@@ -102,7 +102,7 @@ const CanvassForm = ({
 
   // Convert a remote URL to a File object
   const urlToFile = async (
-    attachment: AttachmentData
+    attachment: AttachmentData,
   ): Promise<File | null> => {
     try {
       // Fetch the file
@@ -151,34 +151,34 @@ const CanvassForm = ({
           // Load basic form data
           form.setValue(
             "RfDateReceived",
-            new Date(result.data.canvass_draft_rf_date_received)
+            new Date(result.data.canvass_draft_rf_date_received),
           );
 
           if (result.data.canvass_draft_recommended_supplier) {
             form.setValue(
               "recommendedSupplier",
-              result.data.canvass_draft_recommended_supplier
+              result.data.canvass_draft_recommended_supplier,
             );
           }
 
           if (result.data.canvass_draft_lead_time_day) {
             form.setValue(
               "leadTimeDay",
-              result.data.canvass_draft_lead_time_day
+              result.data.canvass_draft_lead_time_day,
             );
           }
 
           if (result.data.canvass_draft_total_amount) {
             form.setValue(
               "totalAmount",
-              result.data.canvass_draft_total_amount
+              result.data.canvass_draft_total_amount,
             );
           }
 
           if (result.data.canvass_draft_payment_terms) {
             form.setValue(
               "paymentTerms",
-              result.data.canvass_draft_payment_terms
+              result.data.canvass_draft_payment_terms,
             );
           }
 
@@ -188,7 +188,7 @@ const CanvassForm = ({
 
             // Find canvass sheet
             const canvassSheet = attachments.find(
-              (a) => a.canvass_attachment_type === "CANVASS_SHEET"
+              (a) => a.canvass_attachment_type === "CANVASS_SHEET",
             );
 
             if (canvassSheet) {
@@ -213,7 +213,7 @@ const CanvassForm = ({
                 quotations.map(async (q) => {
                   const file = await urlToFile(q);
                   return { file: file || undefined };
-                })
+                }),
               );
 
               // Set form values
@@ -333,7 +333,7 @@ const CanvassForm = ({
       try {
         // Filter out files for quotations
         const validQuotations = values.quotations.map((q) =>
-          q.file instanceof File ? q.file : null
+          q.file instanceof File ? q.file : null,
         );
 
         const result = await saveCanvassDraft({
@@ -390,7 +390,7 @@ const CanvassForm = ({
         setIsSaving(false);
       }
     },
-    700 // 700ms debounce
+    700, // 700ms debounce
   );
 
   // Watch for changes in the form

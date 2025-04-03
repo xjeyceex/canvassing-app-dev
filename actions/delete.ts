@@ -47,7 +47,7 @@ export const deleteDraftCanvass = async (draftId: string) => {
 
     if (attachmentsError) {
       throw new Error(
-        `Failed to delete draft attachments: ${attachmentsError.message}`
+        `Failed to delete draft attachments: ${attachmentsError.message}`,
       );
     }
 
