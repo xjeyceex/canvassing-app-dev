@@ -59,3 +59,23 @@ export const getFileMetadataFromUrl = async (url: string) => {
     throw error;
   }
 };
+
+export const formatDate = (dateString: string) => {
+  const date = new Date(dateString);
+
+  const formattedDate = date.toLocaleString("en-US", {
+    timeZone: "Asia/Manila",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+
+  const formattedTime = date.toLocaleString("en-US", {
+    timeZone: "Asia/Manila",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  return `${formattedDate} at ${formattedTime}`;
+};

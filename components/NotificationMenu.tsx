@@ -15,7 +15,6 @@ import {
   IconBellFilled,
   IconChevronRight,
 } from "@tabler/icons-react";
-import moment from "moment";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -34,11 +33,27 @@ const NotificationMenu = () => {
   const { notifications, setNotifications } = useNotificationStore();
 
   const unreadCount = notifications.filter(
-    (notif) => !notif.notification_read,
+    (notif) => !notif.notification_read
   ).length;
 
   const getRelativeTime = (timestamp: string) => {
-    return moment(timestamp).subtract(8, "hours").fromNow();
+    const now = new Date();
+    const past = new Date(timestamp);
+    const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
+
+    const rtf = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
+
+    if (diffInSeconds < 60) return rtf.format(-diffInSeconds, "second");
+    if (diffInSeconds < 3600)
+      return rtf.format(-Math.floor(diffInSeconds / 60), "minute");
+    if (diffInSeconds < 86400)
+      return rtf.format(-Math.floor(diffInSeconds / 3600), "hour");
+    if (diffInSeconds < 2592000)
+      return rtf.format(-Math.floor(diffInSeconds / 86400), "day");
+    if (diffInSeconds < 31536000)
+      return rtf.format(-Math.floor(diffInSeconds / 2592000), "month");
+
+    return rtf.format(-Math.floor(diffInSeconds / 31536000), "year");
   };
 
   const handleNotificationClick = async (notifications: NotificationType) => {
@@ -83,7 +98,7 @@ const NotificationMenu = () => {
         .sort(
           (a, b) =>
             new Date(b.notification_created_at).getTime() -
-            new Date(a.notification_created_at).getTime(),
+            new Date(a.notification_created_at).getTime()
         );
 
       setNotifications(sortedNotifications as NotificationType[]);
@@ -133,8 +148,8 @@ const NotificationMenu = () => {
                   prev.map((notification) =>
                     notification.notification_id === payload.new.notification_id
                       ? { ...notification, ...payload.new }
-                      : notification,
-                  ),
+                      : notification
+                  )
                 );
                 break;
 
@@ -144,12 +159,12 @@ const NotificationMenu = () => {
                   prev.filter(
                     (notification) =>
                       notification.notification_id !==
-                      payload.old.notification_id,
-                  ),
+                      payload.old.notification_id
+                  )
                 );
                 break;
             }
-          },
+          }
         )
         .subscribe();
 

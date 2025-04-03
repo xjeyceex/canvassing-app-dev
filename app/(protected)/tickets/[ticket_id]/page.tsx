@@ -12,6 +12,7 @@ import CommentThread from "@/components/CommentThread";
 import EditCanvassForm from "@/components/EditCanvassForm";
 import LoadingStateProtected from "@/components/LoadingStateProtected";
 import { useUserStore } from "@/stores/userStore";
+import { formatDate } from "@/utils/functions";
 import {
   CanvassAttachment,
   CanvassDetail,
@@ -49,7 +50,6 @@ import {
   IconFileText,
 } from "@tabler/icons-react";
 import DOMPurify from "dompurify";
-import moment from "moment";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -247,9 +247,7 @@ const TicketDetailsPage = () => {
                       <IconClock size={10} />
                     </ThemeIcon>
                     <Text size="xs" c="dimmed">
-                      {moment
-                        .utc(ticket.ticket_date_created)
-                        .format("MMM D, YYYY [at] h:mm A")}
+                      {formatDate(ticket.ticket_date_created)}
                     </Text>
                   </Group>
                 </Stack>
@@ -327,6 +325,7 @@ const TicketDetailsPage = () => {
                             {new Date(
                               ticket.ticket_rf_date_received
                             ).toLocaleString("en-US", {
+                              timeZone: "Asia/Manila", // Replace with your timezone if needed
                               day: "2-digit",
                               month: "short",
                               year: "numeric",
@@ -499,13 +498,21 @@ const TicketDetailsPage = () => {
                                                         "Unknown"}
                                                     </Text>
                                                     <Text size="xs" c="dimmed">
-                                                      {moment
-                                                        .utc(
-                                                          canvass.canvass_form_date_submitted
-                                                        )
-                                                        .format(
-                                                          "MMM D, YYYY [at] h:mm A"
-                                                        )}
+                                                      {new Date(
+                                                        canvass.canvass_form_date_submitted
+                                                      ).toLocaleString(
+                                                        "en-US",
+                                                        {
+                                                          timeZone:
+                                                            "Asia/Manila",
+                                                          month: "short",
+                                                          day: "2-digit",
+                                                          year: "numeric",
+                                                          hour: "2-digit",
+                                                          minute: "2-digit",
+                                                          hour12: true,
+                                                        }
+                                                      )}
                                                     </Text>
                                                   </Stack>
                                                 </Group>

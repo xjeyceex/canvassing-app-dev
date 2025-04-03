@@ -157,6 +157,7 @@ export const createTicket = async (
     // 1. Format the date
     const formattedDate = new Date(validatedData.ticketRfDateReceived)
       .toLocaleDateString("en-GB", {
+        timeZone: "Asia/Manila",
         day: "2-digit",
         month: "short",
         year: "numeric",

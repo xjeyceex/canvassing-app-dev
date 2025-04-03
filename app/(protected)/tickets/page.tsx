@@ -3,6 +3,7 @@
 import { getAllMyTickets } from "@/actions/get";
 import LoadingStateProtected from "@/components/LoadingStateProtected";
 import { useUserStore } from "@/stores/userStore";
+import { formatDate } from "@/utils/functions";
 import { MyTicketType } from "@/utils/types";
 import {
   ActionIcon,
@@ -38,7 +39,6 @@ import {
   IconTicket,
 } from "@tabler/icons-react";
 import DOMPurify from "dompurify";
-import moment from "moment";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -441,10 +441,7 @@ const TicketList = () => {
                       {ticket.ticket_status}
                     </Badge>
                     <Text size="xs" c="dimmed">
-                      Created{" "}
-                      {moment
-                        .utc(ticket.ticket_date_created)
-                        .format("MMM D, YYYY [at] h:mm A")}
+                      Created {formatDate(ticket.ticket_date_created)}
                     </Text>
                   </Group>
                   <Group gap="md">

@@ -30,7 +30,6 @@ import {
   IconFilter,
   IconInfoCircle,
 } from "@tabler/icons-react";
-import moment from "moment";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -47,11 +46,21 @@ const NotificationsPage = () => {
   const [sortBy, setSortBy] = useState<string>("newest");
 
   const getRelativeTime = (timestamp: string) => {
-    return moment.utc(timestamp).format("MMM D, YYYY [at] h:mm A");
+    return new Date(timestamp)
+      .toLocaleString("en-US", {
+        timeZone: "Asia/Manila",
+        month: "short",
+        day: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: true,
+      })
+      .replace(",", " at");
   };
 
   const filteredNotifications = notifications.filter((notification) =>
-    filter === "unread" ? !notification.notification_read : true,
+    filter === "unread" ? !notification.notification_read : true
   );
 
   const sortedNotifications = [...filteredNotifications].sort((a, b) => {
@@ -81,8 +90,8 @@ const NotificationsPage = () => {
       prev.map((notification) =>
         notification.notification_id === notificationId
           ? { ...notification, notification_read: true }
-          : notification,
-      ),
+          : notification
+      )
     );
   };
 
@@ -103,7 +112,7 @@ const NotificationsPage = () => {
       prev.map((notification) => ({
         ...notification,
         notification_read: true,
-      })),
+      }))
     );
 
     Notifications.show({
@@ -209,7 +218,7 @@ const NotificationsPage = () => {
                       w="fit-content"
                       onClick={() =>
                         router.push(
-                          `/tickets/${notification.notification_ticket_id}`,
+                          `/tickets/${notification.notification_ticket_id}`
                         )
                       } // Use ticket_id here
                       leftSection={<IconExternalLink size={16} />}
