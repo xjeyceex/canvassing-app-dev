@@ -612,7 +612,7 @@ const TicketDetailsPage = () => {
                                     ticketName={ticket?.ticket_name}
                                     ticketId={ticket?.ticket_id}
                                     updateCanvassDetails={fetchCanvassDetails}
-                                    setTicket={setTicket}
+                                    updateTicketDetails={fetchTicketDetails}
                                   />
                                 </>
                               ) : ticket?.reviewers.some(

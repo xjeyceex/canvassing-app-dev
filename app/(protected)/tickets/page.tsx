@@ -191,7 +191,7 @@ const TicketList = () => {
   const availableTickets = tickets.filter((ticket) => {
     const isPurchaser = user?.user_role === "PURCHASER";
     const isSharedWithUser = ticket.shared_users?.some(
-      (sharedUser) => sharedUser === user?.user_id,
+      (sharedUser) => sharedUser === user?.user_id
     );
     const isTicketOwner = ticket.ticket_created_by === user?.user_id;
 
@@ -246,7 +246,7 @@ const TicketList = () => {
     const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
     return text.replace(
       regex,
-      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
     );
   };
 
@@ -269,7 +269,7 @@ const TicketList = () => {
             const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
             const highlighted = node.textContent.replace(
               regex,
-              '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+              '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
             );
 
             const wrapper = document.createElement("span");
@@ -392,7 +392,7 @@ const TicketList = () => {
                   {tab.label}
                   <Badge
                     size="sm"
-                    radius="sm"
+                    radius="xl"
                     variant="filled"
                     color={
                       tab.value !== "all"
@@ -528,7 +528,7 @@ const TicketList = () => {
                           size="sm"
                           dangerouslySetInnerHTML={{
                             __html: highlightSearchTerm(
-                              ticket.ticket_item_description,
+                              ticket.ticket_item_description
                             ),
                           }}
                         />
@@ -606,7 +606,7 @@ const TicketList = () => {
                           className="rich-text-content"
                           dangerouslySetInnerHTML={{
                             __html: sanitizeAndHighlight(
-                              ticket.ticket_specifications,
+                              ticket.ticket_specifications
                             ),
                           }}
                         />
@@ -619,19 +619,7 @@ const TicketList = () => {
           ))}
         </Stack>
       ) : (
-        <Paper
-          p="xl"
-          bg="gray.0"
-          withBorder
-          radius="md"
-          shadow="sm"
-          style={{
-            borderColor:
-              colorScheme === "dark"
-                ? theme.colors.dark[5]
-                : theme.colors.gray[1],
-          }}
-        >
+        <Paper p="xl" withBorder radius="md">
           <Flex
             justify="center"
             align="center"

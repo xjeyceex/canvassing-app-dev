@@ -4,7 +4,7 @@ export const TicketFormSchema = z.object({
   ticketItemName: z.string().min(1, "Item Name is required"),
   ticketItemDescription: z.string().min(1, "Description is required"),
   ticketQuantity: z.coerce.number().min(1, "Quantity must be at least 1"),
-  ticketSpecification: z.string().optional(),
+  ticketSpecification: z.string().min(1, "Specification is required"),
   ticketNotes: z.string().optional(),
   ticketRfDateReceived: z.date().refine((date) => date !== null, {
     message: "RF Date Received is required.",
@@ -29,7 +29,7 @@ const FileSchema = z.instanceof(File).refine(
   {
     message:
       "Invalid file type or size. Please upload an image file (JPEG, PNG, GIF, WEBP) or PDF less than 5MB.",
-  },
+  }
 );
 
 export const CanvassFormSchema = z.object({
@@ -45,7 +45,7 @@ export const CanvassFormSchema = z.object({
     .array(
       z.object({
         file: z.union([FileSchema, z.undefined()]).optional(),
-      }),
+      })
     )
     .min(1, "At least one quotation is required")
     .max(4, "Maximum of 4 quotations allowed")
@@ -68,7 +68,7 @@ export const UpdateCanvassFormSchema = z.object({
     .array(
       z.object({
         file: z.union([FileSchema, z.undefined()]).optional(),
-      }),
+      })
     )
     .min(1, "At least one quotation is required")
     .max(4, "Maximum of 4 quotations allowed"),

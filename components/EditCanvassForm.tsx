@@ -2,17 +2,14 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  Badge,
   Box,
   Button,
   Container,
   Grid,
   Group,
-  Paper,
   Stack,
   Text,
   TextInput,
-  Tooltip,
 } from "@mantine/core";
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
@@ -32,9 +29,9 @@ import {
   IconClipboard,
   IconClock,
   IconCreditCardPay,
-  IconDeviceFloppy,
   IconMoneybag,
   IconPlus,
+  IconSend,
   IconShoppingCart,
   IconTrash,
   IconX,
@@ -122,7 +119,7 @@ const EditCanvassForm = ({
 
         // Filter out only the files that have changed (are not undefined)
         const validQuotations = values.quotations.map((q) =>
-          q.file instanceof File ? q.file : null,
+          q.file instanceof File ? q.file : null
         );
 
         const result = await updateCanvass({
@@ -206,7 +203,7 @@ const EditCanvassForm = ({
         try {
           // Filter out only the files that have changed (are not undefined)
           const validQuotations = values.quotations.map((q) =>
-            q.file instanceof File ? q.file : null,
+            q.file instanceof File ? q.file : null
           );
 
           const result = await updateCanvass({
@@ -259,7 +256,7 @@ const EditCanvassForm = ({
         }
       }
     },
-    700, // Reduced from 300ms to 700ms to better throttle requests
+    700 // Reduced from 300ms to 700ms to better throttle requests
   );
 
   // Watch for changes in the form
@@ -284,7 +281,7 @@ const EditCanvassForm = ({
 
   // Convert a remote URL to a File object
   const urlToFile = async (
-    attachment: AttachmentData,
+    attachment: AttachmentData
   ): Promise<File | null> => {
     try {
       // Fetch the file
@@ -327,23 +324,23 @@ const EditCanvassForm = ({
     // Set basic form values
     form.setValue(
       "RfDateReceived",
-      new Date(currentCanvassDetails[0].canvass_form_rf_date_received),
+      new Date(currentCanvassDetails[0].canvass_form_rf_date_received)
     );
     form.setValue(
       "recommendedSupplier",
-      currentCanvassDetails[0].canvass_form_recommended_supplier,
+      currentCanvassDetails[0].canvass_form_recommended_supplier
     );
     form.setValue(
       "leadTimeDay",
-      currentCanvassDetails[0].canvass_form_lead_time_day,
+      currentCanvassDetails[0].canvass_form_lead_time_day
     );
     form.setValue(
       "totalAmount",
-      currentCanvassDetails[0].canvass_form_total_amount,
+      currentCanvassDetails[0].canvass_form_total_amount
     );
     form.setValue(
       "paymentTerms",
-      currentCanvassDetails[0].canvass_form_payment_terms!,
+      currentCanvassDetails[0].canvass_form_payment_terms!
     );
 
     // Ensure we have attachments to process
@@ -359,7 +356,7 @@ const EditCanvassForm = ({
 
           // Find and load the canvass sheet
           const canvassSheet = attachments.find(
-            (a) => a.canvass_attachment_type === "CANVASS_SHEET",
+            (a) => a.canvass_attachment_type === "CANVASS_SHEET"
           );
 
           if (canvassSheet) {
@@ -388,12 +385,12 @@ const EditCanvassForm = ({
               quotations.map(async (q) => {
                 const file = await urlToFile(q);
                 return { file: file || undefined }; // Convert null to undefined
-              }),
+              })
             );
 
             // Filter out nulls
             const validQuotationFiles = quotationFiles.filter(
-              (q) => q.file !== null,
+              (q) => q.file !== null
             );
 
             // Ensure we have at least one entry
@@ -432,259 +429,227 @@ const EditCanvassForm = ({
     <Container size="md" px="0">
       <form>
         <Stack gap="xl">
-          {/* Form Sections */}
-          <Group>
-            <Grid gutter="lg" w="100%">
-              <Grid.Col span={{ base: 12, sm: 6 }}>
-                <DateInput
-                  {...form.register("RfDateReceived")}
-                  value={form.watch("RfDateReceived")}
-                  onChange={(date) =>
-                    form.setValue("RfDateReceived", date || new Date())
-                  }
-                  error={
-                    form.formState.errors.RfDateReceived?.message as string
-                  }
-                  label="RF Date Received"
-                  placeholder="Select RF date"
-                  disabled={isPending || isLoadingFiles}
-                  required
-                  radius="md"
-                  leftSection={
-                    <IconClipboard
-                      size={16}
-                      style={{ color: "var(--mantine-color-blue-6)" }}
-                    />
-                  }
-                  size="md"
-                />
-              </Grid.Col>
-
-              <Grid.Col span={{ base: 12, sm: 6 }}>
-                <TextInput
-                  {...form.register("recommendedSupplier")}
-                  error={form.formState.errors.recommendedSupplier?.message}
-                  label="Recommended Supplier"
-                  placeholder="Enter recommended supplier"
-                  disabled={isPending || isLoadingFiles}
-                  required
-                  radius="md"
-                  size="md"
-                  leftSection={
-                    <IconShoppingCart
-                      size={16}
-                      style={{ color: "var(--mantine-color-blue-6)" }}
-                    />
-                  }
-                />
-              </Grid.Col>
-            </Grid>
-
-            <Grid gutter="lg" mt="md" w="100%">
-              <Grid.Col span={{ base: 12, sm: 4 }}>
-                <TextInput
-                  {...form.register("leadTimeDay", {
-                    valueAsNumber: true,
-                  })}
-                  error={form.formState.errors.leadTimeDay?.message}
-                  label="Lead Time (days)"
-                  name="leadTimeDay"
-                  placeholder="Enter lead time"
-                  type="number"
-                  required
-                  disabled={isPending || isLoadingFiles}
-                  radius="md"
-                  step="any"
-                  size="md"
-                  leftSection={
-                    <IconClock
-                      size={16}
-                      style={{ color: "var(--mantine-color-blue-6)" }}
-                    />
-                  }
-                />
-              </Grid.Col>
-
-              <Grid.Col span={{ base: 12, sm: 4 }}>
-                <TextInput
-                  {...form.register("totalAmount", {
-                    valueAsNumber: true,
-                  })}
-                  error={form.formState.errors.totalAmount?.message}
-                  label="Total Amount"
-                  name="totalAmount"
-                  placeholder="Enter Total Amount"
-                  type="number"
-                  required
-                  disabled={isPending || isLoadingFiles}
-                  radius="md"
-                  step="any"
-                  size="md"
-                  leftSection={
-                    <IconMoneybag
-                      size={16}
-                      style={{ color: "var(--mantine-color-blue-6)" }}
-                    />
-                  }
-                />
-              </Grid.Col>
-
-              <Grid.Col span={{ base: 12, sm: 4 }}>
-                <TextInput
-                  {...form.register("paymentTerms")}
-                  error={form.formState.errors.paymentTerms?.message}
-                  label="Payment Terms"
-                  placeholder="e.g., Net 30"
-                  disabled={isPending || isLoadingFiles}
-                  required
-                  radius="md"
-                  size="md"
-                  leftSection={
-                    <IconCreditCardPay
-                      size={16}
-                      style={{ color: "var(--mantine-color-blue-6)" }}
-                    />
-                  }
-                  styles={{
-                    input: {
-                      "&:focus": {
-                        borderColor: "var(--mantine-color-blue-6)",
-                      },
-                    },
-                  }}
-                />
-              </Grid.Col>
-            </Grid>
-          </Group>
-
-          {/* Documents Section */}
-          {/* Canvass Sheet Upload */}
-          <Box mb="lg">
-            <Text size="md" fw={500} mb={5}>
-              Canvass Sheet{" "}
-              <Text component="span" c="red">
-                *
-              </Text>
-            </Text>
-            <Controller
-              name="canvassSheet"
-              control={form.control}
-              render={({ field, fieldState }) => (
-                <>
-                  <DropzoneFileInput
-                    onChange={(files) => field.onChange(files)}
-                    value={field.value}
-                    isLoading={isLoadingFiles}
-                  />
-                  {fieldState.error && (
-                    <Text c="red" size="sm" mt={5}>
-                      {fieldState.error.message}
-                    </Text>
-                  )}
-                </>
-              )}
-            />
-          </Box>
-
-          {/* Quotations Section */}
-          <Stack gap={8}>
-            <Text size="md" fw={500}>
-              Quotations{" "}
-              <Text component="span" c="red">
-                *
-              </Text>
-            </Text>
-
-            {fields.map((field, index) => (
-              <Paper
-                key={field.id}
-                p="md"
+          {/* Basic Information Section */}
+          <Grid gutter="lg">
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <DateInput
+                {...form.register("RfDateReceived")}
+                value={form.watch("RfDateReceived")}
+                onChange={(date) =>
+                  form.setValue("RfDateReceived", date || new Date())
+                }
+                error={form.formState.errors.RfDateReceived?.message as string}
+                label="RF Date Received"
+                placeholder="Select RF date"
+                disabled={isPending || isLoadingFiles}
+                required
                 radius="md"
-                shadow="none"
-                mb={8}
-                withBorder
-              >
-                <Group justify="space-between" mb="md">
-                  <Group>
-                    <Badge color="blue" size="lg">
-                      #{index + 1}
-                    </Badge>
-                    {index === 0 && (
-                      <Badge color="red" variant="outline">
-                        Required
-                      </Badge>
+                leftSection={
+                  <IconClipboard
+                    size={16}
+                    style={{ color: "var(--mantine-color-blue-6)" }}
+                  />
+                }
+                size="md"
+              />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, sm: 6 }}>
+              <TextInput
+                {...form.register("recommendedSupplier")}
+                error={form.formState.errors.recommendedSupplier?.message}
+                label="Recommended Supplier"
+                placeholder="Enter recommended supplier"
+                disabled={isPending || isLoadingFiles}
+                required
+                radius="md"
+                size="md"
+                leftSection={
+                  <IconShoppingCart
+                    size={16}
+                    style={{ color: "var(--mantine-color-blue-6)" }}
+                  />
+                }
+              />
+            </Grid.Col>
+          </Grid>
+
+          <Grid gutter="lg">
+            <Grid.Col span={{ base: 12, sm: 4 }}>
+              <TextInput
+                {...form.register("leadTimeDay", {
+                  valueAsNumber: true,
+                })}
+                error={form.formState.errors.leadTimeDay?.message}
+                label="Lead Time (days)"
+                name="leadTimeDay"
+                placeholder="Enter lead time"
+                type="number"
+                required
+                disabled={isPending || isLoadingFiles}
+                radius="md"
+                step="any"
+                size="md"
+                leftSection={
+                  <IconClock
+                    size={16}
+                    style={{ color: "var(--mantine-color-blue-6)" }}
+                  />
+                }
+              />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, sm: 4 }}>
+              <TextInput
+                {...form.register("totalAmount", {
+                  valueAsNumber: true,
+                })}
+                error={form.formState.errors.totalAmount?.message}
+                label="Total Amount"
+                name="totalAmount"
+                placeholder="Enter Total Amount"
+                type="number"
+                required
+                disabled={isPending || isLoadingFiles}
+                radius="md"
+                step="any"
+                size="md"
+                leftSection={
+                  <IconMoneybag
+                    size={16}
+                    style={{ color: "var(--mantine-color-blue-6)" }}
+                  />
+                }
+              />
+            </Grid.Col>
+
+            <Grid.Col span={{ base: 12, sm: 4 }}>
+              <TextInput
+                {...form.register("paymentTerms")}
+                error={form.formState.errors.paymentTerms?.message}
+                label="Payment Terms"
+                placeholder="e.g., Net 30"
+                disabled={isPending || isLoadingFiles}
+                required
+                radius="md"
+                size="md"
+                leftSection={
+                  <IconCreditCardPay
+                    size={16}
+                    style={{ color: "var(--mantine-color-blue-6)" }}
+                  />
+                }
+                styles={{
+                  input: {
+                    "&:focus": {
+                      borderColor: "var(--mantine-color-blue-6)",
+                    },
+                  },
+                }}
+              />
+            </Grid.Col>
+          </Grid>
+
+          <Stack gap="lg">
+            {/* Canvass Sheet Upload */}
+            <Box>
+              <Text size="md" fw={500} mb={5}>
+                Canvass Sheet{" "}
+                <Text component="span" c="red">
+                  *
+                </Text>
+              </Text>
+              <Controller
+                name="canvassSheet"
+                control={form.control}
+                render={({ field, fieldState }) => (
+                  <>
+                    <DropzoneFileInput
+                      onChange={(files) => field.onChange(files)}
+                      value={field.value}
+                      isLoading={isLoadingFiles}
+                    />
+                    {fieldState.error && (
+                      <Text c="red" size="sm" mt={5}>
+                        {fieldState.error.message}
+                      </Text>
                     )}
-                  </Group>
-                  {index > 0 && (
-                    <Tooltip label="Remove quotation">
-                      <Button color="red" variant="light" size="xs" px={8}>
-                        <IconTrash
-                          size={20}
-                          color="red"
-                          style={{ cursor: "pointer" }}
-                          onClick={() => remove(index)}
-                        />
-                      </Button>
-                    </Tooltip>
-                  )}
-                </Group>
-                <Controller
-                  name={`quotations.${index}.file`}
-                  control={form.control}
-                  render={({ field, fieldState }) => (
-                    <>
-                      <DropzoneFileInput
-                        onChange={(files) => field.onChange(files)}
-                        value={field.value}
-                        isLoading={isLoadingFiles}
-                      />
-                      {fieldState.error && (
-                        <Text c="red" size="sm" mt={5}>
-                          {fieldState.error.message}
+                  </>
+                )}
+              />
+            </Box>
+
+            {/* Quotations Section */}
+            <Stack gap="md">
+              {fields.map((field, index) => (
+                <Box key={field.id}>
+                  <Group justify="space-between" mb="xs">
+                    <Text size="md" fw={500}>
+                      Quotation {index + 1}
+                      {index === 0 && (
+                        <Text component="span" c="red">
+                          {" "}
+                          *
                         </Text>
                       )}
-                    </>
-                  )}
-                />
-              </Paper>
-            ))}
+                    </Text>
+                    {index > 0 && (
+                      <Button
+                        variant="subtle"
+                        color="red"
+                        size="xs"
+                        onClick={() => remove(index)}
+                        disabled={isPending || isLoadingFiles}
+                      >
+                        <IconTrash size={16} />
+                      </Button>
+                    )}
+                  </Group>
+                  <Controller
+                    name={`quotations.${index}.file`}
+                    control={form.control}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <DropzoneFileInput
+                          onChange={(files) => field.onChange(files)}
+                          value={field.value}
+                          isLoading={isLoadingFiles}
+                        />
+                        {fieldState.error && (
+                          <Text c="red" size="sm" mt={5}>
+                            {fieldState.error.message}
+                          </Text>
+                        )}
+                      </>
+                    )}
+                  />
+                </Box>
+              ))}
 
-            {fields.length < 4 && (
-              <Group justify="center" mt="sm">
-                <Tooltip label={`Add quotation (${fields.length}/4)`}>
-                  <div>
-                    <IconPlus
-                      size={28}
-                      color="blue"
-                      style={{
-                        cursor:
-                          isPending || isLoadingFiles
-                            ? "not-allowed"
-                            : "pointer",
-                        opacity: isPending || isLoadingFiles ? 0.5 : 1,
-                        padding: 4,
-                        border: "1px dashed var(--mantine-color-blue-5)",
-                        borderRadius: "50%",
-                      }}
-                      onClick={() =>
-                        !isPending && !isLoadingFiles && addQuotation()
-                      }
-                    />
-                  </div>
-                </Tooltip>
-              </Group>
-            )}
+              {fields.length < 4 && (
+                <Button
+                  variant="light"
+                  onClick={addQuotation}
+                  disabled={isPending || isLoadingFiles || fields.length >= 4}
+                  leftSection={<IconPlus size={16} />}
+                  color="blue"
+                  fullWidth
+                  size="md"
+                >
+                  Add Quotation ({fields.length}/4)
+                </Button>
+              )}
+            </Stack>
           </Stack>
 
-          {/* Submit Button */}
           <Group justify="flex-end">
             <Button
-              size="md"
-              color="blue"
-              loading={isPending}
               onClick={submitForm}
+              loading={isPending}
+              size="md"
+              radius="md"
+              leftSection={<IconSend size={18} />}
               disabled={isLoadingFiles}
-              leftSection={<IconDeviceFloppy size={18} />}
             >
               Revise Canvass
             </Button>

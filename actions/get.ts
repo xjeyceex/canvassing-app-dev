@@ -95,7 +95,7 @@ export const getTicketDetails = async (ticket_id: string) => {
 
 export const checkReviewerResponse = async (
   ticket_id: string,
-  user_id: string,
+  user_id: string
 ) => {
   const supabase = await createClient();
 
@@ -174,17 +174,17 @@ export const getAllUsers = async (ticket_id: string) => {
     console.error(
       "Error fetching related users:",
       sharedUsersResponse.error?.message,
-      reviewersResponse.error?.message,
+      reviewersResponse.error?.message
     );
     return { error: true, message: "Failed to fetch related users." };
   }
 
   const ticketCreatorId = ticketResponse.data.ticket_created_by;
   const sharedUserIds = sharedUsersResponse.data.map(
-    (u: SharedUser) => u.shared_user_id,
+    (u: SharedUser) => u.shared_user_id
   );
   const reviewerIds = reviewersResponse.data.map(
-    (r: Reviewer) => r.approval_reviewed_by,
+    (r: Reviewer) => r.approval_reviewed_by
   );
 
   // Collect all users to exclude
@@ -256,7 +256,7 @@ export const getCanvassDetails = async ({
         canvass_attachment_file_size,
         canvass_attachment_created_at
       )
-    `,
+    `
     )
     .eq("canvass_form_ticket_id", ticketId);
 
@@ -305,13 +305,13 @@ export const getCurrentUserNotification = async () => {
 };
 
 export const getComments = async (
-  ticket_id: string,
+  ticket_id: string
 ): Promise<CommentType[]> => {
   const supabase = await createClient();
 
   const { data: comments, error: commentsError } = await supabase.rpc(
     "get_comments_with_avatars",
-    { ticket_id },
+    { ticket_id }
   );
 
   if (commentsError) {
@@ -350,4 +350,53 @@ export const checkIfUserPasswordExists = async (user_id: string) => {
   }
 
   return data as boolean;
+};
+
+export const getDraftCanvass = async (ticketId: string, userId: string) => {
+  try {
+    const supabase = await createClient();
+
+    // Get draft data
+    const { data: draftData, error: draftError } = await supabase
+      .from("canvass_draft_table")
+      .select("*")
+      .eq("canvass_draft_ticket_id", ticketId)
+      .eq("canvass_draft_user_id", userId)
+      .single();
+
+    if (draftError && draftError.code !== "PGRST116") {
+      // PGRST116 is "no rows returned" error
+      throw new Error(`Failed to fetch draft: ${draftError.message}`);
+    }
+
+    if (!draftData) {
+      return { data: null };
+    }
+
+    // Get draft attachments
+    const { data: attachments, error: attachmentsError } = await supabase
+      .from("canvass_attachment_table")
+      .select("*")
+      .eq("canvass_attachment_draft_id", draftData.canvass_draft_id)
+      .eq("canvass_attachment_is_draft", true);
+
+    if (attachmentsError) {
+      throw new Error(
+        `Failed to fetch draft attachments: ${attachmentsError.message}`
+      );
+    }
+
+    return {
+      data: {
+        ...draftData,
+        attachments: attachments || [],
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching canvass draft:", error);
+    return {
+      error:
+        error instanceof Error ? error.message : "An unknown error occurred",
+    };
+  }
 };

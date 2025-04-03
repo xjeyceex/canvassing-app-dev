@@ -346,20 +346,30 @@ USING (auth.role() = 'authenticated');
 DROP TABLE IF EXISTS canvass_attachment_table CASCADE;
 CREATE TABLE public.canvass_attachment_table (
     canvass_attachment_id UUID NOT NULL DEFAULT gen_random_uuid(),
-    canvass_attachment_canvass_form_id UUID NULL DEFAULT gen_random_uuid(),
-    canvass_attachment_type TEXT NULL,
-    canvass_attachment_url TEXT NULL,
-    canvass_attachment_file_type TEXT,
-    canvass_attachment_file_size BIGINT,
+    canvass_attachment_canvass_form_id UUID NULL,
+    canvass_attachment_draft_id UUID REFERENCES canvass_draft_table(canvass_draft_id) ON DELETE CASCADE,
+    canvass_attachment_type TEXT NOT NULL,
+    canvass_attachment_url TEXT NOT NULL,
+    canvass_attachment_file_type TEXT NOT NULL,
+    canvass_attachment_file_size BIGINT NOT NULL,
+    canvass_attachment_is_draft BOOLEAN DEFAULT FALSE,
     canvass_attachment_created_at TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL,
     CONSTRAINT canvass_attachment_table_pkey PRIMARY KEY (canvass_attachment_id),
     CONSTRAINT canvass_attachment_table_canvass_attachment_canvass_form_id_fkey
         FOREIGN KEY (canvass_attachment_canvass_form_id)
         REFERENCES canvass_form_table (canvass_form_id)
         ON UPDATE CASCADE
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT canvass_attachment_reference_check 
+        CHECK (
+            (canvass_attachment_canvass_form_id IS NOT NULL AND canvass_attachment_draft_id IS NULL) 
+            OR 
+            (canvass_attachment_canvass_form_id IS NULL AND canvass_attachment_draft_id IS NOT NULL)
+        ),
+    CONSTRAINT canvass_attachment_type_check
+        CHECK (attachment_type IN ('CANVASS_SHEET', 'QUOTATION_1', 'QUOTATION_2', 'QUOTATION_3', 'QUOTATION_4'))
 ) TABLESPACE pg_default;
--- Enable RLS
+-- Enable Row Level Security
 ALTER TABLE public.canvass_attachment_table ENABLE ROW LEVEL SECURITY;
 
 -- Allow all authenticated users to SELECT canvass attachments
@@ -389,6 +399,49 @@ CREATE POLICY delete_canvass_attachments
 ON public.canvass_attachment_table 
 FOR DELETE 
 USING (auth.role() = 'authenticated');
+
+DROP TABLE IF EXISTS canvass_draft_table CASCADE;
+CREATE TABLE public.canvass_draft_table (
+    canvass_draft_id uuid NOT NULL DEFAULT gen_random_uuid(),
+    canvass_draft_ticket_id uuid NOT NULL,
+    canvass_draft_user_id uuid NOT NULL,
+    canvass_draft_rf_date_received timestamp with time zone NOT NULL DEFAULT timezone('Asia/Manila'::text, now()),
+    canvass_draft_recommended_supplier text,
+    canvass_draft_lead_time_day integer,
+    canvass_draft_total_amount numeric(10, 2),
+    canvass_draft_payment_terms text,
+    canvass_draft_created_at timestamp with time zone NOT NULL DEFAULT timezone('Asia/Manila'::text, now()),
+    canvass_draft_updated_at timestamp with time zone NOT NULL DEFAULT timezone('Asia/Manila'::text, now()),
+    CONSTRAINT canvass_draft_table_pkey PRIMARY KEY (canvass_draft_id),
+    CONSTRAINT canvass_draft_table_ticket_id_fkey FOREIGN KEY (canvass_draft_ticket_id) REFERENCES ticket_table (ticket_id) ON DELETE CASCADE,
+    CONSTRAINT canvass_draft_table_user_id_fkey FOREIGN KEY (canvass_draft_user_id) REFERENCES user_table (user_id) ON DELETE CASCADE
+);
+ALTER TABLE public.canvass_draft_table ENABLE ROW LEVEL SECURITY;
+
+-- CREATE (INSERT) policy
+CREATE POLICY "Enable insert for authenticated users"
+ON canvass_draft_table
+FOR INSERT
+WITH CHECK (auth.uid() = canvass_draft_user_id);
+
+-- READ (SELECT) policy
+CREATE POLICY "Enable read access for own drafts"
+ON canvass_draft_table
+FOR SELECT
+USING (auth.uid() = canvass_draft_user_id);
+
+-- UPDATE policy
+CREATE POLICY "Enable update for own drafts"
+ON canvass_draft_table
+FOR UPDATE
+USING (auth.uid() = canvass_draft_user_id)
+WITH CHECK (auth.uid() = canvass_draft_user_id);
+
+-- DELETE policy
+CREATE POLICY "Enable delete for own drafts"
+ON canvass_draft_table
+FOR DELETE
+USING (auth.uid() = canvass_draft_user_id);
 
 -- APPROVAL TABLE (Tracks Review & Approvals)
 DROP TABLE IF EXISTS approval_table CASCADE;
@@ -527,6 +580,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ticket_status_history_table TO authentic
 GRANT SELECT, INSERT, UPDATE, DELETE ON notification_table TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ticket_shared_with_table TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON canvass_attachment_table TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON canvass_draft_table TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.create_user() 
 RETURNS TRIGGER AS $$

@@ -388,80 +388,49 @@ export const createCanvass = async ({
 
     const userId = user.id;
 
-    // Find existing canvass forms with the same ticketId
-    const { data: existingCanvassForms, error: findError } = await supabase
-      .from("canvass_form_table")
-      .select("canvass_form_id")
-      .eq("canvass_form_ticket_id", ticketId);
+    // First, delete the entire drafts folder for this ticket
+    const draftFolderPath = `${ticketId}/drafts/`;
 
-    if (findError) {
-      throw new Error(
-        `Failed to find existing canvass forms: ${findError.message}`
+    // List all files in the drafts folder
+    const { data: filesList } = await supabase.storage
+      .from(BUCKET_NAME)
+      .list(draftFolderPath);
+
+    if (filesList && filesList.length > 0) {
+      // Create an array of file paths to delete
+      const filesToDelete = filesList.map(
+        (file) => `${draftFolderPath}${file.name}`
       );
+
+      // Delete all files in the drafts folder
+      const { error: deleteError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .remove(filesToDelete);
+
+      if (deleteError) {
+        console.error("Error deleting draft files:", deleteError);
+      }
     }
 
-    // If existing forms found, delete their attachments and the forms themselves
-    if (existingCanvassForms && existingCanvassForms.length > 0) {
-      const existingFormIds = existingCanvassForms.map(
-        (form) => form.canvass_form_id
-      );
+    // Delete draft attachments from the database
+    const { data: draftData } = await supabase
+      .from("canvass_draft_table")
+      .select("canvass_draft_id")
+      .eq("canvass_draft_ticket_id", ticketId)
+      .single();
 
-      // First, get all attachment paths for the existing forms
-      const { data: existingAttachments, error: attachmentsError } =
-        await supabase
-          .from("canvass_attachment_table")
-          .select("canvass_attachment_url")
-          .in("canvass_attachment_canvass_form_id", existingFormIds);
-
-      if (attachmentsError) {
-        throw new Error(
-          `Failed to fetch existing attachments: ${attachmentsError.message}`
-        );
-      }
-
-      // Delete attachments from storage bucket
-      if (existingAttachments) {
-        for (const attachment of existingAttachments) {
-          const filePath = new URL(attachment.canvass_attachment_url).pathname
-            .split("/")
-            .pop();
-          if (filePath) {
-            const { error: deleteStorageError } = await supabase.storage
-              .from(BUCKET_NAME)
-              .remove([`${ticketId}/${filePath}`]);
-
-            if (deleteStorageError) {
-              console.error(
-                `Failed to delete file from storage: ${deleteStorageError.message}`
-              );
-            }
-          }
-        }
-      }
-
-      // Delete attachments from database
-      const { error: deleteAttachmentsError } = await supabase
+    if (draftData?.canvass_draft_id) {
+      // Delete attachment records
+      await supabase
         .from("canvass_attachment_table")
         .delete()
-        .in("canvass_attachment_canvass_form_id", existingFormIds);
+        .eq("canvass_attachment_draft_id", draftData.canvass_draft_id);
 
-      if (deleteAttachmentsError) {
-        throw new Error(
-          `Failed to delete existing attachments: ${deleteAttachmentsError.message}`
-        );
-      }
-
-      // Delete canvass forms
-      const { error: deleteFormsError } = await supabase
-        .from("canvass_form_table")
+      // Delete the draft record itself
+      await supabase
+        .from("canvass_draft_table")
         .delete()
-        .in("canvass_form_id", existingFormIds);
-
-      if (deleteFormsError) {
-        throw new Error(
-          `Failed to delete existing canvass forms: ${deleteFormsError.message}`
-        );
-      }
+        .eq("canvass_draft_id", draftData.canvass_draft_id);
     }
 
     // Helper function to upload a file and get its URL
@@ -623,6 +592,190 @@ export const createCanvass = async ({
     };
   } catch (error) {
     console.error("Error creating canvass:", error);
+    return {
+      error:
+        error instanceof Error ? error.message : "An unknown error occurred",
+    };
+  }
+};
+
+export const saveCanvassDraft = async ({
+  RfDateReceived,
+  recommendedSupplier,
+  leadTimeDay,
+  totalAmount,
+  paymentTerms,
+  canvassSheet,
+  quotations,
+  ticketId,
+  userId,
+}: {
+  RfDateReceived: Date;
+  recommendedSupplier?: string;
+  leadTimeDay?: number;
+  totalAmount?: number;
+  paymentTerms?: string;
+  canvassSheet?: File | null;
+  quotations?: (File | null)[];
+  ticketId: string;
+  userId: string;
+}) => {
+  try {
+    const BUCKET_NAME = "canvass-attachments";
+    const supabase = await createClient();
+
+    // Check if a draft already exists for this user and ticket
+    const { data: existingDraft } = await supabase
+      .from("canvass_draft_table")
+      .select("canvass_draft_id")
+      .eq("canvass_draft_ticket_id", ticketId)
+      .eq("canvass_draft_user_id", userId)
+      .single();
+
+    // Helper function to upload a file and get its URL
+    const uploadFile = async (file: File, fileType: string) => {
+      const extension = file.name.split(".").pop();
+      const fileName = `draft_${fileType}_${uuidv4()}.${extension}`;
+      const filePath = `${ticketId}/drafts/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from(BUCKET_NAME)
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw new Error(`Failed to upload ${fileType}: ${uploadError.message}`);
+      }
+
+      const { data: urlData } = await supabase.storage
+        .from(BUCKET_NAME)
+        .getPublicUrl(filePath);
+
+      return {
+        path: filePath,
+        publicUrl: urlData?.publicUrl,
+        fileType: file.type,
+        fileSize: file.size,
+      };
+    };
+
+    let draftId: string;
+
+    if (existingDraft) {
+      // Update existing draft
+      draftId = existingDraft.canvass_draft_id;
+
+      const { error: updateError } = await supabase
+        .from("canvass_draft_table")
+        .update({
+          canvass_draft_rf_date_received: RfDateReceived,
+          canvass_draft_recommended_supplier: recommendedSupplier || null,
+          canvass_draft_lead_time_day: leadTimeDay || null,
+          canvass_draft_total_amount: totalAmount || null,
+          canvass_draft_payment_terms: paymentTerms || null,
+          canvass_draft_updated_at: new Date().toISOString(),
+        })
+        .eq("canvass_draft_id", draftId);
+
+      if (updateError) {
+        throw new Error(`Failed to update draft: ${updateError.message}`);
+      }
+    } else {
+      // Create new draft
+      const { data: newDraft, error: insertError } = await supabase
+        .from("canvass_draft_table")
+        .insert({
+          canvass_draft_ticket_id: ticketId,
+          canvass_draft_user_id: userId,
+          canvass_draft_rf_date_received: RfDateReceived,
+          canvass_draft_recommended_supplier: recommendedSupplier || null,
+          canvass_draft_lead_time_day: leadTimeDay || null,
+          canvass_draft_total_amount: totalAmount || null,
+          canvass_draft_payment_terms: paymentTerms || null,
+        })
+        .select()
+        .single();
+
+      if (insertError || !newDraft) {
+        throw new Error(
+          `Failed to create draft: ${insertError?.message || "Unknown error"}`
+        );
+      }
+
+      draftId = newDraft.canvass_draft_id;
+    }
+
+    // Handle file uploads if provided
+    if (
+      canvassSheet instanceof File ||
+      quotations?.some((q) => q instanceof File)
+    ) {
+      // First, delete any existing attachments for this draft
+      await supabase
+        .from("canvass_attachment_table")
+        .delete()
+        .eq("canvass_attachment_draft_id", draftId);
+
+      // Now add new attachments
+      const attachments = [];
+
+      // Upload canvass sheet if provided
+      if (canvassSheet instanceof File) {
+        const canvassSheetResult = await uploadFile(
+          canvassSheet,
+          "canvass_sheet"
+        );
+        attachments.push({
+          canvass_attachment_draft_id: draftId,
+          canvass_attachment_type: "CANVASS_SHEET",
+          canvass_attachment_url: canvassSheetResult.publicUrl,
+          canvass_attachment_file_type: canvassSheetResult.fileType,
+          canvass_attachment_file_size: canvassSheetResult.fileSize,
+          canvass_attachment_is_draft: true,
+        });
+      }
+
+      // Upload quotations if provided
+      if (quotations && quotations.length > 0) {
+        for (let i = 0; i < quotations.length; i++) {
+          const quotation = quotations[i];
+          if (quotation instanceof File) {
+            const quotationResult = await uploadFile(
+              quotation,
+              `quotation_${i + 1}`
+            );
+            attachments.push({
+              canvass_attachment_draft_id: draftId,
+              canvass_attachment_type: `QUOTATION_${i + 1}`,
+              canvass_attachment_url: quotationResult.publicUrl,
+              canvass_attachment_file_type: quotationResult.fileType,
+              canvass_attachment_file_size: quotationResult.fileSize,
+              canvass_attachment_is_draft: true,
+            });
+          }
+        }
+      }
+
+      // Insert all attachments if any
+      if (attachments.length > 0) {
+        const { error: attachmentsError } = await supabase
+          .from("canvass_attachment_table")
+          .insert(attachments);
+
+        if (attachmentsError) {
+          throw new Error(
+            `Failed to insert draft attachments: ${attachmentsError.message}`
+          );
+        }
+      }
+    }
+
+    return {
+      success: true,
+      message: "Draft saved successfully",
+      draftId,
+    };
+  } catch (error) {
+    console.error("Error saving canvass draft:", error);
     return {
       error:
         error instanceof Error ? error.message : "An unknown error occurred",

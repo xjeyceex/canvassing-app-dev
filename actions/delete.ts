@@ -34,3 +34,39 @@ export const deleteComment = async (comment_id: string): Promise<void> => {
     throw new Error("Failed to delete comment.");
   }
 };
+
+export const deleteDraftCanvass = async (draftId: string) => {
+  try {
+    const supabase = await createClient();
+
+    // First delete attachments
+    const { error: attachmentsError } = await supabase
+      .from("canvass_attachment_table")
+      .delete()
+      .eq("canvass_attachment_draft_id", draftId);
+
+    if (attachmentsError) {
+      throw new Error(
+        `Failed to delete draft attachments: ${attachmentsError.message}`
+      );
+    }
+
+    // Then delete the draft
+    const { error: deleteError } = await supabase
+      .from("canvass_draft_table")
+      .delete()
+      .eq("canvass_draft_id", draftId);
+
+    if (deleteError) {
+      throw new Error(`Failed to delete draft: ${deleteError.message}`);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting canvass draft:", error);
+    return {
+      error:
+        error instanceof Error ? error.message : "An unknown error occurred",
+    };
+  }
+};
