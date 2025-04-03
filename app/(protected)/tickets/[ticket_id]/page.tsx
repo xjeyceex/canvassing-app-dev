@@ -686,7 +686,8 @@ const TicketDetailsPage = () => {
                                   )}
                                 </>
                               ) : user?.user_id === ticket?.ticket_created_by &&
-                                ticket?.ticket_status !== "CANCELED" ? (
+                                ticket?.ticket_status !== "CANCELED" &&
+                                ticket?.ticket_status !== "FOR REVISION" ? (
                                 <>
                                   <CanvassForm
                                     ticketName={ticket?.ticket_name}
