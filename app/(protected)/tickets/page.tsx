@@ -191,7 +191,7 @@ const TicketList = () => {
   const availableTickets = tickets.filter((ticket) => {
     const isPurchaser = user?.user_role === "PURCHASER";
     const isSharedWithUser = ticket.shared_users?.some(
-      (sharedUser) => sharedUser === user?.user_id
+      (sharedUser) => sharedUser.user_id === user?.user_id
     );
     const isTicketOwner = ticket.ticket_created_by === user?.user_id;
 

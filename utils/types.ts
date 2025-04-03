@@ -78,7 +78,9 @@ export type MyTicketType = {
     reviewer_name: string;
     approval_status: string;
   }[];
-  shared_users?: string[];
+  shared_users: {
+    user_id: string;
+  }[];
 };
 
 export type CanvassAttachment = {
