@@ -622,7 +622,7 @@ const TicketDetailsPage = () => {
                                               )}
 
                                               {/* Revised By */}
-                                              {ticket.ticket_is_revised && (
+                                              {ticket?.ticket_revised_by && (
                                                 <Stack gap={4}>
                                                   <Text
                                                     size="md"
@@ -652,6 +652,26 @@ const TicketDetailsPage = () => {
                                                       <Text fw={500}>
                                                         {ticket.ticket_revised_by_name ||
                                                           "Unknown"}
+                                                      </Text>
+                                                      <Text
+                                                        size="xs"
+                                                        c="dimmed"
+                                                      >
+                                                        {new Date(
+                                                          canvass.canvass_form_updated_at
+                                                        ).toLocaleString(
+                                                          "en-US",
+                                                          {
+                                                            timeZone:
+                                                              "Asia/Manila",
+                                                            month: "short",
+                                                            day: "2-digit",
+                                                            year: "numeric",
+                                                            hour: "2-digit",
+                                                            minute: "2-digit",
+                                                            hour12: true,
+                                                          }
+                                                        )}
                                                       </Text>
                                                     </Stack>
                                                   </Group>

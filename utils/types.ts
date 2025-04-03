@@ -124,6 +124,7 @@ export type CanvassDetail = {
   canvass_form_payment_terms: string | null;
   canvass_form_submitted_by: string;
   canvass_form_date_submitted: string;
+  canvass_form_updated_at: string;
   submitted_by: CanvassSubmitter;
   attachments: CanvassAttachment[];
 };
