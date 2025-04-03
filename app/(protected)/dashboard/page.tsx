@@ -53,11 +53,10 @@ const DashboardPage = () => {
       ? Math.round((ticketStats.completed / ticketStats.total) * 100)
       : 0;
 
-  const revisedPercentage = (
+  const revisedPercentage =
     (tickets.filter((ticket) => ticket.ticket_is_revised).length /
       tickets.length) *
-    100
-  ).toFixed(2);
+    100;
 
   function countUserTicketsByStatus(
     tickets: DashboardTicketType[],
@@ -303,7 +302,8 @@ const DashboardPage = () => {
                 {ticketStats.revised} / {ticketStats.total}
               </Text>
               <Text c="dimmed" size="sm" mt={4}>
-                {revisedPercentage}% of Tickets Revised
+                {isNaN(revisedPercentage) ? "0" : revisedPercentage.toFixed(2)}%
+                of Tickets Revised
               </Text>
             </Paper>
           </Grid.Col>

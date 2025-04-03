@@ -93,9 +93,9 @@ CREATE TABLE public.ticket_table (
   ticket_name TEXT NOT NULL UNIQUE,  -- ticket_name is now UNIQUE
   ticket_status ticket_status_enum NOT NULL DEFAULT 'FOR CANVASS', 
   ticket_created_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
-  ticket_rf_date_received TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL,
-  ticket_date_created TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()),
-  ticket_last_updated TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) 
+  ticket_rf_date_received TIMESTAMPTZ DEFAULT now() NOT NULL,
+  ticket_date_created TIMESTAMPTZ DEFAULT now(),
+  ticket_last_updated TIMESTAMPTZ DEFAULT now() 
 );
 
 CREATE OR REPLACE FUNCTION get_next_ticket_sequence(date_prefix TEXT)
@@ -156,11 +156,11 @@ CREATE TABLE comment_table (
   comment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   comment_ticket_id UUID NOT NULL,
   comment_content TEXT NOT NULL,
-  comment_date_created TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL,
+  comment_date_created TIMESTAMPTZ DEFAULT now() NOT NULL,
   comment_is_edited BOOLEAN DEFAULT FALSE,
   comment_is_disabled BOOLEAN DEFAULT FALSE,
   comment_type TEXT NOT NULL,
-  comment_last_updated TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL,
+  comment_last_updated TIMESTAMPTZ DEFAULT now() NOT NULL,
   comment_user_id UUID NOT NULL,  
   FOREIGN KEY (comment_user_id) REFERENCES user_table(user_id), 
   FOREIGN KEY (comment_ticket_id) REFERENCES ticket_table(ticket_id) ON DELETE CASCADE 
@@ -259,7 +259,7 @@ DROP TABLE IF EXISTS ticket_shared_with_table cascade;
 CREATE TABLE public.ticket_shared_with_table (
     ticket_id UUID NOT NULL REFERENCES public.ticket_table(ticket_id) ON DELETE CASCADE,
     shared_user_id UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
-    assigned_at TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()), 
+    assigned_at TIMESTAMPTZ DEFAULT now(), 
     assigned_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
     PRIMARY KEY (ticket_id, shared_user_id)
 );
@@ -302,13 +302,13 @@ DROP TABLE IF EXISTS canvass_form_table CASCADE;
 CREATE TABLE public.canvass_form_table (
     canvass_form_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     canvass_form_ticket_id UUID NOT NULL REFERENCES public.ticket_table(ticket_id) ON DELETE CASCADE,
-    canvass_form_rf_date_received TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL,
+    canvass_form_rf_date_received TIMESTAMPTZ DEFAULT now() NOT NULL,
     canvass_form_recommended_supplier TEXT NOT NULL,
     canvass_form_lead_time_day INT NOT NULL CHECK (canvass_form_lead_time_day > 0),
     canvass_form_total_amount DECIMAL(10,2) NOT NULL CHECK (canvass_form_total_amount > 0), 
     canvass_form_payment_terms TEXT,
     canvass_form_submitted_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE SET NULL,
-    canvass_form_date_submitted TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL
+    canvass_form_date_submitted TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 -- Enable RLS
@@ -351,7 +351,7 @@ CREATE TABLE public.canvass_attachment_table (
     canvass_attachment_url TEXT NULL,
     canvass_attachment_file_type TEXT,
     canvass_attachment_file_size BIGINT,
-    canvass_attachment_created_at TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL,
+    canvass_attachment_created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
     CONSTRAINT canvass_attachment_table_pkey PRIMARY KEY (canvass_attachment_id),
     CONSTRAINT canvass_attachment_table_canvass_attachment_canvass_form_id_fkey
         FOREIGN KEY (canvass_attachment_canvass_form_id)
@@ -397,7 +397,7 @@ CREATE TABLE public.approval_table (
     approval_ticket_id UUID NOT NULL REFERENCES public.ticket_table(ticket_id) ON DELETE CASCADE,
     approval_reviewed_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
     approval_review_status approval_status_enum NOT NULL, 
-    approval_review_date TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL
+    approval_review_date TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 -- Enable RLS
@@ -439,7 +439,7 @@ CREATE TABLE public.ticket_status_history_table (
     ticket_status_history_previous_status ticket_status_enum NOT NULL, 
     ticket_status_history_new_status ticket_status_enum NOT NULL, 
     ticket_status_history_changed_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
-    ticket_status_history_change_date TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL
+    ticket_status_history_change_date TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 -- Enable RLS
@@ -481,7 +481,7 @@ CREATE TABLE notification_table (
   notification_read BOOLEAN DEFAULT FALSE,
   notification_ticket_id UUID NOT NULL REFERENCES public.ticket_table(ticket_id) ON DELETE CASCADE,
   notification_comment_id UUID REFERENCES public.comment_table(comment_id) ON DELETE CASCADE,  
-  notification_created_at TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL
+  notification_created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 -- Enable RLS
