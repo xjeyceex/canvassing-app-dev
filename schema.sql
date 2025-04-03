@@ -266,14 +266,13 @@ CREATE TABLE public.ticket_shared_with_table (
 
 -- Enable RLS
 ALTER TABLE public.ticket_shared_with_table ENABLE ROW LEVEL SECURITY;
-
--- Allow shared users to SELECT their shared tickets
 DROP POLICY IF EXISTS select_shared_tickets ON public.ticket_shared_with_table;
+
 CREATE POLICY select_shared_tickets
 ON public.ticket_shared_with_table
 FOR SELECT
 USING (
-  auth.uid() = shared_user_id
+  auth.role() = 'authenticated'
   OR (SELECT user_role FROM public.user_table WHERE user_id = auth.uid()) IN ('ADMIN', 'MANAGER')
 );
 
