@@ -89,7 +89,6 @@ CREATE TABLE public.ticket_table (
   ticket_quantity INT NOT NULL CHECK (ticket_quantity > 0), 
   ticket_specifications TEXT,
   ticket_notes TEXT,
-  ticket_is_revised BOOLEAN DEFAULT FALSE,
   ticket_revised_by UUID NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
   ticket_name TEXT NOT NULL UNIQUE,  -- ticket_name is now UNIQUE
   ticket_status ticket_status_enum NOT NULL DEFAULT 'FOR CANVASS', 
@@ -613,26 +612,23 @@ CREATE TRIGGER after_user_signup
   FOR EACH ROW EXECUTE FUNCTION public.create_user();
   
 DROP FUNCTION IF EXISTS get_dashboard_tickets(UUID);
-
 CREATE OR REPLACE FUNCTION get_dashboard_tickets(_user_id UUID)
 RETURNS TABLE (
   ticket_id UUID,
   ticket_name TEXT,
   ticket_item_name TEXT,
   ticket_status TEXT,
-  ticket_is_revised BOOLEAN, 
   ticket_item_description TEXT,
   ticket_date_created TIMESTAMPTZ
 )
 LANGUAGE SQL
 SET search_path TO public  
-AS $$
+AS $$ 
   SELECT 
     t.ticket_id,
     t.ticket_name, 
     t.ticket_item_name,
     t.ticket_status,
-    t.ticket_is_revised,
     t.ticket_item_description,
     t.ticket_date_created 
   FROM 
@@ -665,7 +661,6 @@ RETURNS TABLE (
   ticket_name TEXT, 
   ticket_item_name TEXT,
   ticket_status TEXT,
-  ticket_is_revised BOOLEAN,  
   ticket_item_description TEXT,
   ticket_specifications TEXT,
   ticket_notes TEXT,
@@ -682,7 +677,6 @@ AS $$
     t.ticket_name, 
     t.ticket_item_name,
     t.ticket_status,
-    t.ticket_is_revised,  
     t.ticket_item_description,
     t.ticket_specifications,
     t.ticket_notes,
@@ -799,8 +793,6 @@ $$;
 -- Function for getting specific ticket
 DROP FUNCTION IF EXISTS get_ticket_details(UUID); 
 
-DROP FUNCTION IF EXISTS get_ticket_details(UUID);
-
 CREATE OR REPLACE FUNCTION get_ticket_details(ticket_uuid UUID)
 RETURNS TABLE (
   ticket_id UUID,
@@ -808,7 +800,6 @@ RETURNS TABLE (
   ticket_item_name TEXT,
   ticket_item_description TEXT,
   ticket_status TEXT,
-  ticket_is_revised BOOLEAN,
   ticket_revised_by UUID,
   ticket_revised_by_name TEXT,
   ticket_revised_by_avatar TEXT,
@@ -828,13 +819,13 @@ RETURNS TABLE (
 LANGUAGE SQL
 SET search_path TO public
 AS $$
+
 SELECT
   t.ticket_id,
   t.ticket_name,
   t.ticket_item_name,
   t.ticket_item_description,
   t.ticket_status,
-  t.ticket_is_revised,
   t.ticket_revised_by,
   u_revised.user_full_name AS ticket_revised_by_name,
   u_revised.user_avatar AS ticket_revised_by_avatar,
@@ -902,7 +893,6 @@ LEFT JOIN public.user_table u ON u.user_id = t.ticket_created_by
 LEFT JOIN public.user_table u_revised ON u_revised.user_id = t.ticket_revised_by
 WHERE t.ticket_id = ticket_uuid;
 $$;
-
 
 -- share ticket function
 DROP FUNCTION IF EXISTS public.share_ticket(uuid, uuid, uuid);

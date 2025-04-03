@@ -385,7 +385,7 @@ const TicketDetailsPage = () => {
                                 </ThemeIcon>
                                 <Text fz="lg" fw={600}>
                                   Canvass Form{" "}
-                                  {ticket.ticket_is_revised && (
+                                  {ticket.ticket_revised_by !== null && (
                                     <Text fz="sm" c="dimmed" span>
                                       (Revised)
                                     </Text>
@@ -622,7 +622,8 @@ const TicketDetailsPage = () => {
                                               )}
 
                                               {/* Revised By */}
-                                              {ticket.ticket_is_revised && (
+                                              {ticket.ticket_revised_by !==
+                                                null && (
                                                 <Stack gap={4}>
                                                   <Text
                                                     size="md"
