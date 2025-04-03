@@ -53,15 +53,14 @@ const DashboardPage = () => {
       ? Math.round((ticketStats.completed / ticketStats.total) * 100)
       : 0;
 
-  const revisedPercentage = (
+  const revisedPercentage =
     (tickets.filter((ticket) => ticket.ticket_is_revised).length /
       tickets.length) *
-    100
-  ).toFixed(2);
+    100;
 
   function countUserTicketsByStatus(
     tickets: DashboardTicketType[],
-    statusType: "OPEN" | "COMPLETED",
+    statusType: "OPEN" | "COMPLETED"
   ) {
     if (statusType === "OPEN") {
       return tickets.filter(
@@ -70,7 +69,7 @@ const DashboardPage = () => {
           ticket.ticket_status === "FOR APPROVAL" ||
           ticket.ticket_status === "FOR REVIEW OF SUBMISSIONS" ||
           ticket.ticket_status === "WORK IN PROGRESS" ||
-          ticket.ticket_status === "FOR REVISION",
+          ticket.ticket_status === "FOR REVISION"
       ).length;
     }
 
@@ -85,7 +84,7 @@ const DashboardPage = () => {
     try {
       setLoading(true);
       const data = await getDashboardTickets(
-        isAdmin ? undefined : user?.user_id,
+        isAdmin ? undefined : user?.user_id
       );
       setTickets(data ?? []);
     } catch (error) {
@@ -113,6 +112,13 @@ const DashboardPage = () => {
         return "orange";
       case "DONE":
         return "green";
+      case "FOR APPROVAL":
+        return "teal";
+      case "CANCELED":
+        return "red";
+      case "DECLINED":
+        return "red";
+
       default:
         return "gray";
     }
@@ -296,7 +302,8 @@ const DashboardPage = () => {
                 {ticketStats.revised} / {ticketStats.total}
               </Text>
               <Text c="dimmed" size="sm" mt={4}>
-                {revisedPercentage}% of Tickets Revised
+                {isNaN(revisedPercentage) ? "0" : revisedPercentage.toFixed(2)}%
+                of Tickets Revised
               </Text>
             </Paper>
           </Grid.Col>
@@ -346,7 +353,7 @@ const DashboardPage = () => {
                 .sort(
                   (a, b) =>
                     new Date(b.ticket_date_created).getTime() -
-                    new Date(a.ticket_date_created).getTime(),
+                    new Date(a.ticket_date_created).getTime()
                 )
                 .slice(0, 5)
                 .map((ticket, index) => (

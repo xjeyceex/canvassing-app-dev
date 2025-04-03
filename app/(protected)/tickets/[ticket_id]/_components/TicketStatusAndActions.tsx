@@ -1,10 +1,11 @@
 "use client";
 
-import { getAllUsers } from "@/actions/get";
-import { addComment, shareTicket } from "@/actions/post";
+import { getAllUsers, getTicketDetails } from "@/actions/get";
+import { addComment, notifyUser, shareTicket } from "@/actions/post";
 import { revertApprovalStatus, updateApprovalStatus } from "@/actions/update";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { useUserStore } from "@/stores/userStore";
+import { getNameInitials } from "@/utils/functions";
 import { TicketDetailsType } from "@/utils/types";
 import {
   ActionIcon,
@@ -27,6 +28,7 @@ import {
   Tooltip,
   useMantineColorScheme,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 import {
   IconClipboardCheck,
   IconClipboardX,
@@ -75,7 +77,7 @@ const TicketStatusAndActions = ({
 
   const [isStatusLoading, setIsStatusLoading] = useState(false);
   const [allUsers, setAllUsers] = useState<{ value: string; label: string }[]>(
-    [],
+    []
   );
 
   const { colorScheme } = useMantineColorScheme();
@@ -93,7 +95,7 @@ const TicketStatusAndActions = ({
 
   const isAdmin = user?.user_role === "ADMIN";
   const isReviewer = ticket.reviewers?.some(
-    (r) => r.reviewer_id === user?.user_id,
+    (r) => r.reviewer_id === user?.user_id
   );
   const isManager = user?.user_role === "MANAGER";
   const isCreator = ticket.ticket_created_by === user?.user_id;
@@ -105,14 +107,14 @@ const TicketStatusAndActions = ({
 
     try {
       await Promise.all(
-        selectedUsers.map((userId) => shareTicket(ticket.ticket_id, userId)),
+        selectedUsers.map((userId) => shareTicket(ticket.ticket_id, userId))
       );
 
       await fetchTicketDetails!();
 
       setSelectedUsers([]);
       setAllUsers((prev) =>
-        prev.filter((user) => !selectedUsers.includes(user.value)),
+        prev.filter((user) => !selectedUsers.includes(user.value))
       );
     } catch (error) {
       console.error("Error sharing ticket:", error);
@@ -136,7 +138,7 @@ const TicketStatusAndActions = ({
         setNewComment("");
       }
 
-      await handleCanvassAction("WORK IN PROGRESS");
+      handleCanvassAction("WORK IN PROGRESS");
       updateTicketDetails();
     } catch (error) {
       console.error("Error adding comment or starting canvass:", error);
@@ -150,60 +152,92 @@ const TicketStatusAndActions = ({
       console.error("User not logged in.");
       return;
     }
+
     setIsStatusLoading(true);
+
+    // Fetch latest ticket details and use them immediately
+    await fetchTicketDetails(); // Ensure state is updated before proceeding
+    const latestTicket = await getTicketDetails(ticket?.ticket_id); // Fetch directly
+
+    if (!latestTicket || latestTicket.length === 0) {
+      console.error("Failed to fetch latest ticket details.");
+      setIsStatusLoading(false);
+      return;
+    }
+
+    const currentTicket = latestTicket[0];
+
+    if (currentTicket.ticket_status === "CANCELED") {
+      notifications.show({
+        title: "Failed",
+        message: "Ticket has been canceled.",
+        color: "red",
+        icon: <IconX size={16} />,
+      });
+      setIsStatusLoading(false);
+      return;
+    }
 
     const newApprovalStatus =
       approvalStatus === "APPROVED" ? "APPROVED" : "REJECTED";
 
-    if (!ticket) return;
-
     // Optimistically update only my approval status
-    const updatedReviewers = ticket.reviewers.map((reviewer) =>
-      reviewer.reviewer_id === user.user_id
-        ? { ...reviewer, approval_status: newApprovalStatus }
-        : reviewer,
+    const updatedReviewers = currentTicket.reviewers.map(
+      (reviewer: TicketDetailsType["reviewers"][0]) =>
+        reviewer.reviewer_id === user.user_id
+          ? { ...reviewer, approval_status: newApprovalStatus }
+          : reviewer
     );
 
     // Check if all non-managers have approved
     const nonManagerReviewers = updatedReviewers.filter(
-      (reviewer) => reviewer.reviewer_role !== "MANAGER",
+      (reviewer: TicketDetailsType["reviewers"][0]) =>
+        reviewer.reviewer_role !== "MANAGER"
     );
 
     const isSingleReviewer = nonManagerReviewers.length === 1;
     const allApproved =
       nonManagerReviewers.length > 0 &&
       nonManagerReviewers.every(
-        (reviewer) => reviewer.approval_status === "APPROVED",
+        (reviewer: TicketDetailsType["reviewers"][0]) =>
+          reviewer.approval_status === "APPROVED"
       );
 
-    // Handle edge case where there's only one non-manager reviewer
     const newTicketStatus = allApproved
       ? "FOR APPROVAL"
       : isSingleReviewer && newApprovalStatus === "REJECTED"
-        ? "REJECTED"
-        : ticket.ticket_status;
+      ? "REJECTED"
+      : currentTicket.ticket_status;
 
     try {
       if (newComment.trim()) {
-        await addComment(ticket.ticket_id, newComment, user.user_id);
+        await addComment(currentTicket.ticket_id, newComment, user.user_id);
         updateComments();
       }
 
       await updateApprovalStatus({
-        approval_ticket_id: ticket.ticket_id,
+        approval_ticket_id: currentTicket.ticket_id,
         approval_review_status: newApprovalStatus,
         approval_reviewed_by: user.user_id,
       });
 
       if (allApproved) {
-        for (const manager of ticket.reviewers.filter(
-          (reviewer) => reviewer.reviewer_role === "MANAGER",
+        for (const manager of currentTicket.reviewers.filter(
+          (reviewer: TicketDetailsType["reviewers"][0]) =>
+            reviewer.reviewer_role === "MANAGER"
         )) {
           await updateApprovalStatus({
-            approval_ticket_id: ticket.ticket_id,
+            approval_ticket_id: currentTicket.ticket_id,
             approval_review_status: "AWAITING ACTION",
             approval_reviewed_by: manager.reviewer_id,
           });
+
+          const message = `The ticket ${currentTicket.ticket_name} has been approved by all reviewers and is now awaiting your action.`;
+          await notifyUser(
+            manager.reviewer_id,
+            message,
+            currentTicket.ticket_id
+          );
         }
       }
 
@@ -223,47 +257,71 @@ const TicketStatusAndActions = ({
       return;
     }
 
-    if (!ticket) return;
     setIsStatusLoading(true);
+
+    await fetchTicketDetails();
+    const latestTicket = await getTicketDetails(ticket?.ticket_id);
+
+    if (!latestTicket || latestTicket.length === 0) {
+      console.error("Failed to fetch latest ticket details.");
+      setIsStatusLoading(false);
+      return;
+    }
+
+    const currentTicket = latestTicket[0];
+
+    if (currentTicket.ticket_status === "CANCELED") {
+      notifications.show({
+        title: "Failed",
+        message: "Ticket has been canceled.",
+        color: "red",
+        icon: <IconX size={16} />,
+      });
+      setIsStatusLoading(false);
+      return;
+    }
 
     const newApprovalStatus =
       approvalStatus === "APPROVED" ? "APPROVED" : "REJECTED";
 
     // Optimistically update only the manager's approval status
-    const updatedReviewers = ticket.reviewers.map((reviewer) =>
-      reviewer.reviewer_role === "MANAGER" &&
-      reviewer.reviewer_id === user.user_id
-        ? { ...reviewer, approval_status: newApprovalStatus }
-        : reviewer,
+    const updatedReviewers = currentTicket.reviewers.map(
+      (reviewer: TicketDetailsType["reviewers"][0]) =>
+        reviewer.reviewer_role === "MANAGER" &&
+        reviewer.reviewer_id === user.user_id
+          ? { ...reviewer, approval_status: newApprovalStatus }
+          : reviewer
     );
 
     // Filter only managers
     const managerReviewers = updatedReviewers.filter(
-      (reviewer) => reviewer.reviewer_role === "MANAGER",
+      (reviewer: TicketDetailsType["reviewers"][0]) =>
+        reviewer.reviewer_role === "MANAGER"
     );
 
     const isSingleManager = managerReviewers.length === 1;
     const allManagersApproved =
       managerReviewers.length > 0 &&
       managerReviewers.every(
-        (reviewer) => reviewer.approval_status === "APPROVED",
+        (reviewer: TicketDetailsType["reviewers"][0]) =>
+          reviewer.approval_status === "APPROVED"
       );
 
     // Handle single or multiple manager approvals
     const newTicketStatus = allManagersApproved
       ? "DONE"
       : isSingleManager && newApprovalStatus === "REJECTED"
-        ? "REJECTED"
-        : ticket.ticket_status;
+      ? "REJECTED"
+      : currentTicket.ticket_status;
 
     try {
       if (newComment.trim()) {
-        await addComment(ticket.ticket_id, newComment, user.user_id);
+        await addComment(currentTicket.ticket_id, newComment, user.user_id);
         updateComments();
       }
 
       await updateApprovalStatus({
-        approval_ticket_id: ticket.ticket_id,
+        approval_ticket_id: currentTicket.ticket_id,
         approval_review_status: newApprovalStatus,
         approval_reviewed_by: user.user_id,
       });
@@ -389,16 +447,16 @@ const TicketStatusAndActions = ({
                     ticket?.ticket_status === "FOR REVIEW OF SUBMISSIONS"
                       ? "yellow"
                       : ticket?.ticket_status === "FOR APPROVAL"
-                        ? "yellow"
-                        : ticket?.ticket_status === "WORK IN PROGRESS"
-                          ? "blue"
-                          : ticket?.ticket_status === "FOR REVISION"
-                            ? "orange"
-                            : ticket?.ticket_status === "DONE"
-                              ? "teal"
-                              : ticket?.ticket_status === "DECLINED"
-                                ? "red"
-                                : "gray"
+                      ? "yellow"
+                      : ticket?.ticket_status === "WORK IN PROGRESS"
+                      ? "blue"
+                      : ticket?.ticket_status === "FOR REVISION"
+                      ? "orange"
+                      : ticket?.ticket_status === "DONE"
+                      ? "teal"
+                      : ticket?.ticket_status === "DECLINED"
+                      ? "red"
+                      : "gray"
                   }
                   fullWidth
                 >
@@ -553,7 +611,7 @@ const TicketStatusAndActions = ({
                     .filter(
                       (manager) =>
                         manager.reviewer_role === "MANAGER" &&
-                        manager.approval_status !== "PENDING",
+                        manager.approval_status !== "PENDING"
                     )
                     .map((manager) => (
                       <Group
@@ -567,10 +625,14 @@ const TicketStatusAndActions = ({
                             passHref
                           >
                             <Avatar
-                              src={manager.reviewer_avatar}
+                              src={manager.reviewer_avatar || undefined}
                               radius="xl"
                               size="md"
-                            />
+                            >
+                              {manager.reviewer_avatar
+                                ? null
+                                : getNameInitials(manager.reviewer_name || "")}
+                            </Avatar>
                           </Link>
                           <Stack gap={2}>
                             <Link
@@ -607,8 +669,8 @@ const TicketStatusAndActions = ({
                             manager.approval_status === "APPROVED"
                               ? "green"
                               : manager.approval_status === "REJECTED"
-                                ? "red"
-                                : "gray"
+                              ? "red"
+                              : "gray"
                           }
                         >
                           {manager.approval_status}
@@ -631,10 +693,14 @@ const TicketStatusAndActions = ({
                             passHref
                           >
                             <Avatar
-                              src={reviewer.reviewer_avatar}
+                              src={reviewer.reviewer_avatar || undefined}
                               radius="xl"
                               size="md"
-                            />
+                            >
+                              {reviewer.reviewer_avatar
+                                ? null
+                                : getNameInitials(reviewer.reviewer_name || "")}
+                            </Avatar>
                           </Link>
                           <Stack gap={2}>
                             <Link
@@ -671,8 +737,8 @@ const TicketStatusAndActions = ({
                             reviewer.approval_status === "APPROVED"
                               ? "green"
                               : reviewer.approval_status === "REJECTED"
-                                ? "red"
-                                : "gray"
+                              ? "red"
+                              : "gray"
                           }
                         >
                           {reviewer.approval_status}
@@ -712,10 +778,14 @@ const TicketStatusAndActions = ({
                 <Group gap="xs" align="center">
                   <Link href={`/profile/${ticket.ticket_created_by}`} passHref>
                     <Avatar
-                      src={ticket.ticket_created_by_avatar}
+                      src={ticket.ticket_created_by_avatar || undefined}
                       radius="xl"
                       size="sm"
-                    />
+                    >
+                      {ticket.ticket_created_by_avatar
+                        ? null
+                        : getNameInitials(ticket.ticket_created_by_name || "")}
+                    </Avatar>
                   </Link>
                   <Stack gap={2} align="flex-start">
                     <Link
@@ -752,10 +822,14 @@ const TicketStatusAndActions = ({
                       <Group key={user.user_id} gap="xs" align="center">
                         <Link href={`/profile/${user.user_id}`} passHref>
                           <Avatar
-                            src={user.user_avatar}
+                            src={user.user_avatar || undefined}
                             radius="xl"
                             size="sm"
-                          />
+                          >
+                            {user.user_avatar
+                              ? null
+                              : getNameInitials(user.user_full_name || "")}
+                          </Avatar>
                         </Link>
                         <Link
                           href={`/profile/${user.user_id}`}

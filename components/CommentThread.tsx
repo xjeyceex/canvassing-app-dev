@@ -26,6 +26,7 @@ import {
   RichTextEditor,
   RichTextEditorRef,
 } from "@/components/ui/RichTextEditor";
+import { getNameInitials } from "@/utils/functions";
 import Link from "next/link";
 
 type CommentThreadProps = {
@@ -47,18 +48,18 @@ const CommentThread: React.FC<CommentThreadProps> = ({
   const [newComment, setNewComment] = useState<string>("");
 
   const [editingComment, setEditingComment] = useState<CommentType | null>(
-    null,
+    null
   );
   const [editContent, setEditContent] = useState<string>("");
 
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>(
-    {},
+    {}
   );
   const [isFocused, setIsFocus] = useState(false);
 
   const [isAddingComment, setIsAddingComment] = useState<boolean>(false);
   const [deletingComment, setDeletingComment] = useState<CommentType | null>(
-    null,
+    null
   );
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
 
@@ -95,12 +96,16 @@ const CommentThread: React.FC<CommentThreadProps> = ({
           comment_ticket_id: ticket_id,
           comment_user_id: user.user_id,
           comment_content: newComment,
-          comment_date_created: new Date().toISOString(),
+          comment_date_created: new Date().toLocaleString("en-US", {
+            timeZone: "Asia/Manila",
+          }),
           comment_is_edited: false,
           comment_type: "COMMENT",
           comment_user_full_name: user.user_full_name,
           comment_user_avatar: user?.user_avatar,
-          comment_last_updated: new Date().toISOString(),
+          comment_last_updated: new Date().toLocaleString("en-US", {
+            timeZone: "Asia/Manila",
+          }),
           replies: [],
         },
       ]);
@@ -119,8 +124,8 @@ const CommentThread: React.FC<CommentThreadProps> = ({
         await deleteComment(deletingComment.comment_id);
         setComments((prevComments) =>
           prevComments.filter(
-            (comment) => comment.comment_id !== deletingComment.comment_id,
-          ),
+            (comment) => comment.comment_id !== deletingComment.comment_id
+          )
         );
       } catch (error) {
         console.error("Unexpected error:", error);
@@ -147,8 +152,8 @@ const CommentThread: React.FC<CommentThreadProps> = ({
                 comment_content: editContent,
                 comment_is_edited: true,
               }
-            : comment,
-        ),
+            : comment
+        )
       );
       setEditingComment(null);
       setEditContent("");
@@ -196,10 +201,14 @@ const CommentThread: React.FC<CommentThreadProps> = ({
             <Group key={comment.comment_id} align="flex-start" gap="xs">
               <Link href={`/profile/${comment.comment_user_id}`} passHref>
                 <Avatar
-                  src={comment.comment_user_avatar}
+                  src={comment.comment_user_avatar || undefined}
                   radius="xl"
                   size="md"
-                />
+                >
+                  {comment.comment_user_avatar
+                    ? null
+                    : getNameInitials(comment.comment_user_full_name)}
+                </Avatar>
               </Link>
               <Paper
                 bg="transparent"
@@ -241,9 +250,17 @@ const CommentThread: React.FC<CommentThreadProps> = ({
                       </Link>
 
                       <Text size="xs" c="dimmed">
-                        {new Date(
-                          comment.comment_date_created,
-                        ).toLocaleString()}
+                        {new Date(comment.comment_date_created).toLocaleString(
+                          "en-US",
+                          {
+                            month: "2-digit",
+                            day: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hour12: true,
+                          }
+                        )}
                       </Text>
                       {comment.comment_is_edited && (
                         <Text size="xs" c="dimmed" pl="xs">
@@ -304,7 +321,11 @@ const CommentThread: React.FC<CommentThreadProps> = ({
         ticket_status === "DECLINED"
       ) && (
         <Group align="flex-start" gap="xs" mt="md">
-          <Avatar src={user?.user_avatar} radius="xl" size="md" />
+          <Avatar src={user?.user_avatar || undefined} radius="xl" size="md">
+            {user?.user_avatar
+              ? null
+              : getNameInitials(user?.user_full_name || "")}
+          </Avatar>
 
           <Paper p="md" shadow="xs" style={{ flex: 1 }}>
             <form onSubmit={handleAddComment}>

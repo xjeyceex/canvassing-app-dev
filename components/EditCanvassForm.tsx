@@ -16,8 +16,8 @@ import { Controller, useFieldArray, useForm } from "react-hook-form";
 import { useDebouncedCallback } from "use-debounce";
 import { z } from "zod";
 
-import { canvassAction } from "@/actions/post";
-import { updateCanvass } from "@/actions/update";
+import { canvassAction, notifyUser } from "@/actions/post";
+import { updateApprovalStatus, updateCanvass } from "@/actions/update";
 import { useUserStore } from "@/stores/userStore";
 import { CanvassDetail, TicketDetailsType } from "@/utils/types";
 import { CanvassFormSchema } from "@/utils/zod/schema";
@@ -39,7 +39,7 @@ import {
 import DropzoneFileInput from "./ui/DropzoneFileInput";
 
 type EditCanvassFormProps = {
-  ticketId: string;
+  ticket: TicketDetailsType;
   setTicket: React.Dispatch<React.SetStateAction<TicketDetailsType | null>>;
   updateCanvassDetails: () => void;
   updateTicketDetails: () => void;
@@ -58,7 +58,8 @@ type AttachmentData = {
 };
 
 const EditCanvassForm = ({
-  ticketId,
+  ticket,
+  setTicket,
   updateCanvassDetails,
   currentCanvassDetails,
   updateTicketDetails,
@@ -91,10 +92,10 @@ const EditCanvassForm = ({
   });
 
   const handleCanvassAction = async (status: string) => {
-    if (!user || !ticketId) return;
+    if (!user || !ticket?.ticket_id) return;
 
     try {
-      await canvassAction(ticketId, user.user_id, status);
+      await canvassAction(ticket?.ticket_id, user.user_id, status);
     } catch (error) {
       console.error("Error starting canvass:", error);
     }
@@ -119,7 +120,7 @@ const EditCanvassForm = ({
 
         // Filter out only the files that have changed (are not undefined)
         const validQuotations = values.quotations.map((q) =>
-          q.file instanceof File ? q.file : null,
+          q.file instanceof File ? q.file : null
         );
 
         const result = await updateCanvass({
@@ -131,7 +132,7 @@ const EditCanvassForm = ({
           canvassSheet:
             values.canvassSheet instanceof File ? values.canvassSheet : null,
           quotations: validQuotations,
-          ticketId,
+          ticketId: ticket?.ticket_id,
           currentCanvassFormId: currentCanvassDetails[0].canvass_form_id,
         });
 
@@ -150,16 +151,67 @@ const EditCanvassForm = ({
             icon: <IconCheck size={16} />,
           });
 
-          // Update related data based on user role
+          // Update ticket status
+          const newTicketStatus =
+            user?.user_role === "REVIEWER"
+              ? "FOR APPROVAL"
+              : "FOR REVIEW OF SUBMISSIONS";
+
+          // Optimistically update ticket status and reviewer statuses
+          setTicket((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  ticket_status: newTicketStatus,
+                  reviewers: prev.reviewers.map((reviewer) =>
+                    reviewer.reviewer_id === user?.user_id
+                      ? { ...reviewer, approval_status: "APPROVED" } // Current reviewer approved
+                      : reviewer
+                  ),
+                }
+              : null
+          );
+
           if (user?.user_role === "REVIEWER") {
-            await handleCanvassAction("FOR APPROVAL");
-            updateCanvassDetails();
-            updateTicketDetails();
+            await updateApprovalStatus({
+              approval_ticket_id: ticket?.ticket_id,
+              approval_review_status: "APPROVED",
+              approval_reviewed_by: user?.user_id, // Mark the current reviewer as "APPROVED"
+            });
+
+            // Notify other reviewers (excluding managers)
+            for (const reviewer of ticket?.reviewers.filter(
+              (reviewer) =>
+                reviewer.reviewer_role !== "MANAGER" && // Exclude managers
+                reviewer.reviewer_id !== user?.user_id && // Exclude current reviewer
+                reviewer.approval_status !== "APPROVED" // Exclude already approved reviewers
+            ) || []) {
+              const message = `The ticket ${ticket?.ticket_name} has been revised and needs your approval.`;
+              await notifyUser(
+                reviewer.reviewer_id,
+                message,
+                ticket?.ticket_id
+              );
+            }
+
+            // Check if the current user is the only reviewer (excluding managers)
+            const isOnlyReviewer =
+              ticket?.reviewers.filter(
+                (reviewer) => reviewer.reviewer_role !== "MANAGER"
+              ).length === 1;
+
+            if (isOnlyReviewer) {
+              await handleCanvassAction("FOR APPROVAL");
+            } else {
+              await handleCanvassAction("FOR REVIEW OF SUBMISSIONS");
+            }
           } else if (user?.user_role === "PURCHASER") {
             await handleCanvassAction("FOR REVIEW OF SUBMISSIONS");
-            updateCanvassDetails();
-            updateTicketDetails();
           }
+
+          // Update canvass details and ticket details
+          updateCanvassDetails();
+          updateTicketDetails();
         }
       } catch (error) {
         console.error("Form submission error:", error);
@@ -203,7 +255,7 @@ const EditCanvassForm = ({
         try {
           // Filter out only the files that have changed (are not undefined)
           const validQuotations = values.quotations.map((q) =>
-            q.file instanceof File ? q.file : null,
+            q.file instanceof File ? q.file : null
           );
 
           const result = await updateCanvass({
@@ -215,7 +267,7 @@ const EditCanvassForm = ({
             canvassSheet:
               values.canvassSheet instanceof File ? values.canvassSheet : null,
             quotations: validQuotations,
-            ticketId,
+            ticketId: ticket?.ticket_id,
             currentCanvassFormId: currentCanvassDetails[0].canvass_form_id,
           });
 
@@ -256,7 +308,7 @@ const EditCanvassForm = ({
         }
       }
     },
-    700, // Reduced from 300ms to 700ms to better throttle requests
+    700 // Reduced from 300ms to 700ms to better throttle requests
   );
 
   // Watch for changes in the form
@@ -281,7 +333,7 @@ const EditCanvassForm = ({
 
   // Convert a remote URL to a File object
   const urlToFile = async (
-    attachment: AttachmentData,
+    attachment: AttachmentData
   ): Promise<File | null> => {
     try {
       // Fetch the file
@@ -324,23 +376,23 @@ const EditCanvassForm = ({
     // Set basic form values
     form.setValue(
       "RfDateReceived",
-      new Date(currentCanvassDetails[0].canvass_form_rf_date_received),
+      new Date(currentCanvassDetails[0].canvass_form_rf_date_received)
     );
     form.setValue(
       "recommendedSupplier",
-      currentCanvassDetails[0].canvass_form_recommended_supplier,
+      currentCanvassDetails[0].canvass_form_recommended_supplier
     );
     form.setValue(
       "leadTimeDay",
-      currentCanvassDetails[0].canvass_form_lead_time_day,
+      currentCanvassDetails[0].canvass_form_lead_time_day
     );
     form.setValue(
       "totalAmount",
-      currentCanvassDetails[0].canvass_form_total_amount,
+      currentCanvassDetails[0].canvass_form_total_amount
     );
     form.setValue(
       "paymentTerms",
-      currentCanvassDetails[0].canvass_form_payment_terms!,
+      currentCanvassDetails[0].canvass_form_payment_terms!
     );
 
     // Ensure we have attachments to process
@@ -356,7 +408,7 @@ const EditCanvassForm = ({
 
           // Find and load the canvass sheet
           const canvassSheet = attachments.find(
-            (a) => a.canvass_attachment_type === "CANVASS_SHEET",
+            (a) => a.canvass_attachment_type === "CANVASS_SHEET"
           );
 
           if (canvassSheet) {
@@ -385,12 +437,12 @@ const EditCanvassForm = ({
               quotations.map(async (q) => {
                 const file = await urlToFile(q);
                 return { file: file || undefined }; // Convert null to undefined
-              }),
+              })
             );
 
             // Filter out nulls
             const validQuotationFiles = quotationFiles.filter(
-              (q) => q.file !== null,
+              (q) => q.file !== null
             );
 
             // Ensure we have at least one entry

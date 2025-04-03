@@ -1,5 +1,11 @@
 "use client";
 
+import { getCurrentUserNotification } from "@/actions/get";
+import { markNotificationAsRead } from "@/actions/update";
+import { useNotificationStore } from "@/stores/notificationStore";
+import { useUserStore } from "@/stores/userStore";
+import { createClient } from "@/utils/supabase/client";
+import { NotificationType } from "@/utils/types";
 import {
   ActionIcon,
   Group,
@@ -15,16 +21,10 @@ import {
   IconBellFilled,
   IconChevronRight,
 } from "@tabler/icons-react";
-import moment from "moment";
+import { formatDistanceToNow } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-
-import { getCurrentUserNotification } from "@/actions/get";
-import { markNotificationAsRead } from "@/actions/update";
-import { useNotificationStore } from "@/stores/notificationStore";
-import { useUserStore } from "@/stores/userStore";
-import { createClient } from "@/utils/supabase/client";
-import { NotificationType } from "@/utils/types";
 
 const NotificationMenu = () => {
   const router = useRouter();
@@ -34,11 +34,12 @@ const NotificationMenu = () => {
   const { notifications, setNotifications } = useNotificationStore();
 
   const unreadCount = notifications.filter(
-    (notif) => !notif.notification_read,
+    (notif) => !notif.notification_read
   ).length;
 
   const getRelativeTime = (timestamp: string) => {
-    return moment(timestamp).subtract(8, "hours").fromNow();
+    const zonedDate = toZonedTime(new Date(timestamp), "Asia/Manila");
+    return formatDistanceToNow(zonedDate, { addSuffix: true });
   };
 
   const handleNotificationClick = async (notifications: NotificationType) => {
@@ -83,7 +84,7 @@ const NotificationMenu = () => {
         .sort(
           (a, b) =>
             new Date(b.notification_created_at).getTime() -
-            new Date(a.notification_created_at).getTime(),
+            new Date(a.notification_created_at).getTime()
         );
 
       setNotifications(sortedNotifications as NotificationType[]);
@@ -133,8 +134,8 @@ const NotificationMenu = () => {
                   prev.map((notification) =>
                     notification.notification_id === payload.new.notification_id
                       ? { ...notification, ...payload.new }
-                      : notification,
-                  ),
+                      : notification
+                  )
                 );
                 break;
 
@@ -144,12 +145,12 @@ const NotificationMenu = () => {
                   prev.filter(
                     (notification) =>
                       notification.notification_id !==
-                      payload.old.notification_id,
-                  ),
+                      payload.old.notification_id
+                  )
                 );
                 break;
             }
-          },
+          }
         )
         .subscribe();
 

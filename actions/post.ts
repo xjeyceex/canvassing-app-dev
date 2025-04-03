@@ -157,6 +157,7 @@ export const createTicket = async (
     // 1. Format the date
     const formattedDate = new Date(validatedData.ticketRfDateReceived)
       .toLocaleDateString("en-GB", {
+        timeZone: "Asia/Manila",
         day: "2-digit",
         month: "short",
         year: "numeric",
@@ -336,7 +337,9 @@ export const shareTicket = async (ticket_id: string, user_id: string) => {
     .from("notification_table")
     .insert({
       notification_user_id: user_id,
-      notification_message: `${user?.user_metadata.display_name} has shared ticket with you`,
+      notification_message: `${
+        user?.user_metadata.name || user?.user_metadata.display_name
+      } has shared ticket with you`,
       notification_read: false,
       notification_ticket_id: ticket_id,
     });
@@ -579,7 +582,9 @@ export const createCanvass = async ({
           notification_message: notificationMessage,
           notification_read: false,
           notification_ticket_id: ticketId,
-          notification_created_at: new Date().toISOString(),
+          notification_created_at: new Date().toLocaleString("en-US", {
+            timeZone: "Asia/Manila",
+          }),
           notification_comment_id: null,
         });
       }
@@ -904,4 +909,34 @@ export const updateUserRole = async (user_id: string, user_role: string) => {
   }
 
   return true; // Indicate success
+};
+
+export const notifyUser = async (
+  user_id: string,
+  message: string,
+  ticket_id: string,
+  comment_id: string | null = null
+) => {
+  const supabase = await createClient();
+
+  // Insert notification into the notification_table
+  const { error: notificationError } = await supabase
+    .from("notification_table")
+    .insert({
+      notification_user_id: user_id,
+      notification_message: message,
+      notification_read: false,
+      notification_ticket_id: ticket_id,
+      notification_created_at: new Date().toLocaleString("en-US", {
+        timeZone: "Asia/Manila",
+      }),
+      notification_comment_id: comment_id,
+    });
+
+  if (notificationError) {
+    console.error("Error sending notification:", notificationError.message);
+    return false;
+  }
+
+  return true;
 };

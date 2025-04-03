@@ -6,6 +6,7 @@ import {
   markNotificationAsRead,
 } from "@/actions/update";
 import { useNotificationStore } from "@/stores/notificationStore";
+import { formatDate } from "@/utils/functions";
 import { NotificationType } from "@/utils/types";
 import {
   ActionIcon,
@@ -30,7 +31,6 @@ import {
   IconFilter,
   IconInfoCircle,
 } from "@tabler/icons-react";
-import moment from "moment";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -46,12 +46,8 @@ const NotificationsPage = () => {
   const [filter, setFilter] = useState<filterType>("all");
   const [sortBy, setSortBy] = useState<string>("newest");
 
-  const getRelativeTime = (timestamp: string) => {
-    return moment.utc(timestamp).format("MMM D, YYYY [at] h:mm A");
-  };
-
   const filteredNotifications = notifications.filter((notification) =>
-    filter === "unread" ? !notification.notification_read : true,
+    filter === "unread" ? !notification.notification_read : true
   );
 
   const sortedNotifications = [...filteredNotifications].sort((a, b) => {
@@ -81,8 +77,8 @@ const NotificationsPage = () => {
       prev.map((notification) =>
         notification.notification_id === notificationId
           ? { ...notification, notification_read: true }
-          : notification,
-      ),
+          : notification
+      )
     );
   };
 
@@ -103,7 +99,7 @@ const NotificationsPage = () => {
       prev.map((notification) => ({
         ...notification,
         notification_read: true,
-      })),
+      }))
     );
 
     Notifications.show({
@@ -196,7 +192,7 @@ const NotificationsPage = () => {
                   <Stack gap="xs">
                     <Group gap="xs">
                       <Text size="xs" c="dimmed">
-                        {getRelativeTime(notification.notification_created_at)}
+                        {formatDate(notification.notification_created_at)}
                       </Text>
                     </Group>
                     <Text fw={notification.notification_read ? 400 : 600}>
@@ -209,7 +205,7 @@ const NotificationsPage = () => {
                       w="fit-content"
                       onClick={() =>
                         router.push(
-                          `/tickets/${notification.notification_ticket_id}`,
+                          `/tickets/${notification.notification_ticket_id}`
                         )
                       } // Use ticket_id here
                       leftSection={<IconExternalLink size={16} />}

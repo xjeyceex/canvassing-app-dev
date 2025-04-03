@@ -7,6 +7,7 @@ import {
   RichTextEditorRef,
 } from "@/components/ui/RichTextEditor";
 import { useUserStore } from "@/stores/userStore";
+import { getNameInitials } from "@/utils/functions";
 import { ReviewerType } from "@/utils/types";
 import { TicketFormSchema } from "@/utils/zod/schema";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -61,7 +62,7 @@ const CreateTicketPage = () => {
   const [specificationsValue, setSpecificationsValue] = useState<string>("");
   const [reviewerOptions, setReviewerOptions] = useState<ReviewerType[]>([]);
   const [selectedReviewers, setSelectedReviewers] = useState<ReviewerType[]>(
-    [],
+    []
   );
 
   const form = useForm<z.infer<typeof TicketFormSchema>>({
@@ -81,8 +82,8 @@ const CreateTicketPage = () => {
     const filteredReviewers = reviewerOptions.filter(
       (option) =>
         !selectedReviewers.some(
-          (reviewer) => reviewer.user_id === option.user_id,
-        ),
+          (reviewer) => reviewer.user_id === option.user_id
+        )
     );
 
     return filteredReviewers.map((reviewer) => ({
@@ -95,7 +96,7 @@ const CreateTicketPage = () => {
     if (!value) return;
 
     const selectedOption = reviewerOptions.find(
-      (option) => option.user_id === value,
+      (option) => option.user_id === value
     );
     if (
       selectedOption &&
@@ -119,12 +120,12 @@ const CreateTicketPage = () => {
 
   const removeReviewer = (id: string) => {
     const updatedReviewers = selectedReviewers.filter(
-      (reviewer) => reviewer.user_id !== id,
+      (reviewer) => reviewer.user_id !== id
     );
     setSelectedReviewers(updatedReviewers);
     form.setValue(
       "ticketReviewer",
-      updatedReviewers.map((r) => r.user_id),
+      updatedReviewers.map((r) => r.user_id)
     );
   };
 
@@ -312,7 +313,7 @@ const CreateTicketPage = () => {
                               radius="xl"
                               color={isDark ? "blue.8" : "blue.5"}
                             >
-                              {reviewer.user_full_name.charAt(0).toUpperCase()}
+                              {getNameInitials(reviewer.user_full_name)}
                             </Avatar>
                           </Grid.Col>
                           <Grid.Col span={9} pl={16}>

@@ -93,9 +93,9 @@ CREATE TABLE public.ticket_table (
   ticket_name TEXT NOT NULL UNIQUE,  -- ticket_name is now UNIQUE
   ticket_status ticket_status_enum NOT NULL DEFAULT 'FOR CANVASS', 
   ticket_created_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
-  ticket_rf_date_received TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL,
-  ticket_date_created TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()),
-  ticket_last_updated TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) 
+  ticket_rf_date_received TIMESTAMPTZ DEFAULT now() NOT NULL,
+  ticket_date_created TIMESTAMPTZ DEFAULT now(),
+  ticket_last_updated TIMESTAMPTZ DEFAULT now() 
 );
 
 CREATE OR REPLACE FUNCTION get_next_ticket_sequence(date_prefix TEXT)
@@ -156,11 +156,11 @@ CREATE TABLE comment_table (
   comment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   comment_ticket_id UUID NOT NULL,
   comment_content TEXT NOT NULL,
-  comment_date_created TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL,
+  comment_date_created TIMESTAMPTZ DEFAULT now() NOT NULL,
   comment_is_edited BOOLEAN DEFAULT FALSE,
   comment_is_disabled BOOLEAN DEFAULT FALSE,
   comment_type TEXT NOT NULL,
-  comment_last_updated TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL,
+  comment_last_updated TIMESTAMPTZ DEFAULT now() NOT NULL,
   comment_user_id UUID NOT NULL,  
   FOREIGN KEY (comment_user_id) REFERENCES user_table(user_id), 
   FOREIGN KEY (comment_ticket_id) REFERENCES ticket_table(ticket_id) ON DELETE CASCADE 
@@ -255,25 +255,24 @@ USING (
 );
 
 -- DROP TABLE IF EXISTS
-DROP TABLE IF EXISTS ticket_shared_with_table cascade;
+DROP TABLE IF EXISTS ticket_shared_with_table CASCADE;
 CREATE TABLE public.ticket_shared_with_table (
-    ticket_id UUID NOT NULL REFERENCES public.ticket_table(ticket_id) ON DELETE CASCADE,
-    shared_user_id UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
-    assigned_at TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()), 
-    assigned_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
-    PRIMARY KEY (ticket_id, shared_user_id)
+    ticket_shared_ticket_id UUID NOT NULL REFERENCES public.ticket_table(ticket_id) ON DELETE CASCADE,
+    ticket_shared_user_id UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
+    ticket_shared_assigned_at TIMESTAMPTZ DEFAULT now(), 
+    ticket_shared_assigned_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
+    PRIMARY KEY (ticket_shared_ticket_id, ticket_shared_user_id)
 );
 
 -- Enable RLS
 ALTER TABLE public.ticket_shared_with_table ENABLE ROW LEVEL SECURITY;
-
--- Allow shared users to SELECT their shared tickets
 DROP POLICY IF EXISTS select_shared_tickets ON public.ticket_shared_with_table;
+
 CREATE POLICY select_shared_tickets
 ON public.ticket_shared_with_table
 FOR SELECT
 USING (
-  auth.uid() = shared_user_id
+  auth.role() = 'authenticated'
   OR (SELECT user_role FROM public.user_table WHERE user_id = auth.uid()) IN ('ADMIN', 'MANAGER')
 );
 
@@ -283,7 +282,7 @@ CREATE POLICY insert_shared_tickets
 ON public.ticket_shared_with_table
 FOR INSERT
 WITH CHECK (
-  auth.uid() = assigned_by
+  auth.uid() = ticket_shared_assigned_by
   OR (SELECT user_role FROM public.user_table WHERE user_id = auth.uid()) IN ('ADMIN', 'MANAGER')
 );
 
@@ -293,7 +292,7 @@ CREATE POLICY delete_shared_tickets
 ON public.ticket_shared_with_table
 FOR DELETE
 USING (
-  auth.uid() = assigned_by
+  auth.uid() = ticket_shared_assigned_by
   OR (SELECT user_role FROM public.user_table WHERE user_id = auth.uid()) IN ('ADMIN', 'MANAGER')
 );
 
@@ -302,13 +301,13 @@ DROP TABLE IF EXISTS canvass_form_table CASCADE;
 CREATE TABLE public.canvass_form_table (
     canvass_form_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     canvass_form_ticket_id UUID NOT NULL REFERENCES public.ticket_table(ticket_id) ON DELETE CASCADE,
-    canvass_form_rf_date_received TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL,
+    canvass_form_rf_date_received TIMESTAMPTZ DEFAULT now() NOT NULL,
     canvass_form_recommended_supplier TEXT NOT NULL,
     canvass_form_lead_time_day INT NOT NULL CHECK (canvass_form_lead_time_day > 0),
     canvass_form_total_amount DECIMAL(10,2) NOT NULL CHECK (canvass_form_total_amount > 0), 
     canvass_form_payment_terms TEXT,
     canvass_form_submitted_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE SET NULL,
-    canvass_form_date_submitted TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL
+    canvass_form_date_submitted TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 -- Enable RLS
@@ -450,7 +449,7 @@ CREATE TABLE public.approval_table (
     approval_ticket_id UUID NOT NULL REFERENCES public.ticket_table(ticket_id) ON DELETE CASCADE,
     approval_reviewed_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
     approval_review_status approval_status_enum NOT NULL, 
-    approval_review_date TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL
+    approval_review_date TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 -- Enable RLS
@@ -492,7 +491,7 @@ CREATE TABLE public.ticket_status_history_table (
     ticket_status_history_previous_status ticket_status_enum NOT NULL, 
     ticket_status_history_new_status ticket_status_enum NOT NULL, 
     ticket_status_history_changed_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
-    ticket_status_history_change_date TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL
+    ticket_status_history_change_date TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 -- Enable RLS
@@ -534,7 +533,7 @@ CREATE TABLE notification_table (
   notification_read BOOLEAN DEFAULT FALSE,
   notification_ticket_id UUID NOT NULL REFERENCES public.ticket_table(ticket_id) ON DELETE CASCADE,
   notification_comment_id UUID REFERENCES public.comment_table(comment_id) ON DELETE CASCADE,  
-  notification_created_at TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL
+  notification_created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
 
 -- Enable RLS
@@ -615,6 +614,7 @@ CREATE TRIGGER after_user_signup
   FOR EACH ROW EXECUTE FUNCTION public.create_user();
   
 DROP FUNCTION IF EXISTS get_dashboard_tickets(UUID);
+
 CREATE OR REPLACE FUNCTION get_dashboard_tickets(_user_id UUID)
 RETURNS TABLE (
   ticket_id UUID,
@@ -643,7 +643,8 @@ AS $$
     OR t.ticket_created_by = _user_id
     OR EXISTS (
       SELECT 1 FROM public.ticket_shared_with_table s
-      WHERE s.ticket_id = t.ticket_id AND s.shared_user_id = _user_id
+      WHERE s.ticket_shared_ticket_id = t.ticket_id 
+      AND s.ticket_shared_user_id = _user_id
     )
     OR EXISTS (
       SELECT 1 FROM public.approval_table a
@@ -654,6 +655,7 @@ $$;
 
 -- Drop existing function if it exists
 DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, TEXT, UUID);
+
 CREATE OR REPLACE FUNCTION get_all_my_tickets(
   user_id UUID, 
   ticket_status TEXT DEFAULT NULL, 
@@ -664,7 +666,7 @@ RETURNS TABLE (
   ticket_name TEXT, 
   ticket_item_name TEXT,
   ticket_status TEXT,
-  ticket_is_revised BOOLEAN,  -- Added ticket_is_revised
+  ticket_is_revised BOOLEAN,  
   ticket_item_description TEXT,
   ticket_specifications TEXT,
   ticket_notes TEXT,
@@ -674,19 +676,19 @@ RETURNS TABLE (
   reviewers JSON
 )
 LANGUAGE sql
-SET search_path TO public  -- Ensures function runs in the correct schema
+SET search_path TO public  
 AS $$  
   SELECT
     t.ticket_id,
     t.ticket_name, 
     t.ticket_item_name,
     t.ticket_status,
-    t.ticket_is_revised,  -- Now included in the selection
+    t.ticket_is_revised,  
     t.ticket_item_description,
     t.ticket_specifications,
     t.ticket_notes,
     t.ticket_created_by,
-    t.ticket_date_created, -- No timezone conversion
+    t.ticket_date_created, 
 
     -- Aggregate shared users
     COALESCE(
@@ -698,8 +700,8 @@ AS $$
           'user_avatar', u2.user_avatar
         )
       ) FROM public.ticket_shared_with_table ts
-      LEFT JOIN public.user_table u2 ON ts.shared_user_id = u2.user_id
-      WHERE ts.ticket_id = t.ticket_id), '[]'::JSON
+      LEFT JOIN public.user_table u2 ON ts.ticket_shared_user_id = u2.user_id
+      WHERE ts.ticket_shared_ticket_id = t.ticket_id), '[]'::JSON
     ) AS shared_users,
 
     -- Aggregate reviewers
@@ -716,12 +718,20 @@ AS $$
     ) AS reviewers
 
   FROM
-    public.ticket_table t -- No need to sort before JOIN
+    public.ticket_table t  
 
   WHERE
     user_id IN (t.ticket_created_by)
-    OR EXISTS (SELECT 1 FROM public.ticket_shared_with_table ts WHERE ts.ticket_id = t.ticket_id AND ts.shared_user_id = user_id)
-    OR EXISTS (SELECT 1 FROM public.approval_table a WHERE a.approval_ticket_id = t.ticket_id AND a.approval_reviewed_by = user_id)
+    OR EXISTS (
+      SELECT 1 FROM public.ticket_shared_with_table ts 
+      WHERE ts.ticket_shared_ticket_id = t.ticket_id 
+      AND ts.ticket_shared_user_id = user_id
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.approval_table a 
+      WHERE a.approval_ticket_id = t.ticket_id 
+      AND a.approval_reviewed_by = user_id
+    )
     AND (ticket_status IS NULL OR t.ticket_status = ticket_status)
     AND (ticket_uuid IS NULL OR t.ticket_id = ticket_uuid)
 
@@ -789,6 +799,7 @@ $$;
 
 -- Function for getting specific ticket
 DROP FUNCTION IF EXISTS get_ticket_details(UUID); 
+
 CREATE OR REPLACE FUNCTION get_ticket_details(ticket_uuid UUID) 
 RETURNS TABLE (   
   ticket_id UUID,   
@@ -796,7 +807,7 @@ RETURNS TABLE (
   ticket_item_name TEXT,    
   ticket_item_description TEXT,   
   ticket_status TEXT,   
-  ticket_is_revised BOOLEAN,  -- Added this column
+  ticket_is_revised BOOLEAN,  
   ticket_created_by UUID,   
   ticket_created_by_name TEXT,    
   ticket_created_by_avatar TEXT,    
@@ -819,7 +830,7 @@ SELECT
   t.ticket_item_name,     
   t.ticket_item_description,    
   t.ticket_status,    
-  t.ticket_is_revised,  -- Now included in the selection
+  t.ticket_is_revised,  
   t.ticket_created_by,     
   u.user_full_name AS ticket_created_by_name,    
   u.user_avatar AS ticket_created_by_avatar,       
@@ -857,8 +868,8 @@ SELECT
       ), '[]'      
     )      
     FROM public.ticket_shared_with_table ts      
-    LEFT JOIN public.user_table u2 ON u2.user_id = ts.shared_user_id      
-    WHERE ts.ticket_id = t.ticket_id    
+    LEFT JOIN public.user_table u2 ON u2.user_id = ts.ticket_shared_user_id      
+    WHERE ts.ticket_shared_ticket_id = t.ticket_id    
   )::JSON AS shared_users,     
 
   -- Reviewers JSON (now includes user_role)
@@ -897,9 +908,9 @@ LANGUAGE sql
 SET search_path TO public
 AS $$
   INSERT INTO public.ticket_shared_with_table (
-    ticket_id,
-    shared_user_id,
-    assigned_by
+    ticket_shared_ticket_id,
+    ticket_shared_user_id,
+    ticket_shared_assigned_by
   )
   SELECT 
     _ticket_id,
