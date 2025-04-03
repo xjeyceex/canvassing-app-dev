@@ -847,7 +847,7 @@ export const canvassAction = async (
   // Fetch the current ticket status before updating
   const { data: ticketData, error: fetchError } = await supabase
     .from("ticket_table")
-    .select("ticket_status, ticket_created_by, ticket_is_revised")
+    .select("ticket_status, ticket_created_by, ticket_revised_by")
     .eq("ticket_id", ticket_id)
     .single();
 
@@ -857,7 +857,7 @@ export const canvassAction = async (
   }
 
   const previousStatus = ticketData?.ticket_status || "UNKNOWN";
-  const isAlreadyRevised = ticketData?.ticket_is_revised;
+  const isAlreadyRevised = ticketData?.ticket_revised_by !== null; // Check if ticket is revised
 
   // Update ticket status
   const { error: updateError } = await supabase
@@ -894,7 +894,7 @@ export const canvassAction = async (
   if (status === "FOR REVISION" && !isAlreadyRevised) {
     const { error: revisionError } = await supabase
       .from("ticket_table")
-      .update({ ticket_is_revised: true, ticket_revised_by: userId })
+      .update({ ticket_revised_by: userId }) // Only update ticket_revised_by
       .eq("ticket_id", ticket_id);
 
     if (revisionError) {

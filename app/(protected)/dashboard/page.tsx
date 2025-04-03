@@ -45,7 +45,8 @@ const DashboardPage = () => {
     open: countUserTicketsByStatus(tickets, "OPEN"),
     completed: countUserTicketsByStatus(tickets, "COMPLETED"),
     total: tickets.length,
-    revised: tickets.filter((ticket) => ticket.ticket_is_revised).length,
+    revised: tickets.filter((ticket) => ticket.ticket_revised_by !== null)
+      .length,
   };
 
   const completionRate =
@@ -54,7 +55,7 @@ const DashboardPage = () => {
       : 0;
 
   const revisedPercentage =
-    (tickets.filter((ticket) => ticket.ticket_is_revised).length /
+    (tickets.filter((ticket) => ticket.ticket_revised_by !== null).length /
       tickets.length) *
     100;
 
