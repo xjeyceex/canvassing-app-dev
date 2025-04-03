@@ -384,7 +384,12 @@ const TicketDetailsPage = () => {
                                   <IconFileText size={20} stroke={1.5} />
                                 </ThemeIcon>
                                 <Text fz="lg" fw={600}>
-                                  Canvass Form
+                                  Canvass Form{" "}
+                                  {ticket.ticket_is_revised && (
+                                    <Text fz="sm" c="dimmed" span>
+                                      (Revised)
+                                    </Text>
+                                  )}
                                 </Text>
                               </Group>
 
