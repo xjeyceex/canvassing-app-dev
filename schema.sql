@@ -255,13 +255,13 @@ USING (
 );
 
 -- DROP TABLE IF EXISTS
-DROP TABLE IF EXISTS ticket_shared_with_table cascade;
+DROP TABLE IF EXISTS ticket_shared_with_table CASCADE;
 CREATE TABLE public.ticket_shared_with_table (
-    ticket_id UUID NOT NULL REFERENCES public.ticket_table(ticket_id) ON DELETE CASCADE,
-    shared_user_id UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
-    assigned_at TIMESTAMPTZ DEFAULT now(), 
-    assigned_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
-    PRIMARY KEY (ticket_id, shared_user_id)
+    ticket_shared_ticket_id UUID NOT NULL REFERENCES public.ticket_table(ticket_id) ON DELETE CASCADE,
+    ticket_shared_user_id UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
+    ticket_shared_assigned_at TIMESTAMPTZ DEFAULT now(), 
+    ticket_shared_assigned_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
+    PRIMARY KEY (ticket_shared_ticket_id, ticket_shared_user_id)
 );
 
 -- Enable RLS
@@ -282,7 +282,7 @@ CREATE POLICY insert_shared_tickets
 ON public.ticket_shared_with_table
 FOR INSERT
 WITH CHECK (
-  auth.uid() = assigned_by
+  auth.uid() = ticket_shared_assigned_by
   OR (SELECT user_role FROM public.user_table WHERE user_id = auth.uid()) IN ('ADMIN', 'MANAGER')
 );
 
@@ -292,7 +292,7 @@ CREATE POLICY delete_shared_tickets
 ON public.ticket_shared_with_table
 FOR DELETE
 USING (
-  auth.uid() = assigned_by
+  auth.uid() = ticket_shared_assigned_by
   OR (SELECT user_role FROM public.user_table WHERE user_id = auth.uid()) IN ('ADMIN', 'MANAGER')
 );
 
@@ -560,6 +560,7 @@ CREATE TRIGGER after_user_signup
   FOR EACH ROW EXECUTE FUNCTION public.create_user();
   
 DROP FUNCTION IF EXISTS get_dashboard_tickets(UUID);
+
 CREATE OR REPLACE FUNCTION get_dashboard_tickets(_user_id UUID)
 RETURNS TABLE (
   ticket_id UUID,
@@ -588,7 +589,8 @@ AS $$
     OR t.ticket_created_by = _user_id
     OR EXISTS (
       SELECT 1 FROM public.ticket_shared_with_table s
-      WHERE s.ticket_id = t.ticket_id AND s.shared_user_id = _user_id
+      WHERE s.ticket_shared_ticket_id = t.ticket_id 
+      AND s.ticket_shared_user_id = _user_id
     )
     OR EXISTS (
       SELECT 1 FROM public.approval_table a
@@ -599,6 +601,7 @@ $$;
 
 -- Drop existing function if it exists
 DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, TEXT, UUID);
+
 CREATE OR REPLACE FUNCTION get_all_my_tickets(
   user_id UUID, 
   ticket_status TEXT DEFAULT NULL, 
@@ -609,7 +612,7 @@ RETURNS TABLE (
   ticket_name TEXT, 
   ticket_item_name TEXT,
   ticket_status TEXT,
-  ticket_is_revised BOOLEAN,  -- Added ticket_is_revised
+  ticket_is_revised BOOLEAN,  
   ticket_item_description TEXT,
   ticket_specifications TEXT,
   ticket_notes TEXT,
@@ -619,19 +622,19 @@ RETURNS TABLE (
   reviewers JSON
 )
 LANGUAGE sql
-SET search_path TO public  -- Ensures function runs in the correct schema
+SET search_path TO public  
 AS $$  
   SELECT
     t.ticket_id,
     t.ticket_name, 
     t.ticket_item_name,
     t.ticket_status,
-    t.ticket_is_revised,  -- Now included in the selection
+    t.ticket_is_revised,  
     t.ticket_item_description,
     t.ticket_specifications,
     t.ticket_notes,
     t.ticket_created_by,
-    t.ticket_date_created, -- No timezone conversion
+    t.ticket_date_created, 
 
     -- Aggregate shared users
     COALESCE(
@@ -643,8 +646,8 @@ AS $$
           'user_avatar', u2.user_avatar
         )
       ) FROM public.ticket_shared_with_table ts
-      LEFT JOIN public.user_table u2 ON ts.shared_user_id = u2.user_id
-      WHERE ts.ticket_id = t.ticket_id), '[]'::JSON
+      LEFT JOIN public.user_table u2 ON ts.ticket_shared_user_id = u2.user_id
+      WHERE ts.ticket_shared_ticket_id = t.ticket_id), '[]'::JSON
     ) AS shared_users,
 
     -- Aggregate reviewers
@@ -661,12 +664,20 @@ AS $$
     ) AS reviewers
 
   FROM
-    public.ticket_table t -- No need to sort before JOIN
+    public.ticket_table t  
 
   WHERE
     user_id IN (t.ticket_created_by)
-    OR EXISTS (SELECT 1 FROM public.ticket_shared_with_table ts WHERE ts.ticket_id = t.ticket_id AND ts.shared_user_id = user_id)
-    OR EXISTS (SELECT 1 FROM public.approval_table a WHERE a.approval_ticket_id = t.ticket_id AND a.approval_reviewed_by = user_id)
+    OR EXISTS (
+      SELECT 1 FROM public.ticket_shared_with_table ts 
+      WHERE ts.ticket_shared_ticket_id = t.ticket_id 
+      AND ts.ticket_shared_user_id = user_id
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.approval_table a 
+      WHERE a.approval_ticket_id = t.ticket_id 
+      AND a.approval_reviewed_by = user_id
+    )
     AND (ticket_status IS NULL OR t.ticket_status = ticket_status)
     AND (ticket_uuid IS NULL OR t.ticket_id = ticket_uuid)
 
@@ -734,6 +745,7 @@ $$;
 
 -- Function for getting specific ticket
 DROP FUNCTION IF EXISTS get_ticket_details(UUID); 
+
 CREATE OR REPLACE FUNCTION get_ticket_details(ticket_uuid UUID) 
 RETURNS TABLE (   
   ticket_id UUID,   
@@ -741,7 +753,7 @@ RETURNS TABLE (
   ticket_item_name TEXT,    
   ticket_item_description TEXT,   
   ticket_status TEXT,   
-  ticket_is_revised BOOLEAN,  -- Added this column
+  ticket_is_revised BOOLEAN,  
   ticket_created_by UUID,   
   ticket_created_by_name TEXT,    
   ticket_created_by_avatar TEXT,    
@@ -764,7 +776,7 @@ SELECT
   t.ticket_item_name,     
   t.ticket_item_description,    
   t.ticket_status,    
-  t.ticket_is_revised,  -- Now included in the selection
+  t.ticket_is_revised,  
   t.ticket_created_by,     
   u.user_full_name AS ticket_created_by_name,    
   u.user_avatar AS ticket_created_by_avatar,       
@@ -802,8 +814,8 @@ SELECT
       ), '[]'      
     )      
     FROM public.ticket_shared_with_table ts      
-    LEFT JOIN public.user_table u2 ON u2.user_id = ts.shared_user_id      
-    WHERE ts.ticket_id = t.ticket_id    
+    LEFT JOIN public.user_table u2 ON u2.user_id = ts.ticket_shared_user_id      
+    WHERE ts.ticket_shared_ticket_id = t.ticket_id    
   )::JSON AS shared_users,     
 
   -- Reviewers JSON (now includes user_role)
@@ -842,9 +854,9 @@ LANGUAGE sql
 SET search_path TO public
 AS $$
   INSERT INTO public.ticket_shared_with_table (
-    ticket_id,
-    shared_user_id,
-    assigned_by
+    ticket_shared_ticket_id,
+    ticket_shared_user_id,
+    ticket_shared_assigned_by
   )
   SELECT 
     _ticket_id,
