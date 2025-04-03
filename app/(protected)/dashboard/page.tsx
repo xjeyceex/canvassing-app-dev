@@ -61,7 +61,7 @@ const DashboardPage = () => {
 
   function countUserTicketsByStatus(
     tickets: DashboardTicketType[],
-    statusType: "OPEN" | "COMPLETED",
+    statusType: "OPEN" | "COMPLETED"
   ) {
     if (statusType === "OPEN") {
       return tickets.filter(
@@ -70,7 +70,7 @@ const DashboardPage = () => {
           ticket.ticket_status === "FOR APPROVAL" ||
           ticket.ticket_status === "FOR REVIEW OF SUBMISSIONS" ||
           ticket.ticket_status === "WORK IN PROGRESS" ||
-          ticket.ticket_status === "FOR REVISION",
+          ticket.ticket_status === "FOR REVISION"
       ).length;
     }
 
@@ -85,7 +85,7 @@ const DashboardPage = () => {
     try {
       setLoading(true);
       const data = await getDashboardTickets(
-        isAdmin ? undefined : user?.user_id,
+        isAdmin ? undefined : user?.user_id
       );
       setTickets(data ?? []);
     } catch (error) {
@@ -113,6 +113,13 @@ const DashboardPage = () => {
         return "orange";
       case "DONE":
         return "green";
+      case "FOR APPROVAL":
+        return "teal";
+      case "CANCELED":
+        return "red";
+      case "DECLINED":
+        return "red";
+
       default:
         return "gray";
     }
@@ -346,7 +353,7 @@ const DashboardPage = () => {
                 .sort(
                   (a, b) =>
                     new Date(b.ticket_date_created).getTime() -
-                    new Date(a.ticket_date_created).getTime(),
+                    new Date(a.ticket_date_created).getTime()
                 )
                 .slice(0, 5)
                 .map((ticket, index) => (
