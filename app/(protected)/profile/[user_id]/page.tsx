@@ -10,6 +10,7 @@ import ChangePasswordModal from "@/components/ChangePasswordModal";
 import LoadingStateProtected from "@/components/LoadingStateProtected";
 import SetPasswordModal from "@/components/SetPasswordModal";
 import { useUserStore } from "@/stores/userStore";
+import { getNameInitials } from "@/utils/functions";
 import { UserType } from "@/utils/types";
 import {
   ActionIcon,
@@ -158,7 +159,7 @@ const ProfilePage = () => {
   };
 
   const handleAvatarUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
+    event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -244,19 +245,24 @@ const ProfilePage = () => {
                   <label htmlFor="avatar-upload" style={{ cursor: "pointer" }}>
                     <Avatar
                       variant="light"
-                      src={user.user_avatar}
+                      src={user.user_avatar || undefined} // Fallback to undefined if no avatar
                       size={120}
                       radius="md"
                       color="blue"
                       style={{
                         cursor: "pointer",
                         transition: "transform 0.2s ease",
-                        "&:hover": {
-                          transform: "scale(1.05)",
-                        },
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = "scale(1.05)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = "scale(1)";
                       }}
                     >
-                      {user.user_full_name?.charAt(0).toUpperCase()}
+                      {user.user_avatar
+                        ? null
+                        : getNameInitials(user.user_full_name)}
                     </Avatar>
                   </label>
                   <input
@@ -420,13 +426,16 @@ const ProfilePage = () => {
               <Stack align="center" gap="md">
                 <Avatar
                   variant="light"
-                  src={profileUser?.user_avatar}
+                  src={profileUser?.user_avatar || undefined}
                   size={100}
                   radius="xl"
                   color="blue"
                 >
-                  {profileUser?.user_full_name.charAt(0).toUpperCase()}
+                  {profileUser?.user_avatar
+                    ? null
+                    : getNameInitials(profileUser?.user_full_name || "")}
                 </Avatar>
+
                 <Title order={3} fw={600}>
                   {profileUser?.user_full_name}
                 </Title>

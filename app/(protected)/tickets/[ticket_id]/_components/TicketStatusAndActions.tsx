@@ -5,6 +5,7 @@ import { addComment, notifyUser, shareTicket } from "@/actions/post";
 import { revertApprovalStatus, updateApprovalStatus } from "@/actions/update";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { useUserStore } from "@/stores/userStore";
+import { getNameInitials } from "@/utils/functions";
 import { TicketDetailsType } from "@/utils/types";
 import {
   ActionIcon,
@@ -624,10 +625,14 @@ const TicketStatusAndActions = ({
                             passHref
                           >
                             <Avatar
-                              src={manager.reviewer_avatar}
+                              src={manager.reviewer_avatar || undefined}
                               radius="xl"
                               size="md"
-                            />
+                            >
+                              {manager.reviewer_avatar
+                                ? null
+                                : getNameInitials(manager.reviewer_name || "")}
+                            </Avatar>
                           </Link>
                           <Stack gap={2}>
                             <Link
@@ -688,10 +693,14 @@ const TicketStatusAndActions = ({
                             passHref
                           >
                             <Avatar
-                              src={reviewer.reviewer_avatar}
+                              src={reviewer.reviewer_avatar || undefined}
                               radius="xl"
                               size="md"
-                            />
+                            >
+                              {reviewer.reviewer_avatar
+                                ? null
+                                : getNameInitials(reviewer.reviewer_name || "")}
+                            </Avatar>
                           </Link>
                           <Stack gap={2}>
                             <Link
@@ -769,10 +778,14 @@ const TicketStatusAndActions = ({
                 <Group gap="xs" align="center">
                   <Link href={`/profile/${ticket.ticket_created_by}`} passHref>
                     <Avatar
-                      src={ticket.ticket_created_by_avatar}
+                      src={ticket.ticket_created_by_avatar || undefined}
                       radius="xl"
                       size="sm"
-                    />
+                    >
+                      {ticket.ticket_created_by_avatar
+                        ? null
+                        : getNameInitials(ticket.ticket_created_by_name || "")}
+                    </Avatar>
                   </Link>
                   <Stack gap={2} align="flex-start">
                     <Link
@@ -809,10 +822,14 @@ const TicketStatusAndActions = ({
                       <Group key={user.user_id} gap="xs" align="center">
                         <Link href={`/profile/${user.user_id}`} passHref>
                           <Avatar
-                            src={user.user_avatar}
+                            src={user.user_avatar || undefined}
                             radius="xl"
                             size="sm"
-                          />
+                          >
+                            {user.user_avatar
+                              ? null
+                              : getNameInitials(user.user_full_name || "")}
+                          </Avatar>
                         </Link>
                         <Link
                           href={`/profile/${user.user_id}`}

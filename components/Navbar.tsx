@@ -3,6 +3,7 @@
 import { userLogout } from "@/actions/post";
 import { useSidebarStore } from "@/stores/sidebarStore";
 import { useUserStore } from "@/stores/userStore";
+import { getNameInitials } from "@/utils/functions";
 import {
   ActionIcon,
   Anchor,
@@ -165,7 +166,9 @@ const Navbar = () => {
                         color="primary"
                         variant="filled"
                       >
-                        {user.user_full_name?.charAt(0).toUpperCase() || (
+                        {user.user_full_name ? (
+                          getNameInitials(user.user_full_name)
+                        ) : (
                           <IconUserCircle size={20} />
                         )}
                       </Avatar>

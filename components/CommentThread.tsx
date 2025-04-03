@@ -26,6 +26,7 @@ import {
   RichTextEditor,
   RichTextEditorRef,
 } from "@/components/ui/RichTextEditor";
+import { getNameInitials } from "@/utils/functions";
 import Link from "next/link";
 
 type CommentThreadProps = {
@@ -200,10 +201,14 @@ const CommentThread: React.FC<CommentThreadProps> = ({
             <Group key={comment.comment_id} align="flex-start" gap="xs">
               <Link href={`/profile/${comment.comment_user_id}`} passHref>
                 <Avatar
-                  src={comment.comment_user_avatar}
+                  src={comment.comment_user_avatar || undefined}
                   radius="xl"
                   size="md"
-                />
+                >
+                  {comment.comment_user_avatar
+                    ? null
+                    : getNameInitials(comment.comment_user_full_name)}
+                </Avatar>
               </Link>
               <Paper
                 bg="transparent"
@@ -316,7 +321,11 @@ const CommentThread: React.FC<CommentThreadProps> = ({
         ticket_status === "DECLINED"
       ) && (
         <Group align="flex-start" gap="xs" mt="md">
-          <Avatar src={user?.user_avatar} radius="xl" size="md" />
+          <Avatar src={user?.user_avatar || undefined} radius="xl" size="md">
+            {user?.user_avatar
+              ? null
+              : getNameInitials(user?.user_full_name || "")}
+          </Avatar>
 
           <Paper p="md" shadow="xs" style={{ flex: 1 }}>
             <form onSubmit={handleAddComment}>

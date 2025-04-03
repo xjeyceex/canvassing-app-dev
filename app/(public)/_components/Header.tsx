@@ -4,6 +4,7 @@ import { userLogout } from "@/actions/post";
 import NotificationMenu from "@/components/NotificationMenu";
 import ModeToggle from "@/components/ThemeToggle";
 import { useUserStore } from "@/stores/userStore";
+import { getNameInitials } from "@/utils/functions";
 import {
   Anchor,
   Avatar,
@@ -102,7 +103,7 @@ const Header = () => {
                 <Menu shadow="md" width={200} withinPortal>
                   <Menu.Target>
                     <Avatar
-                      src={user.user_avatar}
+                      src={user.user_avatar || undefined}
                       radius="xl"
                       size="md"
                       style={{
@@ -115,7 +116,11 @@ const Header = () => {
                       onMouseLeave={(e) =>
                         (e.currentTarget.style.transform = "scale(1)")
                       }
-                    />
+                    >
+                      {user.user_avatar
+                        ? null
+                        : getNameInitials(user.user_full_name)}
+                    </Avatar>
                   </Menu.Target>
 
                   <Menu.Dropdown style={{ zIndex: 1100 }}>

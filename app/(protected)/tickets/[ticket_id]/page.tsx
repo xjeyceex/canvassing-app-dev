@@ -12,7 +12,7 @@ import CommentThread from "@/components/CommentThread";
 import EditCanvassForm from "@/components/EditCanvassForm";
 import LoadingStateProtected from "@/components/LoadingStateProtected";
 import { useUserStore } from "@/stores/userStore";
-import { formatDate } from "@/utils/functions";
+import { formatDate, getNameInitials } from "@/utils/functions";
 import {
   CanvassAttachment,
   CanvassDetail,
@@ -230,10 +230,14 @@ const TicketDetailsPage = () => {
               <Group gap="md">
                 <Box pos="relative">
                   <Avatar
-                    src={ticket.ticket_created_by_avatar}
+                    src={ticket.ticket_created_by_avatar || undefined}
                     radius="xl"
                     size={56}
-                  />
+                  >
+                    {ticket.ticket_created_by_avatar
+                      ? null
+                      : getNameInitials(ticket.ticket_created_by_name || "")}
+                  </Avatar>
                 </Box>
                 <Stack gap={3}>
                   <Text size="xs" fw={600} tt="uppercase" c="dimmed">
@@ -484,12 +488,18 @@ const TicketDetailsPage = () => {
                                                     size="md"
                                                     src={
                                                       canvass.submitted_by
-                                                        .user_avatar
+                                                        .user_avatar ||
+                                                      undefined
                                                     }
                                                   >
-                                                    {canvass.submitted_by.user_full_name?.charAt(
-                                                      0
-                                                    )}
+                                                    {canvass.submitted_by
+                                                      .user_avatar
+                                                      ? null
+                                                      : getNameInitials(
+                                                          canvass.submitted_by
+                                                            .user_full_name ||
+                                                            ""
+                                                        )}
                                                   </Avatar>
                                                   <Stack gap={0}>
                                                     <Text fw={500}>
