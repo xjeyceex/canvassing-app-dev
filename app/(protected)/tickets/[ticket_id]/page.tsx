@@ -259,9 +259,9 @@ const TicketDetailsPage = () => {
 
               <Tooltip label={isFormVisible ? "Hide details" : "Show details"}>
                 <ActionIcon
-                  variant={isFormVisible ? "filled" : "light"}
+                  variant={isFormVisible ? "light" : "filled"}
                   onClick={() => setIsFormVisible((prev) => !prev)}
-                  color={isFormVisible ? "blue" : "gray"}
+                  color={isFormVisible ? "gray" : "blue"}
                   radius="xl"
                   size={30}
                 >
