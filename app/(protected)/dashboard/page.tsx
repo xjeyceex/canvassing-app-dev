@@ -45,7 +45,8 @@ const DashboardPage = () => {
     open: countUserTicketsByStatus(tickets, "OPEN"),
     completed: countUserTicketsByStatus(tickets, "COMPLETED"),
     total: tickets.length,
-    revised: tickets.filter((ticket) => ticket.ticket_is_revised).length,
+    revised: tickets.filter((ticket) => ticket.ticket_revised_by !== null)
+      .length,
   };
 
   const completionRate =
@@ -54,13 +55,13 @@ const DashboardPage = () => {
       : 0;
 
   const revisedPercentage =
-    (tickets.filter((ticket) => ticket.ticket_is_revised).length /
+    (tickets.filter((ticket) => ticket.ticket_revised_by !== null).length /
       tickets.length) *
     100;
 
   function countUserTicketsByStatus(
     tickets: DashboardTicketType[],
-    statusType: "OPEN" | "COMPLETED",
+    statusType: "OPEN" | "COMPLETED"
   ) {
     if (statusType === "OPEN") {
       return tickets.filter(
@@ -69,7 +70,7 @@ const DashboardPage = () => {
           ticket.ticket_status === "FOR APPROVAL" ||
           ticket.ticket_status === "FOR REVIEW OF SUBMISSIONS" ||
           ticket.ticket_status === "WORK IN PROGRESS" ||
-          ticket.ticket_status === "FOR REVISION",
+          ticket.ticket_status === "FOR REVISION"
       ).length;
     }
 
@@ -84,7 +85,7 @@ const DashboardPage = () => {
     try {
       setLoading(true);
       const data = await getDashboardTickets(
-        isAdmin ? undefined : user?.user_id,
+        isAdmin ? undefined : user?.user_id
       );
       setTickets(data ?? []);
     } catch (error) {
@@ -353,7 +354,7 @@ const DashboardPage = () => {
                 .sort(
                   (a, b) =>
                     new Date(b.ticket_date_created).getTime() -
-                    new Date(a.ticket_date_created).getTime(),
+                    new Date(a.ticket_date_created).getTime()
                 )
                 .slice(0, 5)
                 .map((ticket, index) => (
