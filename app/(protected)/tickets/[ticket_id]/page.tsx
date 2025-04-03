@@ -129,10 +129,6 @@ const TicketDetailsPage = () => {
     fetchCanvassDetails();
   }, []);
 
-  useEffect(() => {
-    console.log(ticket);
-  }, [ticket]);
-
   if (!user || loading) {
     return <LoadingStateProtected />;
   }
