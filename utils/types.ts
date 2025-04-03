@@ -28,6 +28,9 @@ export type TicketDetailsType = {
   ticket_quantity: number;
   ticket_specifications: string;
   ticket_is_revised: boolean;
+  ticket_revised_by: string;
+  ticket_revised_by_avatar: string;
+  ticket_revised_by_name: string;
   ticket_rf_date_received: string;
   ticket_notes: string;
   ticket_created_by_name: string;

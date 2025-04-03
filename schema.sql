@@ -90,6 +90,7 @@ CREATE TABLE public.ticket_table (
   ticket_specifications TEXT,
   ticket_notes TEXT,
   ticket_is_revised BOOLEAN DEFAULT FALSE,
+  ticket_revised_by UUID NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
   ticket_name TEXT NOT NULL UNIQUE,  -- ticket_name is now UNIQUE
   ticket_status ticket_status_enum NOT NULL DEFAULT 'FOR CANVASS', 
   ticket_created_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
@@ -798,101 +799,110 @@ $$;
 -- Function for getting specific ticket
 DROP FUNCTION IF EXISTS get_ticket_details(UUID); 
 
-CREATE OR REPLACE FUNCTION get_ticket_details(ticket_uuid UUID) 
-RETURNS TABLE (   
-  ticket_id UUID,   
-  ticket_name TEXT,    
-  ticket_item_name TEXT,    
-  ticket_item_description TEXT,   
-  ticket_status TEXT,   
-  ticket_is_revised BOOLEAN,  
-  ticket_created_by UUID,   
-  ticket_created_by_name TEXT,    
-  ticket_created_by_avatar TEXT,    
-  ticket_quantity INTEGER,   
-  ticket_specifications TEXT,   
-  approval_status TEXT,   
-  ticket_date_created TIMESTAMPTZ,   
-  ticket_last_updated TIMESTAMPTZ,   
-  ticket_notes TEXT,   
-  ticket_rf_date_received TIMESTAMPTZ,    
-  shared_users JSON,   
-  reviewers JSON 
-) 
-LANGUAGE SQL 
-SET search_path TO public  
-AS $$    
-SELECT     
-  t.ticket_id,    
-  t.ticket_name,    
-  t.ticket_item_name,     
-  t.ticket_item_description,    
-  t.ticket_status,    
-  t.ticket_is_revised,  
-  t.ticket_created_by,     
-  u.user_full_name AS ticket_created_by_name,    
-  u.user_avatar AS ticket_created_by_avatar,       
-  t.ticket_quantity,    
-  t.ticket_specifications,     
+DROP FUNCTION IF EXISTS get_ticket_details(UUID);
+
+CREATE OR REPLACE FUNCTION get_ticket_details(ticket_uuid UUID)
+RETURNS TABLE (
+  ticket_id UUID,
+  ticket_name TEXT,
+  ticket_item_name TEXT,
+  ticket_item_description TEXT,
+  ticket_status TEXT,
+  ticket_is_revised BOOLEAN,
+  ticket_revised_by UUID,
+  ticket_revised_by_name TEXT,
+  ticket_revised_by_avatar TEXT,
+  ticket_created_by UUID,
+  ticket_created_by_name TEXT,
+  ticket_created_by_avatar TEXT,
+  ticket_quantity INTEGER,
+  ticket_specifications TEXT,
+  approval_status TEXT,
+  ticket_date_created TIMESTAMPTZ,
+  ticket_last_updated TIMESTAMPTZ,
+  ticket_notes TEXT,
+  ticket_rf_date_received TIMESTAMPTZ,
+  shared_users JSON,
+  reviewers JSON
+)
+LANGUAGE SQL
+SET search_path TO public
+AS $$
+SELECT
+  t.ticket_id,
+  t.ticket_name,
+  t.ticket_item_name,
+  t.ticket_item_description,
+  t.ticket_status,
+  t.ticket_is_revised,
+  t.ticket_revised_by,
+  u_revised.user_full_name AS ticket_revised_by_name,
+  u_revised.user_avatar AS ticket_revised_by_avatar,
+  t.ticket_created_by,
+  u.user_full_name AS ticket_created_by_name,
+  u.user_avatar AS ticket_created_by_avatar,
+  t.ticket_quantity,
+  t.ticket_specifications,
 
   -- Get the most recent approval status (or fallback to 'PENDING')
-  COALESCE(      
-    (        
-      SELECT a.approval_review_status        
-      FROM public.approval_table a        
-      WHERE a.approval_ticket_id = t.ticket_id        
-      ORDER BY a.approval_review_date DESC  
-      LIMIT 1      
-    ), 
-    'PENDING'    
-  ) AS approval_status,     
+  COALESCE(
+    (
+      SELECT a.approval_review_status
+      FROM public.approval_table a
+      WHERE a.approval_ticket_id = t.ticket_id
+      ORDER BY a.approval_review_date DESC
+      LIMIT 1
+    ),
+    'PENDING'
+  ) AS approval_status,
 
-  -- Keep timestamps in UTC and format them in the frontend
-  t.ticket_date_created,    
-  t.ticket_last_updated,    
-  t.ticket_notes,    
-  t.ticket_rf_date_received,     
+  t.ticket_date_created,
+  t.ticket_last_updated,
+  t.ticket_notes,
+  t.ticket_rf_date_received,
 
   -- Shared Users JSON
   (
-    SELECT COALESCE(        
-      JSON_AGG(          
-        JSON_BUILD_OBJECT(            
-          'user_id', u2.user_id,            
-          'user_full_name', u2.user_full_name,            
-          'user_email', u2.user_email,            
-          'user_avatar', u2.user_avatar           
-        )        
-      ), '[]'      
-    )      
-    FROM public.ticket_shared_with_table ts      
-    LEFT JOIN public.user_table u2 ON u2.user_id = ts.ticket_shared_user_id      
-    WHERE ts.ticket_shared_ticket_id = t.ticket_id    
-  )::JSON AS shared_users,     
+    SELECT COALESCE(
+      JSON_AGG(
+        JSON_BUILD_OBJECT(
+          'user_id', u2.user_id,
+          'user_full_name', u2.user_full_name,
+          'user_email', u2.user_email,
+          'user_avatar', u2.user_avatar
+        )
+      ), '[]'
+    )
+    FROM public.ticket_shared_with_table ts
+    LEFT JOIN public.user_table u2 ON u2.user_id = ts.ticket_shared_user_id
+    WHERE ts.ticket_shared_ticket_id = t.ticket_id
+  )::JSON AS shared_users,
 
-  -- Reviewers JSON (now includes user_role)
-  (      
-    SELECT COALESCE(        
-      JSON_AGG(          
-        JSON_BUILD_OBJECT(            
-          'reviewer_id', a.approval_reviewed_by,            
-          'reviewer_name', u3.user_full_name,            
-          'reviewer_avatar', u3.user_avatar,             
-          'reviewer_role', u3.user_role,  
-          'approval_status', a.approval_review_status          
-        )        
-      ), '[]'      
-    )      
-    FROM public.approval_table a      
-    LEFT JOIN public.user_table u3 ON u3.user_id = a.approval_reviewed_by      
-    WHERE a.approval_ticket_id = t.ticket_id    
-  )::JSON AS reviewers   
+  -- Reviewers JSON
+  (
+    SELECT COALESCE(
+      JSON_AGG(
+        JSON_BUILD_OBJECT(
+          'reviewer_id', a.approval_reviewed_by,
+          'reviewer_name', u3.user_full_name,
+          'reviewer_avatar', u3.user_avatar,
+          'reviewer_role', u3.user_role,
+          'approval_status', a.approval_review_status
+        )
+      ), '[]'
+    )
+    FROM public.approval_table a
+    LEFT JOIN public.user_table u3 ON u3.user_id = a.approval_reviewed_by
+    WHERE a.approval_ticket_id = t.ticket_id
+  )::JSON AS reviewers
 
-FROM     
-  public.ticket_table t   
-LEFT JOIN public.user_table u ON u.user_id = t.ticket_created_by   
-WHERE t.ticket_id = ticket_uuid;  
+FROM
+  public.ticket_table t
+LEFT JOIN public.user_table u ON u.user_id = t.ticket_created_by
+LEFT JOIN public.user_table u_revised ON u_revised.user_id = t.ticket_revised_by
+WHERE t.ticket_id = ticket_uuid;
 $$;
+
 
 -- share ticket function
 DROP FUNCTION IF EXISTS public.share_ticket(uuid, uuid, uuid);
