@@ -675,10 +675,8 @@ const TicketDetailsPage = () => {
                                     updateTicketDetails={fetchTicketDetails}
                                   />
                                 </>
-                              ) : ticket?.reviewers.some(
-                                  (reviewer) =>
-                                    reviewer.reviewer_id === user?.user_id
-                                ) && ticket?.ticket_status !== "CANCELED" ? (
+                              ) : isReviewer &&
+                                ticket?.ticket_status !== "CANCELED" ? (
                                 <>
                                   <EditCanvassForm
                                     ticket={ticket}
