@@ -6,6 +6,7 @@ import {
   markNotificationAsRead,
 } from "@/actions/update";
 import { useNotificationStore } from "@/stores/notificationStore";
+import { formatDate } from "@/utils/functions";
 import { NotificationType } from "@/utils/types";
 import {
   ActionIcon,
@@ -44,20 +45,6 @@ const NotificationsPage = () => {
 
   const [filter, setFilter] = useState<filterType>("all");
   const [sortBy, setSortBy] = useState<string>("newest");
-
-  const getRelativeTime = (timestamp: string) => {
-    return new Date(timestamp)
-      .toLocaleString("en-US", {
-        timeZone: "Asia/Manila",
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: true,
-      })
-      .replace(",", " at");
-  };
 
   const filteredNotifications = notifications.filter((notification) =>
     filter === "unread" ? !notification.notification_read : true
@@ -205,7 +192,7 @@ const NotificationsPage = () => {
                   <Stack gap="xs">
                     <Group gap="xs">
                       <Text size="xs" c="dimmed">
-                        {getRelativeTime(notification.notification_created_at)}
+                        {formatDate(notification.notification_created_at)}
                       </Text>
                     </Group>
                     <Text fw={notification.notification_read ? 400 : 600}>
