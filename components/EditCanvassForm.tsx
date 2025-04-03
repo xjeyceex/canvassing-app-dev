@@ -169,8 +169,6 @@ const EditCanvassForm = ({
                   reviewers: prev.reviewers.map((reviewer) =>
                     reviewer.reviewer_id === user?.user_id
                       ? { ...reviewer, approval_status: "APPROVED" } // Current reviewer approved
-                      : reviewer.reviewer_role === "MANAGER" // Keep managers as "AWAITING ACTION"
-                      ? { ...reviewer, approval_status: "AWAITING ACTION" }
                       : reviewer
                   ),
                 }
@@ -184,6 +182,21 @@ const EditCanvassForm = ({
               approval_reviewed_by: user?.user_id, // Mark the current reviewer as "APPROVED"
             });
 
+            // Notify other reviewers (excluding managers)
+            for (const reviewer of ticket?.reviewers.filter(
+              (reviewer) =>
+                reviewer.reviewer_role !== "MANAGER" && // Exclude managers
+                reviewer.reviewer_id !== user?.user_id && // Exclude current reviewer
+                reviewer.approval_status !== "APPROVED" // Exclude already approved reviewers
+            ) || []) {
+              const message = `The ticket ${ticket?.ticket_name} has been revised and needs your approval.`;
+              await notifyUser(
+                reviewer.reviewer_id,
+                message,
+                ticket?.ticket_id
+              );
+            }
+
             // Check if the current user is the only reviewer (excluding managers)
             const isOnlyReviewer =
               ticket?.reviewers.filter(
@@ -192,42 +205,8 @@ const EditCanvassForm = ({
 
             if (isOnlyReviewer) {
               await handleCanvassAction("FOR APPROVAL");
-
-              for (const manager of ticket?.reviewers.filter(
-                (reviewer) => reviewer.reviewer_role === "MANAGER"
-              ) || []) {
-                await updateApprovalStatus({
-                  approval_ticket_id: ticket?.ticket_id,
-                  approval_review_status: "AWAITING ACTION",
-                  approval_reviewed_by: manager.reviewer_id,
-                });
-              }
             } else {
-              const allReviewersApproved = ticket?.reviewers
-                .filter((reviewer) => reviewer.reviewer_role !== "MANAGER")
-                .every((reviewer) => reviewer.approval_status === "APPROVED");
-
-              if (allReviewersApproved) {
-                await handleCanvassAction("FOR APPROVAL");
-
-                for (const manager of ticket?.reviewers.filter(
-                  (reviewer) => reviewer.reviewer_role === "MANAGER"
-                ) || []) {
-                  await updateApprovalStatus({
-                    approval_ticket_id: ticket?.ticket_id,
-                    approval_review_status: "AWAITING ACTION",
-                    approval_reviewed_by: manager.reviewer_id,
-                  });
-                  const message = `The ticket ${ticket.ticket_name} has been approved by all reviewers and is now awaiting your action.`;
-                  await notifyUser(
-                    manager.reviewer_id,
-                    message,
-                    ticket.ticket_id
-                  );
-                }
-              } else {
-                await handleCanvassAction("FOR REVIEW OF SUBMISSIONS");
-              }
+              await handleCanvassAction("FOR REVIEW OF SUBMISSIONS");
             }
           } else if (user?.user_role === "PURCHASER") {
             await handleCanvassAction("FOR REVIEW OF SUBMISSIONS");
