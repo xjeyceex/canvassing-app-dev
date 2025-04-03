@@ -915,7 +915,7 @@ export const notifyUser = async (
   user_id: string,
   message: string,
   ticket_id: string,
-  comment_id: string | null = null
+  comment_id: string | null = null,
 ) => {
   const supabase = await createClient();
 

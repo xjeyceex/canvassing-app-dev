@@ -341,64 +341,6 @@ ON public.canvass_form_table
 FOR DELETE 
 USING (auth.role() = 'authenticated');
 
--- CANVASS ATTACHMENT TABLE (Stores Canvass Attachments)
-DROP TABLE IF EXISTS canvass_attachment_table CASCADE;
-CREATE TABLE public.canvass_attachment_table (
-    canvass_attachment_id UUID NOT NULL DEFAULT gen_random_uuid(),
-    canvass_attachment_canvass_form_id UUID NULL,
-    canvass_attachment_draft_id UUID REFERENCES canvass_draft_table(canvass_draft_id) ON DELETE CASCADE,
-    canvass_attachment_type TEXT NOT NULL,
-    canvass_attachment_url TEXT NOT NULL,
-    canvass_attachment_file_type TEXT NOT NULL,
-    canvass_attachment_file_size BIGINT NOT NULL,
-    canvass_attachment_is_draft BOOLEAN DEFAULT FALSE,
-    canvass_attachment_created_at TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL,
-    CONSTRAINT canvass_attachment_table_pkey PRIMARY KEY (canvass_attachment_id),
-    CONSTRAINT canvass_attachment_table_canvass_attachment_canvass_form_id_fkey
-        FOREIGN KEY (canvass_attachment_canvass_form_id)
-        REFERENCES canvass_form_table (canvass_form_id)
-        ON UPDATE CASCADE
-        ON DELETE CASCADE,
-    CONSTRAINT canvass_attachment_reference_check 
-        CHECK (
-            (canvass_attachment_canvass_form_id IS NOT NULL AND canvass_attachment_draft_id IS NULL) 
-            OR 
-            (canvass_attachment_canvass_form_id IS NULL AND canvass_attachment_draft_id IS NOT NULL)
-        ),
-    CONSTRAINT canvass_attachment_type_check
-        CHECK (attachment_type IN ('CANVASS_SHEET', 'QUOTATION_1', 'QUOTATION_2', 'QUOTATION_3', 'QUOTATION_4'))
-) TABLESPACE pg_default;
--- Enable Row Level Security
-ALTER TABLE public.canvass_attachment_table ENABLE ROW LEVEL SECURITY;
-
--- Allow all authenticated users to SELECT canvass attachments
-DROP POLICY IF EXISTS select_canvass_attachments ON public.canvass_attachment_table;
-CREATE POLICY select_canvass_attachments 
-ON public.canvass_attachment_table 
-FOR SELECT 
-USING (auth.role() = 'authenticated');
-
--- Allow all authenticated users to INSERT canvass attachments
-DROP POLICY IF EXISTS insert_canvass_attachments ON public.canvass_attachment_table;
-CREATE POLICY insert_canvass_attachments 
-ON public.canvass_attachment_table 
-FOR INSERT 
-WITH CHECK (auth.role() = 'authenticated');
-
--- Allow all authenticated users to UPDATE their own attachments
-DROP POLICY IF EXISTS update_canvass_attachments ON public.canvass_attachment_table;
-CREATE POLICY update_canvass_attachments 
-ON public.canvass_attachment_table 
-FOR UPDATE 
-USING (auth.role() = 'authenticated');
-
--- Allow all authenticated users to DELETE their own attachments
-DROP POLICY IF EXISTS delete_canvass_attachments ON public.canvass_attachment_table;
-CREATE POLICY delete_canvass_attachments 
-ON public.canvass_attachment_table 
-FOR DELETE 
-USING (auth.role() = 'authenticated');
-
 DROP TABLE IF EXISTS canvass_draft_table CASCADE;
 CREATE TABLE public.canvass_draft_table (
     canvass_draft_id uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -441,6 +383,62 @@ CREATE POLICY "Enable delete for own drafts"
 ON canvass_draft_table
 FOR DELETE
 USING (auth.uid() = canvass_draft_user_id);
+
+-- CANVASS ATTACHMENT TABLE (Stores Canvass Attachments)
+DROP TABLE IF EXISTS canvass_attachment_table CASCADE;
+CREATE TABLE public.canvass_attachment_table (
+    canvass_attachment_id UUID NOT NULL DEFAULT gen_random_uuid(),
+    canvass_attachment_canvass_form_id UUID NULL,
+    canvass_attachment_draft_id UUID REFERENCES canvass_draft_table(canvass_draft_id) ON DELETE CASCADE,
+    canvass_attachment_type TEXT NOT NULL,
+    canvass_attachment_url TEXT NOT NULL,
+    canvass_attachment_file_type TEXT NOT NULL,
+    canvass_attachment_file_size BIGINT NOT NULL,
+    canvass_attachment_is_draft BOOLEAN DEFAULT FALSE,
+    canvass_attachment_created_at TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL,
+    CONSTRAINT canvass_attachment_table_pkey PRIMARY KEY (canvass_attachment_id),
+    CONSTRAINT canvass_attachment_table_canvass_attachment_canvass_form_id_fkey
+        FOREIGN KEY (canvass_attachment_canvass_form_id)
+        REFERENCES canvass_form_table (canvass_form_id)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT canvass_attachment_reference_check 
+        CHECK (
+            (canvass_attachment_canvass_form_id IS NOT NULL AND canvass_attachment_draft_id IS NULL) 
+            OR 
+            (canvass_attachment_canvass_form_id IS NULL AND canvass_attachment_draft_id IS NOT NULL)
+        )
+) TABLESPACE pg_default;
+-- Enable Row Level Security
+ALTER TABLE public.canvass_attachment_table ENABLE ROW LEVEL SECURITY;
+
+-- Allow all authenticated users to SELECT canvass attachments
+DROP POLICY IF EXISTS select_canvass_attachments ON public.canvass_attachment_table;
+CREATE POLICY select_canvass_attachments 
+ON public.canvass_attachment_table 
+FOR SELECT 
+USING (auth.role() = 'authenticated');
+
+-- Allow all authenticated users to INSERT canvass attachments
+DROP POLICY IF EXISTS insert_canvass_attachments ON public.canvass_attachment_table;
+CREATE POLICY insert_canvass_attachments 
+ON public.canvass_attachment_table 
+FOR INSERT 
+WITH CHECK (auth.role() = 'authenticated');
+
+-- Allow all authenticated users to UPDATE their own attachments
+DROP POLICY IF EXISTS update_canvass_attachments ON public.canvass_attachment_table;
+CREATE POLICY update_canvass_attachments 
+ON public.canvass_attachment_table 
+FOR UPDATE 
+USING (auth.role() = 'authenticated');
+
+-- Allow all authenticated users to DELETE their own attachments
+DROP POLICY IF EXISTS delete_canvass_attachments ON public.canvass_attachment_table;
+CREATE POLICY delete_canvass_attachments 
+ON public.canvass_attachment_table 
+FOR DELETE 
+USING (auth.role() = 'authenticated');
 
 -- APPROVAL TABLE (Tracks Review & Approvals)
 DROP TABLE IF EXISTS approval_table CASCADE;
