@@ -236,7 +236,6 @@ const ProfilePage = () => {
                   </Text>
                 </Stack>
               </Group>
-
               <Group gap="sm" wrap="nowrap">
                 <ThemeIcon size="lg" variant="light" radius="xl" color="blue">
                   <IconUserShield style={{ width: rem(16), height: rem(16) }} />
@@ -255,9 +254,7 @@ const ProfilePage = () => {
                 </Stack>
               </Group>
             </Stack>
-
-            <Divider my="md" variant="dashed" />
-
+            <Divider mt="md" variant="dashed" />
             {/* Action buttons */}
             <Group grow>
               <Button
@@ -278,10 +275,8 @@ const ProfilePage = () => {
                 Change Role
               </Button>
             </Group>
-
             {!hasPermission && (
-              <Text size="xs" c="dimmed" ta="center" mt="sm">
-                <IconLock size={14} style={{ marginRight: 4 }} />
+              <Text size="xs" c="dimmed" ta="center">
                 Only admins and managers can edit roles
               </Text>
             )}
@@ -317,7 +312,7 @@ const ProfilePage = () => {
                 Tickets Revised
               </Text>
               <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
-                {ticketCount > 0 && `${revisedTicketCount}`}
+                {revisedTicketCount || 0}
               </Text>
               <Text size="10px" c="dimmed" ta="center">
                 {ticketCount > 0
