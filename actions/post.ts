@@ -157,7 +157,6 @@ export const createTicket = async (
     // 1. Format the date
     const formattedDate = new Date(validatedData.ticketRfDateReceived)
       .toLocaleDateString("en-GB", {
-        timeZone: "Asia/Manila",
         day: "2-digit",
         month: "short",
         year: "numeric",
@@ -238,9 +237,7 @@ export const createTicket = async (
           approval_ticket_id: ticket.ticket_id,
           approval_reviewed_by: reviewerId,
           approval_review_status: "PENDING",
-          approval_review_date: new Date().toLocaleString("en-US", {
-            timeZone: "Asia/Manila",
-          }),
+          approval_review_date: new Date().toISOString(),
         }))
       );
 
@@ -590,9 +587,7 @@ export const createCanvass = async ({
           notification_message: notificationMessage,
           notification_read: false,
           notification_ticket_id: ticketId,
-          notification_created_at: new Date().toLocaleString("en-US", {
-            timeZone: "Asia/Manila",
-          }),
+          notification_created_at: new Date().toISOString(),
           notification_comment_id: null,
         });
       }
@@ -887,9 +882,7 @@ export const canvassAction = async (
         ticket_status_history_previous_status: previousStatus,
         ticket_status_history_new_status: status,
         ticket_status_history_changed_by: user_id,
-        ticket_status_history_change_date: new Date(
-          new Date().toLocaleString("en-US", { timeZone: "Asia/Manila" })
-        ).toISOString(),
+        ticket_status_history_change_date: new Date().toISOString(),
       },
     ]);
 
@@ -949,9 +942,7 @@ export const notifyUser = async (
       notification_message: message,
       notification_read: false,
       notification_ticket_id: ticket_id,
-      notification_created_at: new Date().toLocaleString("en-US", {
-        timeZone: "Asia/Manila",
-      }),
+      notification_created_at: new Date().toISOString(),
       notification_comment_id: comment_id,
     });
 
