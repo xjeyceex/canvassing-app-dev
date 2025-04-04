@@ -4,7 +4,7 @@ import { getUserDataById } from "@/actions/get";
 import { updateUserRole } from "@/actions/post";
 import LoadingStateProtected from "@/components/LoadingStateProtected";
 import { useUserStore } from "@/stores/userStore";
-import { getNameInitials, getRelativeTime } from "@/utils/functions";
+import { getNameInitials } from "@/utils/functions";
 import { UserType } from "@/utils/types";
 import {
   Avatar,
@@ -35,6 +35,8 @@ import {
   IconUserShield,
   IconX,
 } from "@tabler/icons-react";
+import { formatDistance } from "date-fns";
+import { toZonedTime } from "date-fns-tz";
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -57,6 +59,14 @@ const ProfilePage = () => {
   const isAdmin = user?.user_role === "ADMIN";
   const isManager = user?.user_role === "MANAGER";
   const isUser = user?.user_id === profileUser?.user_id;
+
+  const getRelativeTime = (timestamp: string) => {
+    const zonedDate = toZonedTime(new Date(timestamp), "Asia/Manila");
+    const distance = formatDistance(zonedDate, new Date(), {
+      includeSeconds: true,
+    });
+    return distance.replace(/^about /, ""); // Remove "about" if it's present
+  };
 
   useEffect(() => {
     if (isUser) {

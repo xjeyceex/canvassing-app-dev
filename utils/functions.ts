@@ -1,6 +1,3 @@
-import { formatDistanceToNow } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
-
 export const convertFileSize = (sizeInBytes: number, digits?: number) => {
   if (sizeInBytes < 1024) {
     return sizeInBytes + " Bytes"; // Less than 1 KB, show in Bytes
@@ -81,9 +78,4 @@ export const formatDate = (dateString: string) => {
   });
 
   return `${formattedDate} at ${formattedTime}`;
-};
-
-export const getRelativeTime = (timestamp: string) => {
-  const zonedDate = toZonedTime(new Date(timestamp), "Asia/Manila");
-  return formatDistanceToNow(zonedDate, { addSuffix: true });
 };
