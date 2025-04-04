@@ -12,6 +12,9 @@ export const TicketFormSchema = z.object({
   ticketReviewer: z
     .array(z.string())
     .min(1, "At least one reviewer is required"),
+  ticketManager: z
+    .array(z.string())
+    .min(1, "At least one reviewer is required"),
 });
 
 const FileSchema = z.instanceof(File).refine(
@@ -29,7 +32,7 @@ const FileSchema = z.instanceof(File).refine(
   {
     message:
       "Invalid file type or size. Please upload an image file (JPEG, PNG, GIF, WEBP) or PDF less than 5MB.",
-  },
+  }
 );
 
 export const CanvassFormSchema = z.object({
@@ -45,7 +48,7 @@ export const CanvassFormSchema = z.object({
     .array(
       z.object({
         file: z.union([FileSchema, z.undefined()]).optional(),
-      }),
+      })
     )
     .min(1, "At least one quotation is required")
     .max(4, "Maximum of 4 quotations allowed")
@@ -68,7 +71,7 @@ export const UpdateCanvassFormSchema = z.object({
     .array(
       z.object({
         file: z.union([FileSchema, z.undefined()]).optional(),
-      }),
+      })
     )
     .min(1, "At least one quotation is required")
     .max(4, "Maximum of 4 quotations allowed"),

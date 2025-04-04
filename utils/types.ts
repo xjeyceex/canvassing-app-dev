@@ -27,9 +27,6 @@ export type TicketDetailsType = {
   ticket_created_by_avatar: string;
   ticket_quantity: number;
   ticket_specifications: string;
-  ticket_revised_by: string;
-  ticket_revised_by_avatar: string;
-  ticket_revised_by_name: string;
   ticket_rf_date_received: string;
   ticket_notes: string;
   ticket_created_by_name: string;
@@ -105,13 +102,6 @@ export type QuotationAttachmentResult = {
   canvass_attachment_file_size?: number;
 };
 
-export type CanvassSubmitter = {
-  user_id: string;
-  user_full_name: string | null;
-  user_email: string | null;
-  user_avatar: string | null;
-};
-
 export type CanvassDetail = {
   canvass_form_id: string;
   canvass_form_ticket_id: string;
@@ -123,7 +113,11 @@ export type CanvassDetail = {
   canvass_form_submitted_by: string;
   canvass_form_date_submitted: string;
   canvass_form_updated_at: string;
-  submitted_by: CanvassSubmitter;
+  canvass_form_revised_by: string | null;
+  submitted_by_avatar: string | null;
+  submitted_by_name: string;
+  revised_by_avatar: string;
+  revised_by_name: string;
   attachments: CanvassAttachment[];
 };
 

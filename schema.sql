@@ -89,7 +89,6 @@ CREATE TABLE public.ticket_table (
   ticket_quantity INT NOT NULL CHECK (ticket_quantity > 0), 
   ticket_specifications TEXT,
   ticket_notes TEXT,
-  ticket_revised_by UUID NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
   ticket_name TEXT NOT NULL UNIQUE,  -- ticket_name is now UNIQUE
   ticket_status ticket_status_enum NOT NULL DEFAULT 'FOR CANVASS', 
   ticket_created_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
@@ -307,9 +306,11 @@ CREATE TABLE public.canvass_form_table (
   canvass_form_total_amount DECIMAL(10,2) NOT NULL CHECK (canvass_form_total_amount > 0), 
   canvass_form_payment_terms TEXT,
   canvass_form_submitted_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE SET NULL,
+  canvass_form_revised_by UUID NULL REFERENCES public.user_table(user_id) ON DELETE SET NULL,
   canvass_form_date_submitted TIMESTAMPTZ DEFAULT now() NOT NULL,
   canvass_form_updated_at TIMESTAMPTZ DEFAULT now()
 );
+
 
 -- Enable RLS
 ALTER TABLE public.canvass_form_table ENABLE ROW LEVEL SECURITY;
@@ -793,7 +794,6 @@ $$;
 
 -- Function for getting specific ticket
 DROP FUNCTION IF EXISTS get_ticket_details(UUID);
-
 CREATE OR REPLACE FUNCTION get_ticket_details(ticket_uuid UUID)
 RETURNS TABLE (
   ticket_id UUID,
@@ -801,9 +801,6 @@ RETURNS TABLE (
   ticket_item_name TEXT,
   ticket_item_description TEXT,
   ticket_status TEXT,
-  ticket_revised_by UUID,
-  ticket_revised_by_name TEXT,
-  ticket_revised_by_avatar TEXT,
   ticket_created_by UUID,
   ticket_created_by_name TEXT,
   ticket_created_by_avatar TEXT,
@@ -827,9 +824,6 @@ SELECT
   t.ticket_item_name,
   t.ticket_item_description,
   t.ticket_status,
-  t.ticket_revised_by,
-  u_revised.user_full_name AS ticket_revised_by_name,
-  u_revised.user_avatar AS ticket_revised_by_avatar,
   t.ticket_created_by,
   u.user_full_name AS ticket_created_by_name,
   u.user_avatar AS ticket_created_by_avatar,
@@ -891,9 +885,9 @@ SELECT
 FROM
   public.ticket_table t
 LEFT JOIN public.user_table u ON u.user_id = t.ticket_created_by
-LEFT JOIN public.user_table u_revised ON u_revised.user_id = t.ticket_revised_by
 WHERE t.ticket_id = ticket_uuid;
 $$;
+
 
 -- share ticket function
 DROP FUNCTION IF EXISTS public.share_ticket(uuid, uuid, uuid);
@@ -1013,3 +1007,109 @@ BEGIN
   );
 END;
 $$;
+
+CREATE OR REPLACE FUNCTION public.get_reviewers()
+RETURNS JSON
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+SET search_path = public
+AS
+$$
+BEGIN
+    RETURN (
+        SELECT JSON_AGG(
+            JSON_BUILD_OBJECT(
+                'user_id', user_id,
+                'user_full_name', user_full_name,
+                'user_email', user_email
+            )
+        )
+        FROM public.user_table
+        WHERE user_role = 'REVIEWER'
+    );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.get_managers()
+RETURNS JSON
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+SET search_path = public
+AS
+$$
+BEGIN
+    RETURN (
+        SELECT JSON_AGG(
+            JSON_BUILD_OBJECT(
+                'user_id', user_id,
+                'user_full_name', user_full_name,
+                'user_email', user_email
+            )
+        )
+        FROM public.user_table
+        WHERE user_role = 'MANAGER'
+    );
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION get_canvass_details(ticket_uuid UUID)
+RETURNS TABLE (
+  canvass_form_id UUID,
+  canvass_form_ticket_id UUID,
+  canvass_form_rf_date_received TIMESTAMPTZ,
+  canvass_form_recommended_supplier TEXT,
+  canvass_form_lead_time_day INT,
+  canvass_form_total_amount DECIMAL(10,2),
+  canvass_form_payment_terms TEXT,
+  canvass_form_submitted_by UUID,
+  submitted_by_name TEXT,
+  submitted_by_avatar TEXT,
+  canvass_form_revised_by UUID,
+  revised_by_name TEXT,
+  revised_by_avatar TEXT,
+  canvass_form_date_submitted TIMESTAMPTZ,
+  canvass_form_updated_at TIMESTAMPTZ,
+  attachments JSON
+)
+LANGUAGE SQL
+SET search_path TO public
+AS $$
+SELECT
+  c.canvass_form_id,
+  c.canvass_form_ticket_id,
+  c.canvass_form_rf_date_received,
+  c.canvass_form_recommended_supplier,
+  c.canvass_form_lead_time_day,
+  c.canvass_form_total_amount,
+  c.canvass_form_payment_terms,
+  c.canvass_form_submitted_by,
+  u_submitted.user_full_name AS submitted_by_name,
+  u_submitted.user_avatar AS submitted_by_avatar,
+  c.canvass_form_revised_by,
+  u_revised.user_full_name AS revised_by_name,
+  u_revised.user_avatar AS revised_by_avatar,
+  c.canvass_form_date_submitted,
+  c.canvass_form_updated_at,
+  (
+    SELECT COALESCE(
+      JSON_AGG(
+        JSON_BUILD_OBJECT(
+          'canvass_attachment_id', a.canvass_attachment_id,
+          'canvass_attachment_type', a.canvass_attachment_type,
+          'canvass_attachment_url', a.canvass_attachment_url,
+          'canvass_attachment_file_type', a.canvass_attachment_file_type,
+          'canvass_attachment_file_size', a.canvass_attachment_file_size,
+          'canvass_attachment_created_at', a.canvass_attachment_created_at
+        )
+      ), '[]'
+    )
+    FROM public.canvass_attachment_table a
+    WHERE a.canvass_attachment_canvass_form_id = c.canvass_form_id
+  )::JSON AS attachments
+FROM
+  public.canvass_form_table c
+LEFT JOIN public.user_table u_submitted ON u_submitted.user_id = c.canvass_form_submitted_by
+LEFT JOIN public.user_table u_revised ON u_revised.user_id = c.canvass_form_revised_by
+WHERE c.canvass_form_ticket_id = ticket_uuid;
+$$;
+

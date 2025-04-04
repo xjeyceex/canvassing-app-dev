@@ -129,6 +129,10 @@ const TicketDetailsPage = () => {
     fetchCanvassDetails();
   }, []);
 
+  useEffect(() => {
+    console.log(canvassDetails);
+  }, [canvassDetails]);
+
   if (!user || loading) {
     return <LoadingStateProtected />;
   }
@@ -385,11 +389,11 @@ const TicketDetailsPage = () => {
                                 </ThemeIcon>
                                 <Text fz="lg" fw={600}>
                                   Canvass Form{" "}
-                                  {ticket.ticket_revised_by !== null && (
+                                  {/* {ticket.ticket_revised_by !== null && (
                                     <Text fz="sm" c="dimmed" span>
                                       (Revised)
                                     </Text>
-                                  )}
+                                  )} */}
                                 </Text>
                               </Group>
 
@@ -492,24 +496,20 @@ const TicketDetailsPage = () => {
                                                     radius="xl"
                                                     size="md"
                                                     src={
-                                                      canvass.submitted_by
-                                                        .user_avatar ||
+                                                      canvass.submitted_by_avatar ||
                                                       undefined
                                                     }
                                                   >
-                                                    {canvass.submitted_by
-                                                      .user_avatar
+                                                    {canvass.submitted_by_avatar
                                                       ? null
                                                       : getNameInitials(
-                                                          canvass.submitted_by
-                                                            .user_full_name ||
+                                                          canvass.submitted_by_name ||
                                                             ""
                                                         )}
                                                   </Avatar>
                                                   <Stack gap={0}>
                                                     <Text fw={500}>
-                                                      {canvass.submitted_by
-                                                        .user_full_name ||
+                                                      {canvass.submitted_by_name ||
                                                         "Unknown"}
                                                     </Text>
                                                     <Text size="xs" c="dimmed">
@@ -622,8 +622,7 @@ const TicketDetailsPage = () => {
                                               )}
 
                                               {/* Revised By */}
-                                              {ticket.ticket_revised_by !==
-                                                null && (
+                                              {canvass.canvass_form_revised_by && (
                                                 <Stack gap={4}>
                                                   <Text
                                                     size="md"
@@ -638,20 +637,20 @@ const TicketDetailsPage = () => {
                                                       radius="xl"
                                                       size="md"
                                                       src={
-                                                        ticket.ticket_revised_by_avatar ||
+                                                        canvass.revised_by_avatar ||
                                                         undefined
                                                       }
                                                     >
-                                                      {ticket.ticket_revised_by_avatar
-                                                        ? null
+                                                      {canvass.revised_by_avatar
+                                                        ? undefined
                                                         : getNameInitials(
-                                                            ticket.ticket_revised_by_name ||
+                                                            canvass.revised_by_name ||
                                                               ""
                                                           )}
                                                     </Avatar>
                                                     <Stack gap={0}>
                                                       <Text fw={500}>
-                                                        {ticket.ticket_revised_by_name ||
+                                                        {canvass.revised_by_name ||
                                                           "Unknown"}
                                                       </Text>
                                                       <Text
