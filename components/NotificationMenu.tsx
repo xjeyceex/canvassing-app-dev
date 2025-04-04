@@ -38,8 +38,7 @@ const NotificationMenu = () => {
   ).length;
 
   const getRelativeTime = (timestamp: string) => {
-    const utcDate = new Date(timestamp);
-    const zonedDate = toZonedTime(utcDate, "UTC");
+    const zonedDate = toZonedTime(new Date(timestamp), "Asia/Manila");
     return formatDistanceToNow(zonedDate, { addSuffix: true });
   };
 

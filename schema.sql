@@ -347,17 +347,18 @@ CREATE TABLE public.canvass_draft_table (
     canvass_draft_id uuid NOT NULL DEFAULT gen_random_uuid(),
     canvass_draft_ticket_id uuid NOT NULL,
     canvass_draft_user_id uuid NOT NULL,
-    canvass_draft_rf_date_received timestamp with time zone NOT NULL DEFAULT timezone('Asia/Manila'::text, now()),
+    canvass_draft_rf_date_received TIMESTAMPTZ DEFAULT now() NOT NULL,
     canvass_draft_recommended_supplier text,
     canvass_draft_lead_time_day integer,
     canvass_draft_total_amount numeric(10, 2),
     canvass_draft_payment_terms text,
-    canvass_draft_created_at timestamp with time zone NOT NULL DEFAULT timezone('Asia/Manila'::text, now()),
-    canvass_draft_updated_at timestamp with time zone NOT NULL DEFAULT timezone('Asia/Manila'::text, now()),
+    canvass_draft_created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    canvass_draft_updated_at TIMESTAMPTZ DEFAULT now() NOT NULL,
     CONSTRAINT canvass_draft_table_pkey PRIMARY KEY (canvass_draft_id),
     CONSTRAINT canvass_draft_table_ticket_id_fkey FOREIGN KEY (canvass_draft_ticket_id) REFERENCES ticket_table (ticket_id) ON DELETE CASCADE,
     CONSTRAINT canvass_draft_table_user_id_fkey FOREIGN KEY (canvass_draft_user_id) REFERENCES user_table (user_id) ON DELETE CASCADE
 );
+
 ALTER TABLE public.canvass_draft_table ENABLE ROW LEVEL SECURITY;
 
 -- CREATE (INSERT) policy
@@ -396,7 +397,7 @@ CREATE TABLE public.canvass_attachment_table (
     canvass_attachment_file_type TEXT NOT NULL,
     canvass_attachment_file_size BIGINT NOT NULL,
     canvass_attachment_is_draft BOOLEAN DEFAULT FALSE,
-    canvass_attachment_created_at TIMESTAMPTZ DEFAULT timezone('Asia/Manila', now()) NOT NULL,
+    canvass_attachment_created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
     CONSTRAINT canvass_attachment_table_pkey PRIMARY KEY (canvass_attachment_id),
     CONSTRAINT canvass_attachment_table_canvass_attachment_canvass_form_id_fkey
         FOREIGN KEY (canvass_attachment_canvass_form_id)

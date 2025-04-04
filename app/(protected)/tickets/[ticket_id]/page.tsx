@@ -329,7 +329,7 @@ const TicketDetailsPage = () => {
                             {new Date(
                               ticket.ticket_rf_date_received
                             ).toLocaleString("en-US", {
-                              timeZone: "Asia/Manila", // Replace with your timezone if needed
+                              timeZone: "Asia/Manila",
                               day: "2-digit",
                               month: "short",
                               year: "numeric",
