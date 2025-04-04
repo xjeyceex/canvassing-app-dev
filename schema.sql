@@ -943,10 +943,10 @@ AS $$
 DECLARE
   v_comment_id UUID;
   v_commenter_role user_role_enum;
-  v_target_user_id UUID;
   v_commenter_name TEXT;
   v_ticket_creator_id UUID;
   v_ticket_name TEXT;  -- Variable to store the ticket's name
+  v_target_user_id UUID;
 BEGIN
   -- Get the role and name of the user who is commenting
   SELECT user_role, user_full_name
@@ -977,32 +977,70 @@ BEGIN
     p_user_id
   ) RETURNING comment_id INTO v_comment_id;
 
-  -- Determine the target user for notification based on commenter's role
+  -- Determine the target users for notification based on the commenter's role
   IF v_commenter_role = 'REVIEWER' THEN
     -- If commenter is REVIEWER, notify the ticket creator (PURCHASER)
     v_target_user_id := v_ticket_creator_id;
-  ELSE
-    -- If commenter is PURCHASER, notify a REVIEWER
-    SELECT user_id INTO v_target_user_id
-    FROM user_table
-    WHERE user_role = 'REVIEWER'
-    LIMIT 1;
-  END IF;
 
-  -- Insert the notification with the new comment_id reference
-  INSERT INTO notification_table (
-    notification_user_id,
-    notification_message,
-    notification_ticket_id,
-    notification_comment_id,
-    notification_read
-  ) VALUES (
-    v_target_user_id,
-    v_commenter_name || ' has added a new comment on ticket ' || v_ticket_name,  -- Using ticket_name here
-    p_ticket_id,
-    v_comment_id,
-    false
-  );
+    -- Insert the notification for the ticket creator
+    INSERT INTO notification_table (
+      notification_user_id,
+      notification_message,
+      notification_ticket_id,
+      notification_comment_id,
+      notification_read
+    ) VALUES (
+      v_target_user_id,
+      v_commenter_name || ' has added a new comment on ticket ' || v_ticket_name,  -- Using ticket_name here
+      p_ticket_id,
+      v_comment_id,
+      false
+    );
+  ELSE
+    -- If commenter is PURCHASER, notify all REVIEWERs and SHARED users except MANAGERS
+    -- Notify REVIEWERs
+    FOR v_target_user_id IN
+      SELECT user_id 
+      FROM user_table
+      WHERE user_role = 'REVIEWER'
+    LOOP
+      -- Insert notification for each reviewer
+      INSERT INTO notification_table (
+        notification_user_id,
+        notification_message,
+        notification_ticket_id,
+        notification_comment_id,
+        notification_read
+      ) VALUES (
+        v_target_user_id,
+        v_commenter_name || ' has added a new comment on ticket ' || v_ticket_name,  
+        p_ticket_id,
+        v_comment_id,
+        false
+      );
+    END LOOP;
+
+    FOR v_target_user_id IN
+      SELECT ticket_shared_user_id
+      FROM ticket_shared_with_table
+      WHERE ticket_shared_ticket_id = p_ticket_id
+    LOOP
+      -- Insert notification for each shared user
+      INSERT INTO notification_table (
+        notification_user_id,
+        notification_message,
+        notification_ticket_id,
+        notification_comment_id,
+        notification_read
+      ) VALUES (
+        v_target_user_id,
+        v_commenter_name || ' has added a new comment on ticket ' || v_ticket_name,  -- Using ticket_name here
+        p_ticket_id,
+        v_comment_id,
+        false
+      );
+    END LOOP;
+  END IF;
 
   RETURN v_comment_id;
 END;
