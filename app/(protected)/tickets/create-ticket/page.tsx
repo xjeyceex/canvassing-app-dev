@@ -63,7 +63,7 @@ const CreateTicketPage = () => {
   const [specificationsValue, setSpecificationsValue] = useState<string>("");
   const [reviewerOptions, setReviewerOptions] = useState<ReviewerType[]>([]);
   const [selectedReviewers, setSelectedReviewers] = useState<ReviewerType[]>(
-    [],
+    []
   );
   const [managerOptions, setManagerOptions] = useState<ReviewerType[]>([]);
   const [selectedManagers, setSelectedManagers] = useState<ReviewerType[]>([]);
@@ -85,8 +85,8 @@ const CreateTicketPage = () => {
     const filteredReviewers = reviewerOptions.filter(
       (option) =>
         !selectedReviewers.some(
-          (reviewer) => reviewer.user_id === option.user_id,
-        ),
+          (reviewer) => reviewer.user_id === option.user_id
+        )
     );
 
     return filteredReviewers.map((reviewer) => ({
@@ -111,7 +111,7 @@ const CreateTicketPage = () => {
     if (!value) return;
 
     const selectedOption = reviewerOptions.find(
-      (option) => option.user_id === value,
+      (option) => option.user_id === value
     );
     if (
       selectedOption &&
@@ -161,12 +161,12 @@ const CreateTicketPage = () => {
 
   const removeReviewer = (id: string) => {
     const updatedReviewers = selectedReviewers.filter(
-      (reviewer) => reviewer.user_id !== id,
+      (reviewer) => reviewer.user_id !== id
     );
     setSelectedReviewers(updatedReviewers);
     form.setValue(
       "ticketReviewer",
-      updatedReviewers.map((r) => r.user_id),
+      updatedReviewers.map((r) => r.user_id)
     );
   };
 
@@ -212,7 +212,7 @@ const CreateTicketPage = () => {
         } else {
           notifications.show({
             title: "Error",
-            message: "Failed to create ticket.",
+            message: res.message || "Failed to create ticket.", // ✅ Show the actual error
             color: "red",
             icon: <IconX size={20} />,
             autoClose: 5000,

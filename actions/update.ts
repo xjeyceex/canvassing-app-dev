@@ -50,7 +50,7 @@ export const markAllUserNotificationsAsRead = async () => {
 
 export const editComment = async (
   comment_id: string,
-  newContent: string,
+  newContent: string
 ): Promise<void> => {
   const supabase = await createClient();
 
@@ -72,7 +72,7 @@ export const editComment = async (
 
 export const changePassword = async (
   oldPassword: string,
-  newPassword: string,
+  newPassword: string
 ) => {
   const supabase = await createClient();
 
@@ -207,6 +207,7 @@ export const updateCanvass = async ({
   totalAmount,
   paymentTerms,
   canvassSheet,
+  updatedAt,
   quotations,
   ticketId,
   currentCanvassFormId,
@@ -215,6 +216,7 @@ export const updateCanvass = async ({
   recommendedSupplier: string;
   leadTimeDay: number;
   totalAmount: number;
+  updatedAt: Date;
   paymentTerms: string;
   canvassSheet: File | null; // null if unchanged
   quotations: (File | null)[]; // null for unchanged files
@@ -245,7 +247,7 @@ export const updateCanvass = async ({
 
     if (fetchError) {
       throw new Error(
-        `Failed to fetch existing attachments: ${fetchError.message}`,
+        `Failed to fetch existing attachments: ${fetchError.message}`
       );
     }
 
@@ -278,14 +280,14 @@ export const updateCanvass = async ({
     // Handle canvass sheet update
     let canvassSheetData = null;
     const existingCanvassSheet = existingAttachments?.find(
-      (a) => a.canvass_attachment_type === "CANVASS_SHEET",
+      (a) => a.canvass_attachment_type === "CANVASS_SHEET"
     );
 
     if (canvassSheet) {
       // Delete old canvass sheet if it exists
       if (existingCanvassSheet) {
         const oldFilePath = new URL(
-          existingCanvassSheet.canvass_attachment_url,
+          existingCanvassSheet.canvass_attachment_url
         ).pathname
           .split("/")
           .pop();
@@ -305,7 +307,7 @@ export const updateCanvass = async ({
     const quotationResults = await Promise.all(
       quotations.map(async (quotation, index) => {
         const existingQuotation = existingAttachments?.find(
-          (a) => a.canvass_attachment_type === `QUOTATION_${index + 1}`,
+          (a) => a.canvass_attachment_type === `QUOTATION_${index + 1}`
         );
 
         if (!quotation) {
@@ -327,7 +329,7 @@ export const updateCanvass = async ({
         // Delete old quotation if it exists
         if (existingQuotation) {
           const oldFilePath = new URL(
-            existingQuotation.canvass_attachment_url,
+            existingQuotation.canvass_attachment_url
           ).pathname
             .split("/")
             .pop();
@@ -341,7 +343,7 @@ export const updateCanvass = async ({
 
         // Upload new quotation
         return uploadFile(quotation, `quotation_${index + 1}`);
-      }),
+      })
     );
 
     // Update canvass form data
@@ -353,6 +355,7 @@ export const updateCanvass = async ({
         canvass_form_lead_time_day: leadTimeDay,
         canvass_form_total_amount: totalAmount,
         canvass_form_payment_terms: paymentTerms,
+        canvass_form_updated_at: updatedAt,
       })
       .eq("canvass_form_id", currentCanvassFormId);
 
@@ -394,7 +397,7 @@ export const updateCanvass = async ({
       // Add all quotation attachments
       ...quotationResults
         .filter(
-          (result): result is NonNullable<QuotationResult> => result !== null,
+          (result): result is NonNullable<QuotationResult> => result !== null
         )
         .map((result, index) => {
           if ("publicUrl" in result) {
@@ -426,7 +429,7 @@ export const updateCanvass = async ({
 
     if (attachmentsError) {
       throw new Error(
-        `Failed to insert attachments: ${attachmentsError.message}`,
+        `Failed to insert attachments: ${attachmentsError.message}`
       );
     }
 

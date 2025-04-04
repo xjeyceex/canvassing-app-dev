@@ -333,7 +333,7 @@ const TicketDetailsPage = () => {
                             {new Date(
                               ticket.ticket_rf_date_received,
                             ).toLocaleString("en-US", {
-                              timeZone: "Asia/Manila", // Replace with your timezone if needed
+                              timeZone: "Asia/Manila",
                               day: "2-digit",
                               month: "short",
                               year: "numeric",
@@ -685,7 +685,8 @@ const TicketDetailsPage = () => {
                                   )}
                                 </>
                               ) : user?.user_id === ticket?.ticket_created_by &&
-                                ticket?.ticket_status !== "CANCELED" ? (
+                                ticket?.ticket_status !== "CANCELED" &&
+                                ticket?.ticket_status !== "FOR REVISION" ? (
                                 <>
                                   <CanvassForm
                                     ticketName={ticket?.ticket_name}
