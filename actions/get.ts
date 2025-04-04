@@ -96,7 +96,7 @@ export const getTicketDetails = async (ticket_id: string) => {
 
 export const checkReviewerResponse = async (
   ticket_id: string,
-  user_id: string
+  user_id: string,
 ) => {
   const supabase = await createClient();
 
@@ -175,17 +175,17 @@ export const getAllUsers = async (ticket_id: string) => {
     console.error(
       "Error fetching related users:",
       sharedUsersResponse.error?.message,
-      reviewersResponse.error?.message
+      reviewersResponse.error?.message,
     );
     return { error: true, message: "Failed to fetch related users." };
   }
 
   const ticketCreatorId = ticketResponse.data.ticket_created_by;
   const sharedUserIds = sharedUsersResponse.data.map(
-    (u: SharedUser) => u.ticket_shared_user_id
+    (u: SharedUser) => u.ticket_shared_user_id,
   );
   const reviewerIds = reviewersResponse.data.map(
-    (r: Reviewer) => r.approval_reviewed_by
+    (r: Reviewer) => r.approval_reviewed_by,
   );
 
   // Collect all users to exclude
@@ -251,7 +251,7 @@ export const getCanvassDetails = async ({
 
   const { data: canvassDetails, error } = await supabase.rpc(
     "get_canvass_details",
-    { ticket_uuid: ticketId }
+    { ticket_uuid: ticketId },
   );
 
   if (error) {
@@ -299,13 +299,13 @@ export const getCurrentUserNotification = async () => {
 };
 
 export const getComments = async (
-  ticket_id: string
+  ticket_id: string,
 ): Promise<CommentType[]> => {
   const supabase = await createClient();
 
   const { data: comments, error: commentsError } = await supabase.rpc(
     "get_comments_with_avatars",
-    { ticket_id }
+    { ticket_id },
   );
 
   if (commentsError) {
@@ -376,7 +376,7 @@ export const getDraftCanvass = async (ticketId: string, userId: string) => {
 
     if (attachmentsError) {
       throw new Error(
-        `Failed to fetch draft attachments: ${attachmentsError.message}`
+        `Failed to fetch draft attachments: ${attachmentsError.message}`,
       );
     }
 
