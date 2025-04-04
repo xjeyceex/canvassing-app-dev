@@ -917,7 +917,12 @@ AS $$
     _assigned_by
   FROM public.ticket_table
   WHERE ticket_id = _ticket_id
-  AND ticket_created_by != _shared_user_id;
+    AND ticket_created_by != _shared_user_id
+    AND NOT EXISTS (
+      SELECT 1 
+      FROM public.user_table 
+      WHERE user_id = _shared_user_id AND user_role = 'MANAGER'
+    );
 $$;
 
 CREATE OR REPLACE FUNCTION public.add_comment_with_notification(
