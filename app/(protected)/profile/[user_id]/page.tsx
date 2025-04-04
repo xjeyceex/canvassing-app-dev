@@ -481,7 +481,6 @@ const ProfilePage = () => {
               <Divider my="md" />
 
               {/* Placeholder for Role Change */}
-
               <Stack align="center" gap={4} py="xs">
                 <Button
                   leftSection={
@@ -502,13 +501,19 @@ const ProfilePage = () => {
                 </Button>
 
                 {!hasPermission && (
-                  <Text size="xs" c="dimmed">
+                  <Text
+                    size="xs"
+                    c="dimmed"
+                    ta="center"
+                    style={{ marginTop: 8 }}
+                  >
                     Only admins and managers can edit roles
                   </Text>
                 )}
               </Stack>
             </Paper>
           </Stack>
+
           <Modal
             opened={opened}
             onClose={() => setOpened(false)}
