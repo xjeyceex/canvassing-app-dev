@@ -32,7 +32,6 @@ import {
   IconLock,
   IconMail,
   IconSettings,
-  IconUserEdit,
   IconUserShield,
   IconX,
 } from "@tabler/icons-react";
@@ -278,15 +277,6 @@ const ProfilePage = () => {
               >
                 Change Role
               </Button>
-
-              <Button
-                leftSection={<IconUserEdit size={16} />}
-                variant="default"
-                radius="md"
-                size="md"
-              >
-                Edit Profile
-              </Button>
             </Group>
 
             {!hasPermission && (
@@ -299,36 +289,40 @@ const ProfilePage = () => {
         </Paper>
 
         <Paper p="md" radius="lg" withBorder shadow="sm">
-          <Group justify="space-around">
-            <Stack align="center" gap={0}>
-              <Text size="sm" c="dimmed">
+          <Group justify="space-around" align="stretch">
+            <Stack align="center" gap={0} style={{ height: "100%" }}>
+              <Text size="sm" c="dimmed" ta="center">
                 Tickets
               </Text>
-              <Text size="xl" fw={700}>
+              <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
                 {ticketCount}
               </Text>
             </Stack>
+
             <Divider orientation="vertical" />
-            <Stack align="center" gap={0}>
-              <Text size="sm" c="dimmed">
+
+            <Stack align="center" gap={0} style={{ height: "100%" }}>
+              <Text size="sm" c="dimmed" ta="center">
                 Joined
               </Text>
-              <Text size="xl" fw={700}>
+              <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
                 {getRelativeTime(profileUser?.user_created_at)}
               </Text>
             </Stack>
+
             <Divider orientation="vertical" />
-            <Stack align="center" gap={0}>
-              <Text size="sm" c="dimmed">
+
+            <Stack align="center" gap={0} style={{ height: "100%" }}>
+              <Text size="sm" c="dimmed" ta="center">
                 Tickets Revised
               </Text>
-              <Text size="xl" fw={700}>
+              <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
+                {ticketCount > 0 && `${revisedTicketCount}`}
+              </Text>
+              <Text size="10px" c="dimmed" ta="center">
                 {ticketCount > 0
-                  ? `${revisedTicketCount} (${(
-                      (revisedTicketCount / ticketCount) *
-                      100
-                    ).toFixed(2)}%)`
-                  : "0 (0%)"}
+                  ? `${((revisedTicketCount / ticketCount) * 100).toFixed(2)}%`
+                  : "0%"}
               </Text>
             </Stack>
           </Group>
