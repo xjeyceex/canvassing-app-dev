@@ -8,6 +8,7 @@ import { getNameInitials } from "@/utils/functions";
 import {
   Anchor,
   Avatar,
+  Box,
   Burger,
   Button,
   Container,
@@ -136,6 +137,9 @@ const Header = () => {
               </Group>
             ) : (
               <Flex gap="sm">
+                <Box display={{ base: "none", sm: "block" }}>
+                  <ModeToggle />
+                </Box>
                 <Button component={Link} href="/login" variant="outline">
                   Sign In
                 </Button>
