@@ -4,6 +4,7 @@ import { getCurrentUserNotification } from "@/actions/get";
 import { markNotificationAsRead } from "@/actions/update";
 import { useNotificationStore } from "@/stores/notificationStore";
 import { useUserStore } from "@/stores/userStore";
+import { getRelativeTime } from "@/utils/functions";
 import { createClient } from "@/utils/supabase/client";
 import { NotificationType } from "@/utils/types";
 import {
@@ -21,8 +22,6 @@ import {
   IconBellFilled,
   IconChevronRight,
 } from "@tabler/icons-react";
-import { formatDistanceToNow } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -36,11 +35,6 @@ const NotificationMenu = () => {
   const unreadCount = notifications.filter(
     (notif) => !notif.notification_read
   ).length;
-
-  const getRelativeTime = (timestamp: string) => {
-    const zonedDate = toZonedTime(new Date(timestamp), "Asia/Manila");
-    return formatDistanceToNow(zonedDate, { addSuffix: true });
-  };
 
   const handleNotificationClick = async (notifications: NotificationType) => {
     if (!notifications.notification_ticket_id) return null;

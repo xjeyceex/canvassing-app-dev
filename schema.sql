@@ -46,6 +46,8 @@ CREATE TABLE user_table (
     user_role user_role_enum DEFAULT 'PURCHASER' NOT NULL,
     user_avatar TEXT,
     user_full_name TEXT,
+    user_created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    user_updated_at TIMESTAMPTZ DEFAULT now() NOT NULL,
     user_email TEXT
 );
 
@@ -582,13 +584,15 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON canvass_attachment_table TO authenticate
 GRANT SELECT, INSERT, UPDATE, DELETE ON canvass_draft_table TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.create_user() 
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER AS $$ 
 BEGIN
   INSERT INTO public.user_table (
     user_id, 
     user_full_name, 
     user_email,
-    user_avatar
+    user_avatar,
+    created_at,
+    updated_at
   )
   VALUES (
     NEW.id, 
@@ -597,17 +601,18 @@ BEGIN
       NEW.raw_user_meta_data->>'full_name', 
       'Unnamed User'
     ), 
-    COALESCE(NEW.email, ''), -- Prevent NULL email issues
-    COALESCE(NEW.raw_user_meta_data->>'avatar_url', '')
+    COALESCE(NEW.email, ''),
+    COALESCE(NEW.raw_user_meta_data->>'avatar_url', ''),
+    NOW(),  
+    NOW()  
   )
-  ON CONFLICT (user_id) DO NOTHING; -- Avoid duplicate inserts
+  ON CONFLICT (user_id) DO NOTHING;  
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER
+$$ LANGUAGE plpgsql SECURITY DEFINER 
 SET search_path = public;
 
--- Recreate the trigger
 DROP TRIGGER IF EXISTS after_user_signup ON auth.users;
 CREATE TRIGGER after_user_signup
   AFTER INSERT ON auth.users
