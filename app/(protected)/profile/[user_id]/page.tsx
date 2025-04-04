@@ -159,7 +159,7 @@ const ProfilePage = () => {
   };
 
   const handleAvatarUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
+    event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -211,6 +211,11 @@ const ProfilePage = () => {
       setIsEditingName(false);
     }
   };
+
+  const hasPermission =
+    (isAdmin || isManager) &&
+    profileUser?.user_role !== "ADMIN" &&
+    profileUser?.user_role !== "MANAGER";
 
   return (
     <>
@@ -414,7 +419,9 @@ const ProfilePage = () => {
           <Stack gap="lg">
             <Paper
               shadow="sm"
-              p="xl"
+              px="xl"
+              pt="xl"
+              pb="md"
               radius="md"
               withBorder
               style={(theme) => ({
@@ -474,20 +481,31 @@ const ProfilePage = () => {
               <Divider my="md" />
 
               {/* Placeholder for Role Change */}
-              <Stack align="center">
-                {(isAdmin || isManager) &&
-                  profileUser.user_role !== "ADMIN" &&
-                  profileUser.user_role !== "MANAGER" && (
-                    <Button
-                      leftSection={<IconSettings size={16} />}
-                      variant="light"
-                      radius="md"
-                      size="sm"
-                      onClick={() => setOpened(true)}
-                    >
-                      Change Role
-                    </Button>
-                  )}
+
+              <Stack align="center" gap={4} py="xs">
+                <Button
+                  leftSection={
+                    hasPermission ? (
+                      <IconSettings size={16} />
+                    ) : (
+                      <IconLock size={16} />
+                    )
+                  }
+                  variant="light"
+                  radius="md"
+                  size="sm"
+                  color={hasPermission ? "blue" : "gray"}
+                  style={!hasPermission ? { pointerEvents: "none" } : {}}
+                  onClick={hasPermission ? () => setOpened(true) : undefined}
+                >
+                  Change Role
+                </Button>
+
+                {!hasPermission && (
+                  <Text size="xs" c="dimmed">
+                    Only admins and managers can edit roles
+                  </Text>
+                )}
               </Stack>
             </Paper>
           </Stack>
@@ -495,6 +513,7 @@ const ProfilePage = () => {
             opened={opened}
             onClose={() => setOpened(false)}
             title="Change User Role"
+            centered
           >
             <Select
               label="Select a Role"
