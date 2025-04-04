@@ -10,6 +10,7 @@ import { getNameInitials } from "@/utils/functions";
 import {
   ActionIcon,
   Avatar,
+  Badge,
   Box,
   Button,
   Divider,
@@ -17,20 +18,22 @@ import {
   Modal,
   Paper,
   rem,
+  Skeleton,
   Stack,
   Text,
   TextInput,
   ThemeIcon,
   Title,
-  Tooltip,
   useMantineColorScheme,
+  useMantineTheme,
 } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
   IconAlertCircle,
+  IconCamera,
   IconCheck,
   IconEdit,
+  IconKey,
   IconLock,
   IconMail,
   IconUserShield,
@@ -38,6 +41,8 @@ import {
 import { useEffect, useState } from "react";
 
 const ProfilePage = () => {
+  const theme = useMantineTheme();
+
   const { colorScheme } = useMantineColorScheme();
   const { user, setUser } = useUserStore();
 
@@ -47,13 +52,10 @@ const ProfilePage = () => {
   const [isSetPasswordModalOpen, setIsSetPasswordModalOpen] = useState(false);
   const [newName, setNewName] = useState(user?.user_full_name || "");
   const [loading, setLoading] = useState(false);
-  const [isPasswordExist, setIsPasswordExist] = useState(false);
-
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [isPasswordExist, setIsPasswordExist] = useState(true);
 
   useEffect(() => {
     if (!user || !user.user_id) return;
-
     const checkPasswordExists = async () => {
       const result = await checkIfUserPasswordExists(user.user_id);
 
@@ -72,7 +74,7 @@ const ProfilePage = () => {
   }
 
   const handleAvatarUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
+    event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -126,63 +128,124 @@ const ProfilePage = () => {
   };
 
   return (
-    <Box p={{ base: "sm", sm: "md" }}>
-      <Stack gap={isMobile ? 1 : 2} mb="xl">
-        <Title order={2} fw={600} ta={isMobile ? "center" : "left"}>
-          Profile
-        </Title>
-        <Text
-          c="dimmed"
-          size={isMobile ? "xs" : "sm"}
-          ta={isMobile ? "center" : "left"}
-        >
-          TODO: Breadcrumbs
-        </Text>
+    <Box p={{ base: "md", sm: "xl" }} mx="auto" maw={800}>
+      {/* Header with Breadcrumbs */}
+      <Stack gap={4} mb="xl">
+        <Group justify="space-between" align="flex-end">
+          <Stack gap={0}>
+            <Title order={2} fw={700}>
+              Profile Settings
+            </Title>
+          </Stack>
+          <Badge variant="light" color="blue" radius="sm" size="lg">
+            {user.user_role.toLowerCase()}
+          </Badge>
+        </Group>
       </Stack>
 
       <Stack gap="xl">
-        {/* Header Section */}
+        {/* Profile Header Section */}
         <Paper
-          shadow="xs"
-          p={isMobile ? "md" : "xl"}
-          radius="md"
+          shadow="md"
+          p="xl"
+          radius="lg"
+          withBorder
           style={(theme) => ({
             backgroundColor:
-              colorScheme === "dark" ? theme.colors.dark[6] : theme.white,
-            border: `1px solid ${
-              colorScheme === "dark"
-                ? theme.colors.dark[4]
-                : theme.colors.gray[2]
-            }`,
+              colorScheme === "dark" ? theme.colors.dark[7] : theme.white,
+            position: "relative",
+            overflow: "hidden",
           })}
         >
+          {/* Decorative background */}
+          <Box
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              width: "100%",
+              height: 75,
+              background:
+                colorScheme === "dark"
+                  ? `linear-gradient(135deg, ${theme.colors.blue[9]} 0%, ${theme.colors.dark[7]} 100%)`
+                  : `linear-gradient(135deg, ${theme.colors.blue[2]} 0%, ${theme.white} 100%)`,
+              zIndex: 0,
+              opacity: 0.8,
+            }}
+          />
+
           <Group
-            wrap={isMobile ? "wrap" : "nowrap"}
-            gap={isMobile ? "xs" : "xl"}
+            wrap="nowrap"
+            gap="xl"
+            style={{ position: "relative", zIndex: 1 }}
           >
+            {/* Avatar with upload functionality */}
             <Box>
-              <label htmlFor="avatar-upload" style={{ cursor: "pointer" }}>
-                <Avatar
-                  variant="light"
-                  src={user.user_avatar || undefined} // Fallback to undefined if no avatar
-                  size={isMobile ? 80 : 120}
-                  radius="md"
-                  color="blue"
-                  style={{
-                    cursor: "pointer",
-                    transition: "transform 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "scale(1.05)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "scale(1)";
-                  }}
-                >
-                  {user.user_avatar
-                    ? null
-                    : getNameInitials(user.user_full_name)}
-                </Avatar>
+              <label
+                htmlFor="avatar-upload"
+                style={{ cursor: "pointer", display: "block" }}
+              >
+                {" "}
+                {loading ? (
+                  <Skeleton
+                    height={120}
+                    width={120}
+                    radius="xl"
+                    style={{
+                      border: `2px solid ${
+                        colorScheme === "dark"
+                          ? theme.colors.dark[4]
+                          : theme.colors.gray[2]
+                      }`,
+                      boxShadow: theme.shadows.md,
+                    }}
+                  />
+                ) : (
+                  <Avatar
+                    variant="light"
+                    src={user.user_avatar || undefined}
+                    size={120}
+                    radius="xl"
+                    color="blue"
+                    style={{
+                      border: `2px solid ${
+                        colorScheme === "dark"
+                          ? theme.colors.dark[4]
+                          : theme.colors.gray[2]
+                      }`,
+                      boxShadow: theme.shadows.md,
+                      transition: "transform 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "scale(1.05)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "scale(1)";
+                    }}
+                  >
+                    {user.user_avatar
+                      ? null
+                      : getNameInitials(user.user_full_name)}
+                    <Box
+                      style={{
+                        position: "absolute",
+                        bottom: 0,
+                        right: 0,
+                        backgroundColor: theme.colors.blue[6],
+                        borderRadius: "50%",
+                        padding: 4,
+                      }}
+                    >
+                      <IconCamera
+                        style={{
+                          width: rem(16),
+                          height: rem(16),
+                          color: "white",
+                        }}
+                      />
+                    </Box>
+                  </Avatar>
+                )}
               </label>
               <input
                 id="avatar-upload"
@@ -193,86 +256,113 @@ const ProfilePage = () => {
               />
             </Box>
 
-            <Stack gap={4} style={{ width: isMobile ? "100%" : "auto" }}>
-              <Group align="center" gap="xs">
-                <Title order={2} fw={600} ta={isMobile ? "center" : "left"}>
+            {/* User Info */}
+            <Stack gap="md" style={{ flex: 1 }}>
+              <Group align="center" gap="sm">
+                <Title order={2} fw={700}>
                   {user.user_full_name}
                 </Title>
-                <Tooltip label="Edit name">
-                  <ActionIcon
-                    variant="subtle"
-                    onClick={() => setIsEditingName(true)}
-                    size={isMobile ? "xs" : "sm"}
-                  >
-                    <IconEdit style={{ width: rem(14), height: rem(14) }} />
-                  </ActionIcon>
-                </Tooltip>
+                <ActionIcon
+                  variant="subtle"
+                  color="blue"
+                  onClick={() => setIsEditingName(true)}
+                  size="lg"
+                  radius="xl"
+                >
+                  <IconEdit style={{ width: rem(18), height: rem(18) }} />
+                </ActionIcon>
               </Group>
-              <Group gap="xs">
-                <ThemeIcon size="sm" variant="light" radius="xl">
-                  <IconMail style={{ width: rem(12), height: rem(12) }} />
-                </ThemeIcon>
-                <Text size={isMobile ? "xs" : "sm"} c="dimmed">
-                  {user.user_email}
-                </Text>
-              </Group>
-              <Group gap="xs">
-                <ThemeIcon size="sm" variant="light" radius="xl">
-                  <IconUserShield style={{ width: rem(12), height: rem(12) }} />
-                </ThemeIcon>
-                <Text size={isMobile ? "xs" : "sm"} c="dimmed" tt="capitalize">
-                  {user.user_role.toLowerCase()}
-                </Text>
-              </Group>
+
+              <Stack gap="sm">
+                <Group gap="sm" wrap="nowrap">
+                  <ThemeIcon size="lg" variant="light" radius="xl" color="blue">
+                    <IconMail style={{ width: rem(16), height: rem(16) }} />
+                  </ThemeIcon>
+                  <Stack gap={0}>
+                    <Text size="xs" c="dimmed">
+                      Email
+                    </Text>
+                    <Text size="sm" fw={500}>
+                      {user.user_email}
+                    </Text>
+                  </Stack>
+                </Group>
+
+                <Group gap="sm" wrap="nowrap">
+                  <ThemeIcon size="lg" variant="light" radius="xl" color="blue">
+                    <IconUserShield
+                      style={{ width: rem(16), height: rem(16) }}
+                    />
+                  </ThemeIcon>
+                  <Stack gap={0}>
+                    <Text size="xs" c="dimmed">
+                      Account Type
+                    </Text>
+                    <Text size="sm" fw={500} tt="capitalize">
+                      {user.user_role.toLowerCase()}
+                    </Text>
+                  </Stack>
+                </Group>
+              </Stack>
             </Stack>
           </Group>
         </Paper>
 
-        {/* Settings Section */}
+        {/* Account Settings Section */}
         <Paper
-          shadow="xs"
-          radius="md"
+          shadow="md"
+          radius="lg"
+          withBorder
           style={(theme) => ({
             backgroundColor:
-              colorScheme === "dark" ? theme.colors.dark[6] : theme.white,
-            border: `1px solid ${
-              colorScheme === "dark"
-                ? theme.colors.dark[4]
-                : theme.colors.gray[2]
-            }`,
+              colorScheme === "dark" ? theme.colors.dark[7] : theme.white,
           })}
         >
           <Stack gap={0}>
-            <Text p="md" fw={500}>
-              Account Settings
-            </Text>
+            <Box p="lg" pb="sm">
+              <Title order={4} fw={600}>
+                Account Security
+              </Title>
+              <Text size="sm" c="dimmed" mt={2}>
+                Manage your account security settings
+              </Text>
+            </Box>
             <Divider />
 
+            {/* Password Settings */}
             <Group
-              p="md"
+              p="lg"
               justify="space-between"
               wrap="nowrap"
               style={(theme) => ({
                 "&:hover": {
                   backgroundColor:
                     colorScheme === "dark"
-                      ? theme.colors.dark[5]
+                      ? theme.colors.dark[6]
                       : theme.colors.gray[0],
+                  borderRadius: theme.radius.md,
                 },
+                transition: "background-color 0.2s ease",
               })}
             >
-              <Stack gap={1}>
-                <Text size={isMobile ? "sm" : "md"} fw={500}>
-                  Change Password
-                </Text>
-                <Text size={isMobile ? "xs" : "sm"} c="dimmed">
-                  Update your password to keep your account secure
+              <Stack gap={2}>
+                <Group gap="sm">
+                  <IconLock size={20} color={theme.colors.blue[6]} />
+                  <Text size="md" fw={500}>
+                    Password
+                  </Text>
+                </Group>
+                <Text size="sm" c="dimmed">
+                  {isPasswordExist
+                    ? "Update your password to keep your account secure"
+                    : "Set your password"}
                 </Text>
               </Stack>
               <Button
                 variant="light"
-                size={isMobile ? "xs" : "sm"}
-                leftSection={<IconLock size={14} />}
+                color="blue"
+                size="sm"
+                leftSection={<IconKey size={14} />}
                 onClick={() => {
                   if (isPasswordExist) {
                     setIsChangePasswordModalOpen(true);
@@ -281,7 +371,7 @@ const ProfilePage = () => {
                   }
                 }}
               >
-                Update
+                {isPasswordExist ? "Change" : "Set Password"}
               </Button>
             </Group>
           </Stack>
@@ -292,21 +382,32 @@ const ProfilePage = () => {
       <Modal
         opened={isEditingName}
         onClose={() => setIsEditingName(false)}
-        title="Update Name"
+        title="Update Your Name"
         centered
-        size={isMobile ? "xs" : "sm"}
+        radius="lg"
       >
-        <Stack>
+        <Stack gap="md">
           <TextInput
-            label="New Name"
-            placeholder="Enter new name"
+            label="Full Name"
+            placeholder="Enter your full name"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             disabled={loading}
+            size="md"
           />
-          <Button onClick={handleUpdateName} loading={loading} fullWidth>
-            Save Changes
-          </Button>
+          <Group justify="flex-end" mt="md">
+            <Button variant="default" onClick={() => setIsEditingName(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleUpdateName}
+              loading={loading}
+              variant="gradient"
+              gradient={{ from: "blue", to: "cyan" }}
+            >
+              Save Changes
+            </Button>
+          </Group>
         </Stack>
       </Modal>
 
