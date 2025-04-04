@@ -81,6 +81,10 @@ const AuthCallback = () => {
         user_full_name: supabaseUser.user_metadata?.full_name || "Unnamed User",
         user_email: email ?? "",
         user_avatar: supabaseUser.user_metadata?.avatar_url || "",
+        user_updated_at:
+          supabaseUser.user_metadata?.updated_at || new Date().toISOString(),
+        user_created_at:
+          supabaseUser.user_metadata?.created_at || new Date().toISOString(),
       };
 
       setUser(user);
