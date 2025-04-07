@@ -618,7 +618,7 @@ DROP TRIGGER IF EXISTS after_user_signup ON auth.users;
 CREATE TRIGGER after_user_signup
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.create_user();
-  
+
 DROP FUNCTION IF EXISTS get_dashboard_tickets(UUID);
 CREATE OR REPLACE FUNCTION get_dashboard_tickets(_user_id UUID)
 RETURNS TABLE (
@@ -638,11 +638,14 @@ AS $$
     t.ticket_name, 
     t.ticket_item_name,
     t.ticket_status,
-    t.ticket_revised_by,
+    -- Get the canvass_form_revised_by from canvass_form_table
+    c.canvass_form_revised_by AS ticket_revised_by,
     t.ticket_item_description,
     t.ticket_date_created 
   FROM 
     public.ticket_table t
+  -- Left join with canvass_form_table to get the canvass_form_revised_by
+  LEFT JOIN public.canvass_form_table c ON t.ticket_id = c.canvass_form_ticket_id
   WHERE 
     _user_id IS NULL 
     OR t.ticket_created_by = _user_id
@@ -657,7 +660,6 @@ AS $$
       AND a.approval_reviewed_by = _user_id
     )
 $$;
-
 -- Drop existing function if it exists
 DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, TEXT, UUID);
 CREATE OR REPLACE FUNCTION get_all_my_tickets(
@@ -687,7 +689,8 @@ AS $$
     t.ticket_name, 
     t.ticket_item_name,
     t.ticket_status,
-    t.ticket_revised_by,
+    -- Get the canvass_form_revised_by from canvass_form_table
+    c.canvass_form_revised_by AS ticket_revised_by,
     t.ticket_item_description,
     t.ticket_specifications,
     t.ticket_notes,
@@ -723,6 +726,8 @@ AS $$
 
   FROM
     public.ticket_table t  
+  -- Left join with canvass_form_table to get the canvass_form_revised_by
+  LEFT JOIN public.canvass_form_table c ON t.ticket_id = c.canvass_form_ticket_id
 
   WHERE
     user_id IN (t.ticket_created_by)

@@ -403,12 +403,12 @@ export const getUserDataById = async (user_id: string) => {
       throw new Error(ticketError?.message || "Error fetching ticket count");
     }
 
-    // Fetch revised ticket count (created by the user and revised)
+    // Fetch revised ticket count (created by the user and revised via canvass form)
     const { data: revisedTickets, error: revisedTicketError } = await supabase
-      .from("ticket_table")
+      .from("canvass_form_table")
       .select("*", { count: "exact" })
-      .eq("ticket_created_by", user_id)
-      .not("ticket_revised_by", "is", null);
+      .eq("canvass_form_submitted_by", user_id)
+      .not("canvass_form_revised_by", "is", null);
 
     if (revisedTicketError) {
       throw new Error(
@@ -416,12 +416,12 @@ export const getUserDataById = async (user_id: string) => {
       );
     }
 
-    // Fetch count of tickets revised by the user
+    // Fetch count of tickets revised by the user (from canvass form)
     const { data: ticketsRevisedByUser, error: ticketsRevisedByUserError } =
       await supabase
-        .from("ticket_table")
+        .from("canvass_form_table")
         .select("*", { count: "exact" })
-        .eq("ticket_revised_by", user_id);
+        .eq("canvass_form_revised_by", user_id);
 
     if (ticketsRevisedByUserError) {
       throw new Error(
@@ -496,7 +496,7 @@ export const getUsers = async () => {
       throw new Error(userError?.message || "Error fetching users");
     }
 
-    // Fetch ticket count for each user
+    // Fetch ticket count and revised stats for each user
     const userWithTicketCountPromises = users.map(async (user) => {
       // Fetch tickets created by the user
       const { data: tickets, error: ticketError } = await supabase
@@ -508,12 +508,12 @@ export const getUsers = async () => {
         throw new Error(ticketError?.message || "Error fetching ticket count");
       }
 
-      // Fetch revised tickets created by the user (tickets that were revised by someone else)
+      // Fetch revised tickets (canvass forms submitted by user that were later revised)
       const { data: revisedTickets, error: revisedTicketError } = await supabase
-        .from("ticket_table")
+        .from("canvass_form_table")
         .select("*", { count: "exact" })
-        .eq("ticket_created_by", user.user_id)
-        .not("ticket_revised_by", "is", null);
+        .eq("canvass_form_submitted_by", user.user_id)
+        .not("canvass_form_revised_by", "is", null);
 
       if (revisedTicketError) {
         throw new Error(
@@ -521,12 +521,12 @@ export const getUsers = async () => {
         );
       }
 
-      // Fetch revised tickets where the user is the reviewer (tickets that the user revised)
+      // Fetch tickets revised by this user (from canvass_form_table)
       const { data: ticketsRevisedByUser, error: ticketsRevisedByUserError } =
         await supabase
-          .from("ticket_table")
+          .from("canvass_form_table")
           .select("*", { count: "exact" })
-          .eq("ticket_revised_by", user.user_id);
+          .eq("canvass_form_revised_by", user.user_id);
 
       if (ticketsRevisedByUserError) {
         throw new Error(
@@ -539,7 +539,7 @@ export const getUsers = async () => {
         ...user,
         ticketCount: tickets?.length || 0,
         revisedTicketCount: revisedTickets?.length || 0,
-        ticketsRevisedByUserCount: ticketsRevisedByUser?.length || 0, // Count of tickets this user has revised
+        ticketsRevisedByUserCount: ticketsRevisedByUser?.length || 0,
       };
     });
 
