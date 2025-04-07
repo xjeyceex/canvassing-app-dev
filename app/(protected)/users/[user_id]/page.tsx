@@ -295,41 +295,47 @@ const ProfilePage = () => {
 
         <Paper p="md" radius="lg" withBorder shadow="sm">
           <Group justify="space-around" align="stretch">
-            <Stack align="center" gap={0} style={{ height: "100%" }}>
-              <Text size="sm" c="dimmed" ta="center">
-                Tickets
-              </Text>
-              <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
-                {ticketCount}
-              </Text>
-            </Stack>
+            {profileUser?.user_role === "PURCHASER" && (
+              <>
+                <Stack align="center" gap={0} style={{ height: "100%" }}>
+                  <Text size="sm" c="dimmed" ta="center">
+                    Tickets
+                  </Text>
+                  <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
+                    {ticketCount}
+                  </Text>
+                </Stack>
 
-            <Divider orientation="vertical" />
+                <Divider orientation="vertical" />
 
-            <Stack align="center" gap={0} style={{ height: "100%" }}>
-              <Text size="sm" c="dimmed" ta="center">
-                Joined
-              </Text>
-              <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
-                {getRelativeTime(profileUser?.user_created_at)}
-              </Text>
-            </Stack>
+                <Stack align="center" gap={0} style={{ height: "100%" }}>
+                  <Text size="sm" c="dimmed" ta="center">
+                    Tickets Revised
+                  </Text>
+                  <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
+                    {revisedTicketCount || 0}
+                  </Text>
+                  <Text size="10px" c="dimmed" ta="center">
+                    {ticketCount > 0
+                      ? `${((revisedTicketCount / ticketCount) * 100).toFixed(
+                          2
+                        )}%`
+                      : "0%"}
+                  </Text>
+                </Stack>
+              </>
+            )}
 
-            <Divider orientation="vertical" />
-
-            <Stack align="center" gap={0} style={{ height: "100%" }}>
-              <Text size="sm" c="dimmed" ta="center">
-                Tickets Revised
-              </Text>
-              <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
-                {revisedTicketCount || 0}
-              </Text>
-              <Text size="10px" c="dimmed" ta="center">
-                {ticketCount > 0
-                  ? `${((revisedTicketCount / ticketCount) * 100).toFixed(2)}%`
-                  : "0%"}
-              </Text>
-            </Stack>
+            {profileUser?.user_role !== "PURCHASER" && (
+              <Stack align="center" gap={0} style={{ height: "100%" }}>
+                <Text size="sm" c="dimmed" ta="center">
+                  Joined
+                </Text>
+                <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
+                  {getRelativeTime(profileUser?.user_created_at)}
+                </Text>
+              </Stack>
+            )}
           </Group>
         </Paper>
       </Stack>
