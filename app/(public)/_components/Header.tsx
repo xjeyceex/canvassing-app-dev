@@ -136,8 +136,8 @@ const Header = () => {
                   activeLink === headerLink.href
                     ? theme.colors[theme.primaryColor][isDark ? 4 : 6]
                     : isDark
-                      ? "white"
-                      : "black"
+                    ? "white"
+                    : "black"
                 }
                 onClick={() => handleLinkClick(headerLink.href)}
                 style={{
@@ -346,8 +346,8 @@ const Header = () => {
                   activeLink === link.href
                     ? theme.colors[theme.primaryColor][isDark ? 4 : 6]
                     : isDark
-                      ? "white"
-                      : "black"
+                    ? "white"
+                    : "black"
                 }
                 style={{
                   transition: "color 0.2s ease",
@@ -360,12 +360,7 @@ const Header = () => {
           </Stack>
 
           {!user && (
-            <Stack w="100%" gap="md" mb={isMobile ? "md" : "xl"}>
-              {isMobile && (
-                <Box ta="center" mb="md">
-                  <ModeToggle />
-                </Box>
-              )}
+            <Stack w="100%" gap="md" mb={isMobile ? "md" : "xl"} mt="xl">
               <Button
                 variant="outline"
                 fullWidth

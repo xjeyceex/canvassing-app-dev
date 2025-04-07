@@ -183,7 +183,7 @@ export default function HomePage() {
         {/* ----------------------- */}
         {/*  Hero Section           */}
         {/* ----------------------- */}
-        <Box py={rem(50)}>
+        <Box py={{ md: rem(120), base: rem(80) }}>
           <Card
             bg={
               colorScheme === "dark"
