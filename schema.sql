@@ -626,6 +626,7 @@ RETURNS TABLE (
   ticket_name TEXT,
   ticket_item_name TEXT,
   ticket_status TEXT,
+  ticket_revised_by UUID,
   ticket_item_description TEXT,
   ticket_date_created TIMESTAMPTZ
 )
@@ -637,6 +638,7 @@ AS $$
     t.ticket_name, 
     t.ticket_item_name,
     t.ticket_status,
+    t.ticket_revised_by,
     t.ticket_item_description,
     t.ticket_date_created 
   FROM 
