@@ -393,7 +393,7 @@ export const getUserDataById = async (user_id: string) => {
       throw new Error(userError?.message || "Error fetching user data");
     }
 
-    // Fetch ticket count
+    // Fetch ticket count (created by the user)
     const { data: tickets, error: ticketError } = await supabase
       .from("ticket_table")
       .select("*", { count: "exact" })
@@ -403,7 +403,7 @@ export const getUserDataById = async (user_id: string) => {
       throw new Error(ticketError?.message || "Error fetching ticket count");
     }
 
-    // Fetch revised ticket count
+    // Fetch revised ticket count (created by the user and revised)
     const { data: revisedTickets, error: revisedTicketError } = await supabase
       .from("ticket_table")
       .select("*", { count: "exact" })
@@ -416,12 +416,62 @@ export const getUserDataById = async (user_id: string) => {
       );
     }
 
+    // Fetch count of tickets revised by the user
+    const { data: ticketsRevisedByUser, error: ticketsRevisedByUserError } =
+      await supabase
+        .from("ticket_table")
+        .select("*", { count: "exact" })
+        .eq("ticket_revised_by", user_id);
+
+    if (ticketsRevisedByUserError) {
+      throw new Error(
+        ticketsRevisedByUserError?.message ||
+          "Error fetching tickets revised by user"
+      );
+    }
+
+    // Fetch count of tickets the user is a reviewer for (from the approval table)
+    const { data: ticketsReviewedByUser, error: ticketsReviewedByUserError } =
+      await supabase
+        .from("approval_table")
+        .select("approval_ticket_id", { count: "exact" })
+        .eq("approval_reviewed_by", user_id); // Assuming "approval_reviewed_by" is the reviewer field
+
+    if (ticketsReviewedByUserError) {
+      throw new Error(
+        ticketsReviewedByUserError?.message ||
+          "Error fetching tickets reviewed by user"
+      );
+    }
+
+    // Fetch total tickets for review (if the user is a reviewer for any tickets)
+    const ticketIdsReviewed = ticketsReviewedByUser?.map(
+      (approval) => approval.approval_ticket_id
+    );
+
+    // If the user is a reviewer for any ticket, calculate the count
+    const { data: reviewTicketsCount, error: reviewTicketsError } =
+      ticketIdsReviewed?.length
+        ? await supabase
+            .from("ticket_table")
+            .select("*", { count: "exact" })
+            .in("ticket_id", ticketIdsReviewed)
+        : { data: [], error: null };
+
+    if (reviewTicketsError) {
+      throw new Error(
+        reviewTicketsError?.message || "Error fetching review tickets count"
+      );
+    }
+
     return {
       error: false,
       success: true,
       user: userData,
       ticketCount: tickets?.length || 0,
       revisedTicketCount: revisedTickets?.length || 0,
+      ticketsRevisedByUserCount: ticketsRevisedByUser?.length || 0,
+      ticketsReviewedByUserCount: reviewTicketsCount?.length || 0, // Added
     };
   } catch (error) {
     return {

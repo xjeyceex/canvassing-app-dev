@@ -36,7 +36,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { formatDistance } from "date-fns";
-import { toZonedTime } from "date-fns-tz";
+import { format, toZonedTime } from "date-fns-tz";
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -55,6 +55,9 @@ const ProfilePage = () => {
   const [redirecting, setRedirecting] = useState(false);
   const [ticketCount, setTicketCount] = useState(0);
   const [revisedTicketCount, setRevisedTicketCount] = useState(0);
+  const [ticketsRevisedByUserCount, setTicketsRevisedByUserCount] = useState(0);
+  const [ticketsReviewedByUserCount, setTicketsReviewedByUserCount] =
+    useState(0);
 
   const isAdmin = user?.user_role === "ADMIN";
   const isManager = user?.user_role === "MANAGER";
@@ -62,18 +65,21 @@ const ProfilePage = () => {
 
   const getRelativeTime = (timestamp: string) => {
     const zonedDate = toZonedTime(new Date(timestamp), "Asia/Manila");
+    return format(zonedDate, "MMM dd, yyyy");
+  };
+
+  const getExactTime = (timestamp: string) => {
+    const zonedDate = toZonedTime(new Date(timestamp), "Asia/Manila");
     const distance = formatDistance(zonedDate, new Date(), {
       includeSeconds: true,
     });
-    return distance.replace(/^about /, ""); // Remove "about" if it's present
+    return distance + " ago"; // Removes "about" and adds "ago"
   };
 
-  useEffect(() => {
-    if (isUser) {
-      setRedirecting(true);
-      router.replace("/profile");
-    }
-  }, [isUser, router]);
+  const handleEditProfile = () => {
+    setRedirecting(true);
+    router.push("/profile");
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -98,6 +104,8 @@ const ProfilePage = () => {
           setProfileUser(result.user);
           setTicketCount(result.ticketCount || 0);
           setRevisedTicketCount(result.revisedTicketCount || 0);
+          setTicketsRevisedByUserCount(result.revisedTicketCount || 0);
+          setTicketsReviewedByUserCount(result.ticketsReviewedByUserCount || 0);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -199,14 +207,8 @@ const ProfilePage = () => {
                 variant="light"
                 src={profileUser?.user_avatar || undefined}
                 size={120}
-                radius="xl"
                 color="blue"
                 style={{
-                  border: `4px solid ${
-                    colorScheme === "dark"
-                      ? theme.colors.dark[4]
-                      : theme.colors.gray[2]
-                  }`,
                   boxShadow: theme.shadows.md,
                 }}
               >
@@ -267,25 +269,38 @@ const ProfilePage = () => {
             <Divider mt="md" variant="dashed" />
             {/* Action buttons */}
             <Group grow>
-              <Button
-                leftSection={
-                  hasPermission ? (
-                    <IconSettings size={16} />
-                  ) : (
-                    <IconLock size={16} />
-                  )
-                }
-                variant="gradient"
-                gradient={{ from: "blue", to: "cyan", deg: 45 }}
-                radius="md"
-                size="md"
-                disabled={!hasPermission}
-                onClick={hasPermission ? () => setOpened(true) : undefined}
-              >
-                Change Role
-              </Button>
+              {isUser ? (
+                <Button
+                  leftSection={<IconSettings size={16} />}
+                  variant="gradient"
+                  gradient={{ from: "blue", to: "cyan", deg: 45 }}
+                  radius="md"
+                  size="md"
+                  onClick={handleEditProfile}
+                >
+                  Edit Profile
+                </Button>
+              ) : (
+                <Button
+                  leftSection={
+                    hasPermission ? (
+                      <IconSettings size={16} />
+                    ) : (
+                      <IconLock size={16} />
+                    )
+                  }
+                  variant="gradient"
+                  gradient={{ from: "blue", to: "cyan", deg: 45 }}
+                  radius="md"
+                  size="md"
+                  disabled={!hasPermission}
+                  onClick={hasPermission ? () => setOpened(true) : undefined}
+                >
+                  Change Role
+                </Button>
+              )}
             </Group>
-            {!hasPermission && (
+            {!hasPermission && !isUser && (
               <Text size="xs" c="dimmed" ta="center">
                 Only admins and managers can edit roles
               </Text>
@@ -310,7 +325,7 @@ const ProfilePage = () => {
 
                 <Stack align="center" gap={0} style={{ height: "100%" }}>
                   <Text size="sm" c="dimmed" ta="center">
-                    Tickets Revised
+                    Revised Ticket Ratio
                   </Text>
                   <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
                     {revisedTicketCount || 0}
@@ -323,19 +338,75 @@ const ProfilePage = () => {
                       : "0%"}
                   </Text>
                 </Stack>
+
+                <Divider orientation="vertical" />
+
+                <Stack align="center" gap={0} style={{ height: "100%" }}>
+                  <Text size="sm" c="dimmed" ta="center">
+                    Joined
+                  </Text>
+                  <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
+                    {getRelativeTime(profileUser?.user_created_at)}
+                  </Text>
+                  <Text size="10px" c="dimmed" ta="center">
+                    {getExactTime(profileUser?.user_created_at)}
+                  </Text>
+                </Stack>
               </>
             )}
 
-            {profileUser?.user_role !== "PURCHASER" && (
-              <Stack align="center" gap={0} style={{ height: "100%" }}>
-                <Text size="sm" c="dimmed" ta="center">
-                  Joined
-                </Text>
-                <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
-                  {getRelativeTime(profileUser?.user_created_at)}
-                </Text>
-              </Stack>
+            {profileUser?.user_role === "REVIEWER" && (
+              <>
+                <Stack align="center" gap={0} style={{ height: "100%" }}>
+                  <Text size="sm" c="dimmed" ta="center">
+                    Tickets
+                  </Text>
+                  <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
+                    {ticketsReviewedByUserCount || 0}
+                  </Text>
+                </Stack>
+
+                <Divider orientation="vertical" />
+
+                <Stack align="center" gap={0} style={{ height: "100%" }}>
+                  <Text size="sm" c="dimmed" ta="center">
+                    Tickets Revised
+                  </Text>
+                  <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
+                    {ticketsRevisedByUserCount || 0}
+                  </Text>
+                </Stack>
+
+                <Divider orientation="vertical" />
+
+                <Stack align="center" gap={0} style={{ height: "100%" }}>
+                  <Text size="sm" c="dimmed" ta="center">
+                    Joined
+                  </Text>
+                  <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
+                    {getRelativeTime(profileUser?.user_created_at)}
+                  </Text>
+                  <Text size="10px" c="dimmed" ta="center">
+                    {getExactTime(profileUser?.user_created_at)}
+                  </Text>
+                </Stack>
+              </>
             )}
+
+            {profileUser?.user_role !== "PURCHASER" &&
+              profileUser?.user_role !== "REVIEWER" && (
+                <Stack align="center" gap={0} style={{ height: "100%" }}>
+                  <Text size="sm" c="dimmed" ta="center">
+                    Joined
+                  </Text>
+                  <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
+                    {getRelativeTime(profileUser?.user_created_at)}
+                  </Text>
+                  <Text size="10px" c="dimmed" ta="center">
+                    {getExactTime(profileUser?.user_created_at)}
+                  </Text>
+                </Stack>
+              )}
           </Group>
         </Paper>
       </Stack>
