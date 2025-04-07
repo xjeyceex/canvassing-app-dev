@@ -156,13 +156,13 @@ const Navbar = () => {
                       <Avatar
                         src={user.user_avatar}
                         radius="xl"
-                        size={isMobile ? "sm" : "md"}
+                        size="md"
                         alt={user.user_full_name || "User avatar"}
                       />
                     ) : (
                       <Avatar
                         radius="xl"
-                        size={isMobile ? "sm" : "md"}
+                        size="md"
                         color="primary"
                         variant="filled"
                       >
