@@ -62,23 +62,6 @@ export const getDashboardTickets = async (user_id?: string) => {
   return data as DashboardTicketType[];
 };
 
-export const fetchUserById = async (user_id: string) => {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("user_table")
-    .select("user_id, user_full_name, user_email, user_avatar, user_role") // Added user_role
-    .eq("user_id", user_id)
-    .single();
-
-  if (error) {
-    console.error("Supabase Error:", error.message);
-    return null; // Return null if there's an error or no user found
-  }
-
-  return data; // Return the user data
-};
-
 export const getTicketDetails = async (ticket_id: string) => {
   const supabase = await createClient();
 
@@ -96,7 +79,7 @@ export const getTicketDetails = async (ticket_id: string) => {
 
 export const checkReviewerResponse = async (
   ticket_id: string,
-  user_id: string,
+  user_id: string
 ) => {
   const supabase = await createClient();
 
@@ -175,17 +158,17 @@ export const getAllUsers = async (ticket_id: string) => {
     console.error(
       "Error fetching related users:",
       sharedUsersResponse.error?.message,
-      reviewersResponse.error?.message,
+      reviewersResponse.error?.message
     );
     return { error: true, message: "Failed to fetch related users." };
   }
 
   const ticketCreatorId = ticketResponse.data.ticket_created_by;
   const sharedUserIds = sharedUsersResponse.data.map(
-    (u: SharedUser) => u.ticket_shared_user_id,
+    (u: SharedUser) => u.ticket_shared_user_id
   );
   const reviewerIds = reviewersResponse.data.map(
-    (r: Reviewer) => r.approval_reviewed_by,
+    (r: Reviewer) => r.approval_reviewed_by
   );
 
   // Collect all users to exclude
@@ -251,7 +234,7 @@ export const getCanvassDetails = async ({
 
   const { data: canvassDetails, error } = await supabase.rpc(
     "get_canvass_details",
-    { ticket_uuid: ticketId },
+    { ticket_uuid: ticketId }
   );
 
   if (error) {
@@ -299,13 +282,13 @@ export const getCurrentUserNotification = async () => {
 };
 
 export const getComments = async (
-  ticket_id: string,
+  ticket_id: string
 ): Promise<CommentType[]> => {
   const supabase = await createClient();
 
   const { data: comments, error: commentsError } = await supabase.rpc(
     "get_comments_with_avatars",
-    { ticket_id },
+    { ticket_id }
   );
 
   if (commentsError) {
@@ -376,7 +359,7 @@ export const getDraftCanvass = async (ticketId: string, userId: string) => {
 
     if (attachmentsError) {
       throw new Error(
-        `Failed to fetch draft attachments: ${attachmentsError.message}`,
+        `Failed to fetch draft attachments: ${attachmentsError.message}`
       );
     }
 
@@ -390,6 +373,61 @@ export const getDraftCanvass = async (ticketId: string, userId: string) => {
     console.error("Error fetching canvass draft:", error);
     return {
       error:
+        error instanceof Error ? error.message : "An unknown error occurred",
+    };
+  }
+};
+
+export const getUserDataById = async (user_id: string) => {
+  const supabase = await createClient();
+
+  try {
+    // Fetch user data
+    const { data: userData, error: userError } = await supabase
+      .from("user_table")
+      .select("*")
+      .eq("user_id", user_id)
+      .single();
+
+    if (userError) {
+      throw new Error(userError?.message || "Error fetching user data");
+    }
+
+    // Fetch ticket count
+    const { data: tickets, error: ticketError } = await supabase
+      .from("ticket_table")
+      .select("*", { count: "exact" })
+      .eq("ticket_created_by", user_id);
+
+    if (ticketError) {
+      throw new Error(ticketError?.message || "Error fetching ticket count");
+    }
+
+    // Fetch revised ticket count
+    const { data: revisedTickets, error: revisedTicketError } = await supabase
+      .from("ticket_table")
+      .select("*", { count: "exact" })
+      .eq("ticket_created_by", user_id)
+      .not("ticket_revised_by", "is", null);
+
+    if (revisedTicketError) {
+      throw new Error(
+        revisedTicketError?.message || "Error fetching revised ticket count"
+      );
+    }
+
+    return {
+      error: false,
+      success: true,
+      user: userData,
+      ticketCount: tickets?.length || 0,
+      revisedTicketCount: revisedTickets?.length || 0,
+    };
+  } catch (error) {
+    return {
+      error: true,
+      success: false,
+      message:
         error instanceof Error ? error.message : "An unknown error occurred",
     };
   }

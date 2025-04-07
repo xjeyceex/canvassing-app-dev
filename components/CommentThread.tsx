@@ -48,18 +48,18 @@ const CommentThread: React.FC<CommentThreadProps> = ({
   const [newComment, setNewComment] = useState<string>("");
 
   const [editingComment, setEditingComment] = useState<CommentType | null>(
-    null,
+    null
   );
   const [editContent, setEditContent] = useState<string>("");
 
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>(
-    {},
+    {}
   );
   const [isFocused, setIsFocus] = useState(false);
 
   const [isAddingComment, setIsAddingComment] = useState<boolean>(false);
   const [deletingComment, setDeletingComment] = useState<CommentType | null>(
-    null,
+    null
   );
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
 
@@ -124,8 +124,8 @@ const CommentThread: React.FC<CommentThreadProps> = ({
         await deleteComment(deletingComment.comment_id);
         setComments((prevComments) =>
           prevComments.filter(
-            (comment) => comment.comment_id !== deletingComment.comment_id,
-          ),
+            (comment) => comment.comment_id !== deletingComment.comment_id
+          )
         );
       } catch (error) {
         console.error("Unexpected error:", error);
@@ -152,8 +152,8 @@ const CommentThread: React.FC<CommentThreadProps> = ({
                 comment_content: editContent,
                 comment_is_edited: true,
               }
-            : comment,
-        ),
+            : comment
+        )
       );
       setEditingComment(null);
       setEditContent("");

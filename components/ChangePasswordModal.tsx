@@ -36,7 +36,7 @@ const ChangePasswordModal = ({
   const [isPending, startTransition] = useTransition();
 
   const handleChangePassword = (
-    values: z.infer<typeof ChangePasswordSchema>
+    values: z.infer<typeof ChangePasswordSchema>,
   ) => {
     const validatedFields = ChangePasswordSchema.safeParse(values);
 
@@ -44,7 +44,7 @@ const ChangePasswordModal = ({
       startTransition(async () => {
         const result = await changePassword(
           values.currentPassword,
-          values.newPassword
+          values.newPassword,
         );
 
         if (result?.error && result.OldPasswordErrorMessage) {

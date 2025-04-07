@@ -4,6 +4,8 @@ export type UserType = {
   user_full_name: string;
   user_email: string;
   user_avatar: string;
+  user_updated_at: string;
+  user_created_at: string;
 };
 
 export type ReviewerType = {
@@ -100,6 +102,13 @@ export type QuotationAttachmentResult = {
   canvass_attachment_url?: string;
   canvass_attachment_file_type?: string;
   canvass_attachment_file_size?: number;
+};
+
+export type CanvassSubmitter = {
+  user_id: string;
+  user_full_name: string | null;
+  user_email: string | null;
+  user_avatar: string | null;
 };
 
 export type CanvassDetail = {

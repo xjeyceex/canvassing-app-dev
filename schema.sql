@@ -46,6 +46,8 @@ CREATE TABLE user_table (
     user_role user_role_enum DEFAULT 'PURCHASER' NOT NULL,
     user_avatar TEXT,
     user_full_name TEXT,
+    user_created_at TIMESTAMPTZ DEFAULT now() NOT NULL,
+    user_updated_at TIMESTAMPTZ DEFAULT now() NOT NULL,
     user_email TEXT
 );
 
@@ -89,6 +91,7 @@ CREATE TABLE public.ticket_table (
   ticket_quantity INT NOT NULL CHECK (ticket_quantity > 0), 
   ticket_specifications TEXT,
   ticket_notes TEXT,
+  ticket_revised_by UUID NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
   ticket_name TEXT NOT NULL UNIQUE,  -- ticket_name is now UNIQUE
   ticket_status ticket_status_enum NOT NULL DEFAULT 'FOR CANVASS', 
   ticket_created_by UUID NOT NULL REFERENCES public.user_table(user_id) ON DELETE CASCADE,
@@ -583,13 +586,15 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON canvass_attachment_table TO authenticate
 GRANT SELECT, INSERT, UPDATE, DELETE ON canvass_draft_table TO authenticated;
 
 CREATE OR REPLACE FUNCTION public.create_user() 
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER AS $$ 
 BEGIN
   INSERT INTO public.user_table (
     user_id, 
     user_full_name, 
     user_email,
-    user_avatar
+    user_avatar,
+    created_at,
+    updated_at
   )
   VALUES (
     NEW.id, 
@@ -598,17 +603,18 @@ BEGIN
       NEW.raw_user_meta_data->>'full_name', 
       'Unnamed User'
     ), 
-    COALESCE(NEW.email, ''), -- Prevent NULL email issues
-    COALESCE(NEW.raw_user_meta_data->>'avatar_url', '')
+    COALESCE(NEW.email, ''),
+    COALESCE(NEW.raw_user_meta_data->>'avatar_url', ''),
+    NOW(),  
+    NOW()  
   )
-  ON CONFLICT (user_id) DO NOTHING; -- Avoid duplicate inserts
+  ON CONFLICT (user_id) DO NOTHING;  
 
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER
+$$ LANGUAGE plpgsql SECURITY DEFINER 
 SET search_path = public;
 
--- Recreate the trigger
 DROP TRIGGER IF EXISTS after_user_signup ON auth.users;
 CREATE TRIGGER after_user_signup
   AFTER INSERT ON auth.users
@@ -795,6 +801,7 @@ $$;
 
 -- Function for getting specific ticket
 DROP FUNCTION IF EXISTS get_ticket_details(UUID);
+
 CREATE OR REPLACE FUNCTION get_ticket_details(ticket_uuid UUID)
 RETURNS TABLE (
   ticket_id UUID,
@@ -889,7 +896,6 @@ LEFT JOIN public.user_table u ON u.user_id = t.ticket_created_by
 WHERE t.ticket_id = ticket_uuid;
 $$;
 
-
 -- share ticket function
 DROP FUNCTION IF EXISTS public.share_ticket(uuid, uuid, uuid);
 CREATE OR REPLACE FUNCTION public.share_ticket(
@@ -932,10 +938,10 @@ AS $$
 DECLARE
   v_comment_id UUID;
   v_commenter_role user_role_enum;
-  v_target_user_id UUID;
   v_commenter_name TEXT;
   v_ticket_creator_id UUID;
   v_ticket_name TEXT;  -- Variable to store the ticket's name
+  v_target_user_id UUID;
 BEGIN
   -- Get the role and name of the user who is commenting
   SELECT user_role, user_full_name
@@ -966,32 +972,70 @@ BEGIN
     p_user_id
   ) RETURNING comment_id INTO v_comment_id;
 
-  -- Determine the target user for notification based on commenter's role
+  -- Determine the target users for notification based on the commenter's role
   IF v_commenter_role = 'REVIEWER' THEN
     -- If commenter is REVIEWER, notify the ticket creator (PURCHASER)
     v_target_user_id := v_ticket_creator_id;
-  ELSE
-    -- If commenter is PURCHASER, notify a REVIEWER
-    SELECT user_id INTO v_target_user_id
-    FROM user_table
-    WHERE user_role = 'REVIEWER'
-    LIMIT 1;
-  END IF;
 
-  -- Insert the notification with the new comment_id reference
-  INSERT INTO notification_table (
-    notification_user_id,
-    notification_message,
-    notification_ticket_id,
-    notification_comment_id,
-    notification_read
-  ) VALUES (
-    v_target_user_id,
-    v_commenter_name || ' has added a new comment on ticket ' || v_ticket_name,  -- Using ticket_name here
-    p_ticket_id,
-    v_comment_id,
-    false
-  );
+    -- Insert the notification for the ticket creator
+    INSERT INTO notification_table (
+      notification_user_id,
+      notification_message,
+      notification_ticket_id,
+      notification_comment_id,
+      notification_read
+    ) VALUES (
+      v_target_user_id,
+      v_commenter_name || ' has added a new comment on ticket ' || v_ticket_name,  -- Using ticket_name here
+      p_ticket_id,
+      v_comment_id,
+      false
+    );
+  ELSE
+    -- If commenter is PURCHASER, notify all REVIEWERs and SHARED users except MANAGERS
+    -- Notify REVIEWERs
+    FOR v_target_user_id IN
+      SELECT user_id 
+      FROM user_table
+      WHERE user_role = 'REVIEWER'
+    LOOP
+      -- Insert notification for each reviewer
+      INSERT INTO notification_table (
+        notification_user_id,
+        notification_message,
+        notification_ticket_id,
+        notification_comment_id,
+        notification_read
+      ) VALUES (
+        v_target_user_id,
+        v_commenter_name || ' has added a new comment on ticket ' || v_ticket_name,  
+        p_ticket_id,
+        v_comment_id,
+        false
+      );
+    END LOOP;
+
+    FOR v_target_user_id IN
+      SELECT ticket_shared_user_id
+      FROM ticket_shared_with_table
+      WHERE ticket_shared_ticket_id = p_ticket_id
+    LOOP
+      -- Insert notification for each shared user
+      INSERT INTO notification_table (
+        notification_user_id,
+        notification_message,
+        notification_ticket_id,
+        notification_comment_id,
+        notification_read
+      ) VALUES (
+        v_target_user_id,
+        v_commenter_name || ' has added a new comment on ticket ' || v_ticket_name,  -- Using ticket_name here
+        p_ticket_id,
+        v_comment_id,
+        false
+      );
+    END LOOP;
+  END IF;
 
   RETURN v_comment_id;
 END;
@@ -1118,4 +1162,3 @@ LEFT JOIN public.user_table u_submitted ON u_submitted.user_id = c.canvass_form_
 LEFT JOIN public.user_table u_revised ON u_revised.user_id = c.canvass_form_revised_by
 WHERE c.canvass_form_ticket_id = ticket_uuid;
 $$;
-
