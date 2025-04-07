@@ -296,7 +296,7 @@ const UsersPage = () => {
 
                 <Button
                   component={Link}
-                  href={`/profile/${user.user_id}`}
+                  href={`/users/${user.user_id}`}
                   fullWidth
                   variant="outline"
                   mt="sm"
