@@ -51,7 +51,7 @@ export const RichTextEditor = forwardRef<
       Highlight,
       TextAlign.configure({ types: ["heading", "paragraph"] }),
     ],
-    []
+    [],
   );
 
   // Create a debounced version of onChange
@@ -76,7 +76,7 @@ export const RichTextEditor = forwardRef<
           });
         }
       },
-      [editorReady, debouncedOnChange]
+      [editorReady, debouncedOnChange],
     ),
     onFocus: onFocus,
   });

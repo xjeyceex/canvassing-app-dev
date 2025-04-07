@@ -79,3 +79,26 @@ export const formatDate = (dateString: string) => {
 
   return `${formattedDate} at ${formattedTime}`;
 };
+
+export const getStatusColor = (status: string) => {
+  switch (status) {
+    case "FOR CANVASS":
+      return "indigo.6";
+    case "WORK IN PROGRESS":
+      return "blue.6";
+    case "FOR REVIEW OF SUBMISSIONS":
+      return "violet.6";
+    case "FOR APPROVAL":
+      return "teal.6";
+    case "FOR REVISION":
+      return "orange.6";
+    case "DONE":
+      return "green.6";
+    case "CANCELED":
+      return "red.7";
+    case "REVISED":
+      return "yellow.4";
+    default:
+      return "gray.6";
+  }
+};

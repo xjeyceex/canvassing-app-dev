@@ -5,7 +5,7 @@ import { addComment, notifyUser, shareTicket } from "@/actions/post";
 import { revertApprovalStatus, updateApprovalStatus } from "@/actions/update";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { useUserStore } from "@/stores/userStore";
-import { getNameInitials } from "@/utils/functions";
+import { getNameInitials, getStatusColor } from "@/utils/functions";
 import { TicketDetailsType } from "@/utils/types";
 import {
   ActionIcon,
@@ -455,21 +455,7 @@ const TicketStatusAndActions = ({
                   py="md"
                   size="lg"
                   radius="md"
-                  color={
-                    ticket?.ticket_status === "FOR REVIEW OF SUBMISSIONS"
-                      ? "yellow"
-                      : ticket?.ticket_status === "FOR APPROVAL"
-                        ? "yellow"
-                        : ticket?.ticket_status === "WORK IN PROGRESS"
-                          ? "blue"
-                          : ticket?.ticket_status === "FOR REVISION"
-                            ? "orange"
-                            : ticket?.ticket_status === "DONE"
-                              ? "teal"
-                              : ticket?.ticket_status === "DECLINED"
-                                ? "red"
-                                : "gray"
-                  }
+                  color={getStatusColor(ticket?.ticket_status)}
                   fullWidth
                 >
                   {ticket?.ticket_status}

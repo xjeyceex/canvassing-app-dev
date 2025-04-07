@@ -360,12 +360,7 @@ const Header = () => {
           </Stack>
 
           {!user && (
-            <Stack w="100%" gap="md" mb={isMobile ? "md" : "xl"}>
-              {isMobile && (
-                <Box ta="center" mb="md">
-                  <ModeToggle />
-                </Box>
-              )}
+            <Stack w="100%" gap="md" mb={isMobile ? "md" : "xl"} mt="xl">
               <Button
                 variant="outline"
                 fullWidth
