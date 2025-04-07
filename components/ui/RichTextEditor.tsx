@@ -63,6 +63,7 @@ export const RichTextEditor = forwardRef<
   const editor = useEditor({
     extensions,
     content: value,
+    immediatelyRender: false,
     onUpdate: useCallback(
       ({ editor }: { editor: Editor }) => {
         if (!editorUpdateRef.current && editorReady) {

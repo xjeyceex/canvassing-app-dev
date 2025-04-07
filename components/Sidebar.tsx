@@ -68,7 +68,7 @@ const Sidebar = () => {
   const handleNavigation = (href: string) => {
     if (isNavigating || pathname === href) return;
     setIsNavigating(true);
-    router.push(href);
+    router.push(href, { scroll: false }); // Add scroll: false option
 
     setTimeout(() => {
       setIsNavigating(false);
@@ -145,8 +145,8 @@ const Sidebar = () => {
                             colorScheme === "dark" ? 4 : 6
                           ]
                         : colorScheme === "dark"
-                          ? theme.colors.dark[0]
-                          : theme.colors.gray[7],
+                        ? theme.colors.dark[0]
+                        : theme.colors.gray[7],
                       position: "relative",
                       top: 3,
                     }}
