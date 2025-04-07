@@ -385,11 +385,14 @@ const TicketDetailsPage = () => {
                                 </ThemeIcon>
                                 <Text fz="lg" fw={600}>
                                   Canvass Form{" "}
-                                  {/* {ticket.ticket_revised_by !== null && (
-                                    <Text fz="sm" c="dimmed" span>
-                                      (Revised)
-                                    </Text>
-                                  )} */}
+                                  {canvassDetails &&
+                                    canvassDetails.length > 0 &&
+                                    canvassDetails[0]
+                                      .canvass_form_revised_by !== null && (
+                                      <Text fz="sm" c="dimmed" span>
+                                        (Revised)
+                                      </Text>
+                                    )}
                                 </Text>
                               </Group>
 
@@ -486,34 +489,31 @@ const TicketDetailsPage = () => {
                                                 >
                                                   Submitted By:
                                                 </Text>
-                                                {/* <Group gap="md">
+                                                <Group gap="md">
                                                   <Avatar
                                                     variant="light"
                                                     radius="xl"
                                                     size="md"
                                                     src={
-                                                      canvass.submitted_by
-                                                        .user_avatar ||
+                                                      canvass.submitted_by_avatar ||
                                                       undefined
                                                     }
                                                   >
-                                                    {canvass.submitted_by
-                                                      .user_avatar
+                                                    {canvass.submitted_by_avatar
                                                       ? null
                                                       : getNameInitials(
                                                           canvass.submitted_by_name ||
-                                                            "",
+                                                            ""
                                                         )}
                                                   </Avatar>
                                                   <Stack gap={0}>
                                                     <Text fw={500}>
-                                                      {canvass.submitted_by
-                                                        .user_full_name ||
+                                                      {canvass.submitted_by_name ||
                                                         "Unknown"}
                                                     </Text>
                                                     <Text size="xs" c="dimmed">
                                                       {new Date(
-                                                        canvass.canvass_form_date_submitted,
+                                                        canvass.canvass_form_date_submitted
                                                       ).toLocaleString(
                                                         "en-US",
                                                         {
@@ -525,11 +525,11 @@ const TicketDetailsPage = () => {
                                                           hour: "2-digit",
                                                           minute: "2-digit",
                                                           hour12: true,
-                                                        },
+                                                        }
                                                       )}
                                                     </Text>
                                                   </Stack>
-                                                </Group> */}
+                                                </Group>
                                               </Stack>
                                             </Stack>
                                           </Grid.Col>
@@ -621,61 +621,67 @@ const TicketDetailsPage = () => {
                                               )}
 
                                               {/* Revised By */}
-                                              {canvass.canvass_form_revised_by && (
-                                                <Stack gap={4}>
-                                                  <Text
-                                                    size="md"
-                                                    c="dimmed"
-                                                    fw={500}
-                                                  >
-                                                    Revised By:
-                                                  </Text>
-                                                  <Group gap="md">
-                                                    <Avatar
-                                                      variant="light"
-                                                      radius="xl"
+                                              {canvass &&
+                                                canvass.canvass_form_revised_by && (
+                                                  <Stack gap={4}>
+                                                    <Text
                                                       size="md"
-                                                      src={
-                                                        canvass.revised_by_avatar ||
-                                                        undefined
-                                                      }
+                                                      c="dimmed"
+                                                      fw={500}
                                                     >
-                                                      {canvass.revised_by_avatar
-                                                        ? undefined
-                                                        : getNameInitials(
-                                                            canvass.revised_by_name ||
-                                                              ""
-                                                          )}
-                                                    </Avatar>
-                                                    <Stack gap={0}>
-                                                      <Text fw={500}>
-                                                        {canvass.revised_by_name ||
-                                                          "Unknown"}
-                                                      </Text>
-                                                      <Text
-                                                        size="xs"
-                                                        c="dimmed"
+                                                      Revised By:
+                                                    </Text>
+                                                    <Group gap="md">
+                                                      <Avatar
+                                                        variant="light"
+                                                        radius="xl"
+                                                        size="md"
+                                                        src={
+                                                          canvass.revised_by_avatar ||
+                                                          undefined
+                                                        }
                                                       >
-                                                        {new Date(
+                                                        {canvass.revised_by_avatar
+                                                          ? undefined
+                                                          : getNameInitials(
+                                                              canvass.revised_by_name ||
+                                                                ""
+                                                            )}
+                                                      </Avatar>
+                                                      <Stack gap={0}>
+                                                        <Text fw={500}>
+                                                          {canvass.revised_by_name ||
+                                                            "Unknown"}
+                                                        </Text>
+                                                        <Text
+                                                          size="xs"
+                                                          c="dimmed"
+                                                        >
+                                                          {canvass &&
                                                           canvass.canvass_form_updated_at
-                                                        ).toLocaleString(
-                                                          "en-US",
-                                                          {
-                                                            timeZone:
-                                                              "Asia/Manila",
-                                                            month: "short",
-                                                            day: "2-digit",
-                                                            year: "numeric",
-                                                            hour: "2-digit",
-                                                            minute: "2-digit",
-                                                            hour12: true,
-                                                          }
-                                                        )}
-                                                      </Text>
-                                                    </Stack>
-                                                  </Group>
-                                                </Stack>
-                                              )}
+                                                            ? new Date(
+                                                                canvass.canvass_form_updated_at
+                                                              ).toLocaleString(
+                                                                "en-US",
+                                                                {
+                                                                  timeZone:
+                                                                    "Asia/Manila",
+                                                                  month:
+                                                                    "short",
+                                                                  day: "2-digit",
+                                                                  year: "numeric",
+                                                                  hour: "2-digit",
+                                                                  minute:
+                                                                    "2-digit",
+                                                                  hour12: true,
+                                                                }
+                                                              )
+                                                            : ""}
+                                                        </Text>
+                                                      </Stack>
+                                                    </Group>
+                                                  </Stack>
+                                                )}
                                             </Stack>
                                           </Grid.Col>
                                         </Grid>

@@ -850,7 +850,7 @@ export const canvassAction = async (
   // Fetch the current ticket status before updating
   const { data: ticketData, error: fetchError } = await supabase
     .from("ticket_table")
-    .select("ticket_status, ticket_created_by, ticket_revised_by")
+    .select("ticket_status")
     .eq("ticket_id", ticket_id)
     .single();
 
@@ -860,7 +860,6 @@ export const canvassAction = async (
   }
 
   const previousStatus = ticketData?.ticket_status || "UNKNOWN";
-  const isAlreadyRevised = ticketData?.ticket_revised_by !== null; // Check if ticket is revised
 
   // Update ticket status
   const { error: updateError } = await supabase
@@ -891,23 +890,39 @@ export const canvassAction = async (
     throw new Error("Failed to insert status history.");
   }
 
-  // If the status is "FOR REVISION" and the ticket was created by the user, update the revised ticket flag
-  if (status === "FOR REVISION" && !isAlreadyRevised) {
-    const { error: revisionError } = await supabase
-      .from("ticket_table")
-      .update({ ticket_revised_by: userId }) // Only update ticket_revised_by
-      .eq("ticket_id", ticket_id);
+  // If the status is "FOR REVISION", check if there's a canvass form for this ticket
+  if (status === "FOR REVISION") {
+    // Check if a canvass form already exists for this ticket
+    const { data: canvassFormData, error: canvassFormError } = await supabase
+      .from("canvass_form_table")
+      .select("canvass_form_id, canvass_form_revised_by")
+      .eq("canvass_form_ticket_id", ticket_id)
+      .single();
 
-    if (revisionError) {
-      console.error(
-        "Error updating ticket revision flag:",
-        revisionError.message
-      );
-      throw new Error("Failed to mark ticket as revised.");
+    if (canvassFormError && canvassFormError.code !== "PGRST116") {
+      // PGRST116 is "not found" error
+      console.error("Error checking canvass form:", canvassFormError.message);
+      throw new Error("Failed to check canvass form.");
+    }
+
+    // If the form exists and hasn't been revised yet, update the revised_by field
+    if (canvassFormData && !canvassFormData.canvass_form_revised_by) {
+      const { error: revisionError } = await supabase
+        .from("canvass_form_table")
+        .update({ canvass_form_revised_by: userId })
+        .eq("canvass_form_id", canvassFormData.canvass_form_id);
+
+      if (revisionError) {
+        console.error(
+          "Error updating canvass form revision flag:",
+          revisionError.message
+        );
+        throw new Error("Failed to mark canvass form as revised.");
+      }
     }
   }
 
-  return { success: true, message: "Canvassing started successfully" };
+  return { success: true, message: "Canvassing action completed successfully" };
 };
 
 export const updateUserRole = async (user_id: string, user_role: string) => {
