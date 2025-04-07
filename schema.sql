@@ -626,6 +626,7 @@ RETURNS TABLE (
   ticket_name TEXT,
   ticket_item_name TEXT,
   ticket_status TEXT,
+  ticket_revised_by UUID,
   ticket_item_description TEXT,
   ticket_date_created TIMESTAMPTZ
 )
@@ -637,6 +638,7 @@ AS $$
     t.ticket_name, 
     t.ticket_item_name,
     t.ticket_status,
+    t.ticket_revised_by,
     t.ticket_item_description,
     t.ticket_date_created 
   FROM 
@@ -658,7 +660,6 @@ $$;
 
 -- Drop existing function if it exists
 DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, TEXT, UUID);
-
 CREATE OR REPLACE FUNCTION get_all_my_tickets(
   user_id UUID, 
   ticket_status TEXT DEFAULT NULL, 
@@ -669,6 +670,7 @@ RETURNS TABLE (
   ticket_name TEXT, 
   ticket_item_name TEXT,
   ticket_status TEXT,
+  ticket_revised_by UUID,
   ticket_item_description TEXT,
   ticket_specifications TEXT,
   ticket_notes TEXT,
@@ -685,6 +687,7 @@ AS $$
     t.ticket_name, 
     t.ticket_item_name,
     t.ticket_status,
+    t.ticket_revised_by,
     t.ticket_item_description,
     t.ticket_specifications,
     t.ticket_notes,
