@@ -104,7 +104,7 @@ const ProfilePage = () => {
           setProfileUser(result.user);
           setTicketCount(result.ticketCount || 0);
           setRevisedTicketCount(result.revisedTicketCount || 0);
-          setTicketsRevisedByUserCount(result.revisedTicketCount || 0);
+          setTicketsRevisedByUserCount(result.ticketsRevisedByUserCount || 0);
           setTicketsReviewedByUserCount(result.ticketsReviewedByUserCount || 0);
         }
       } catch (error) {
