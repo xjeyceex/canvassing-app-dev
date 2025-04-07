@@ -18,7 +18,9 @@ import {
   Title,
   Tooltip,
   useMantineColorScheme,
+  useMantineTheme,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconArrowRight,
   IconCheck,
@@ -33,6 +35,9 @@ import { useEffect, useState } from "react";
 
 const DashboardPage = () => {
   const { colorScheme } = useMantineColorScheme();
+  const theme = useMantineTheme();
+
+  const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.xs})`);
 
   const { user } = useUserStore();
 
@@ -55,13 +60,11 @@ const DashboardPage = () => {
       : 0;
 
   const revisedPercentage =
-    (tickets.filter((ticket) => ticket.ticket_revised_by !== null).length /
-      tickets.length) *
-    100;
+    tickets.length > 0 ? (ticketStats.revised / tickets.length) * 100 : 0;
 
   function countUserTicketsByStatus(
     tickets: DashboardTicketType[],
-    statusType: "OPEN" | "COMPLETED",
+    statusType: "OPEN" | "COMPLETED"
   ) {
     if (statusType === "OPEN") {
       return tickets.filter(
@@ -70,7 +73,7 @@ const DashboardPage = () => {
           ticket.ticket_status === "FOR APPROVAL" ||
           ticket.ticket_status === "FOR REVIEW OF SUBMISSIONS" ||
           ticket.ticket_status === "WORK IN PROGRESS" ||
-          ticket.ticket_status === "FOR REVISION",
+          ticket.ticket_status === "FOR REVISION"
       ).length;
     }
 
@@ -85,7 +88,7 @@ const DashboardPage = () => {
     try {
       setLoading(true);
       const data = await getDashboardTickets(
-        isAdmin ? undefined : user?.user_id,
+        isAdmin ? undefined : user?.user_id
       );
       setTickets(data ?? []);
     } catch (error) {
@@ -96,7 +99,9 @@ const DashboardPage = () => {
   };
 
   useEffect(() => {
-    fetchTickets();
+    if (user?.user_id) {
+      fetchTickets();
+    }
   }, [isAdmin, user?.user_id]);
 
   if (!user || loading) {
@@ -119,17 +124,25 @@ const DashboardPage = () => {
         return "red";
       case "DECLINED":
         return "red";
-
       default:
         return "gray";
     }
   };
 
   return (
-    <Box p={{ base: "md", sm: "xl" }}>
-      <Flex justify="space-between" align="center" mb="xl">
+    <Box
+      p={{ base: "xs", sm: "md", md: "xl" }}
+      style={{ maxWidth: "100%", overflowX: "hidden" }}
+    >
+      <Flex
+        direction={isMobile ? "column" : "row"}
+        justify="space-between"
+        align={isMobile ? "flex-start" : "center"}
+        mb="xl"
+        gap={isMobile ? "xs" : "md"}
+      >
         <Stack gap={2}>
-          <Title order={2} fw={600}>
+          <Title order={isMobile ? 3 : 2} fw={600}>
             Welcome back, {user.user_full_name}
           </Title>
           <Text c="dimmed" size="sm">
@@ -148,14 +161,19 @@ const DashboardPage = () => {
         </Tooltip>
       </Flex>
 
-      <Grid gutter="lg" mb="xl">
+      <Grid gutter={{ base: "sm", sm: "md", md: "lg" }} mb="xl">
         {/* Open Tickets */}
         <Grid.Col
-          span={{ base: 12, md: user.user_role === "PURCHASER" ? 3 : 4 }}
+          span={{
+            base: 12,
+            xs: 6,
+            md: user.user_role === "PURCHASER" ? 6 : 4,
+            lg: user.user_role === "PURCHASER" ? 3 : 4,
+          }}
         >
           <Paper
             shadow="xs"
-            p="lg"
+            p={isMobile ? "sm" : "lg"}
             radius="md"
             style={(theme) => ({
               backgroundColor:
@@ -165,25 +183,28 @@ const DashboardPage = () => {
                   ? theme.colors.dark[4]
                   : theme.colors.gray[2]
               }`,
-              padding: "10px",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
             })}
           >
             <Group gap="xs" mb="xs">
               <IconClockHour4
                 style={{
-                  width: rem(20),
-                  height: rem(20),
+                  width: isMobile ? rem(16) : rem(20),
+                  height: isMobile ? rem(16) : rem(20),
                   color: "var(--mantine-color-blue-5)",
                 }}
               />
-              <Text size="sm" fw={500} c="dimmed">
+              <Text size={isMobile ? "xs" : "sm"} fw={500} c="dimmed">
                 Open Tickets
               </Text>
             </Group>
-            <Text fz={32} fw={600}>
+            <Text fz={isMobile ? 24 : 32} fw={600}>
               {ticketStats.open}
             </Text>
-            <Text c="dimmed" size="sm" mt={4}>
+            <Text c="dimmed" size={isMobile ? "xs" : "sm"} mt={4}>
               Tickets Pending Action
             </Text>
           </Paper>
@@ -191,11 +212,16 @@ const DashboardPage = () => {
 
         {/* Completed Tickets */}
         <Grid.Col
-          span={{ base: 12, md: user.user_role === "PURCHASER" ? 3 : 4 }}
+          span={{
+            base: 12,
+            xs: 6,
+            md: user.user_role === "PURCHASER" ? 6 : 4,
+            lg: user.user_role === "PURCHASER" ? 3 : 4,
+          }}
         >
           <Paper
             shadow="xs"
-            p="lg"
+            p={isMobile ? "sm" : "lg"}
             radius="md"
             style={(theme) => ({
               backgroundColor:
@@ -205,25 +231,28 @@ const DashboardPage = () => {
                   ? theme.colors.dark[4]
                   : theme.colors.gray[2]
               }`,
-              padding: "10px",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
             })}
           >
             <Group gap="xs" mb="xs">
               <IconCheck
                 style={{
-                  width: rem(20),
-                  height: rem(20),
+                  width: isMobile ? rem(16) : rem(20),
+                  height: isMobile ? rem(16) : rem(20),
                   color: "var(--mantine-color-green-5)",
                 }}
               />
-              <Text size="sm" fw={500} c="dimmed">
+              <Text size={isMobile ? "xs" : "sm"} fw={500} c="dimmed">
                 Completed Tickets
               </Text>
             </Group>
-            <Text fz={32} fw={600}>
+            <Text fz={isMobile ? 24 : 32} fw={600}>
               {ticketStats.completed}
             </Text>
-            <Text c="dimmed" size="sm" mt={4}>
+            <Text c="dimmed" size={isMobile ? "xs" : "sm"} mt={4}>
               Tickets Resolved
             </Text>
           </Paper>
@@ -231,11 +260,16 @@ const DashboardPage = () => {
 
         {/* Total Tickets */}
         <Grid.Col
-          span={{ base: 12, md: user.user_role === "PURCHASER" ? 3 : 4 }}
+          span={{
+            base: 12,
+            xs: 6,
+            md: user.user_role === "PURCHASER" ? 6 : 4,
+            lg: user.user_role === "PURCHASER" ? 3 : 4,
+          }}
         >
           <Paper
             shadow="xs"
-            p="lg"
+            p={isMobile ? "sm" : "lg"}
             radius="md"
             style={(theme) => ({
               backgroundColor:
@@ -245,25 +279,28 @@ const DashboardPage = () => {
                   ? theme.colors.dark[4]
                   : theme.colors.gray[2]
               }`,
-              padding: "10px",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "space-between",
             })}
           >
             <Group gap="xs" mb="xs">
               <IconTicket
                 style={{
-                  width: rem(20),
-                  height: rem(20),
+                  width: isMobile ? rem(16) : rem(20),
+                  height: isMobile ? rem(16) : rem(20),
                   color: "var(--mantine-color-violet-5)",
                 }}
               />
-              <Text size="sm" fw={500} c="dimmed">
+              <Text size={isMobile ? "xs" : "sm"} fw={500} c="dimmed">
                 Total Tickets
               </Text>
             </Group>
-            <Text fz={32} fw={600}>
+            <Text fz={isMobile ? 24 : 32} fw={600}>
               {ticketStats.total}
             </Text>
-            <Text c="dimmed" size="sm" mt={4}>
+            <Text c="dimmed" size={isMobile ? "xs" : "sm"} mt={4}>
               {completionRate}% Completion Rate
             </Text>
           </Paper>
@@ -271,10 +308,17 @@ const DashboardPage = () => {
 
         {/* Revised Tickets - Show only for PURCHASER role */}
         {user.user_role === "PURCHASER" && (
-          <Grid.Col span={{ base: 12, md: 3 }}>
+          <Grid.Col
+            span={{
+              base: 12,
+              xs: 6,
+              md: 6,
+              lg: 3,
+            }}
+          >
             <Paper
               shadow="xs"
-              p="lg"
+              p={isMobile ? "sm" : "lg"}
               radius="md"
               style={(theme) => ({
                 backgroundColor:
@@ -284,25 +328,28 @@ const DashboardPage = () => {
                     ? theme.colors.dark[4]
                     : theme.colors.gray[2]
                 }`,
-                padding: "10px",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
               })}
             >
               <Group gap="xs" mb="xs">
                 <IconEdit
                   style={{
-                    width: rem(20),
-                    height: rem(20),
+                    width: isMobile ? rem(16) : rem(20),
+                    height: isMobile ? rem(16) : rem(20),
                     color: "var(--mantine-color-orange-5)",
                   }}
                 />
-                <Text size="sm" fw={500} c="dimmed">
+                <Text size={isMobile ? "xs" : "sm"} fw={500} c="dimmed">
                   Revised Tickets
                 </Text>
               </Group>
-              <Text fz={32} fw={600}>
+              <Text fz={isMobile ? 24 : 32} fw={600}>
                 {ticketStats.revised} / {ticketStats.total}
               </Text>
-              <Text c="dimmed" size="sm" mt={4}>
+              <Text c="dimmed" size={isMobile ? "xs" : "sm"} mt={4}>
                 {isNaN(revisedPercentage) ? "0" : revisedPercentage.toFixed(2)}%
                 of Tickets Revised
               </Text>
@@ -311,17 +358,22 @@ const DashboardPage = () => {
         )}
       </Grid>
 
-      <Box mt={70}>
-        <Group justify="space-between" mb="lg">
+      <Box mt={isMobile ? 40 : 70}>
+        <Group
+          justify="space-between"
+          mb="lg"
+          wrap="wrap"
+          gap={isMobile ? "sm" : "md"}
+        >
           <Stack gap={2}>
-            <Title order={3} fw={600}>
+            <Title order={isMobile ? 4 : 3} fw={600}>
               Recent Tickets
             </Title>
           </Stack>
           <Button
             component={Link}
             href="/tickets"
-            size="sm"
+            size={isMobile ? "xs" : "sm"}
             rightSection={
               <IconArrowRight style={{ width: rem(16), height: rem(16) }} />
             }
@@ -340,32 +392,35 @@ const DashboardPage = () => {
                 ? theme.colors.dark[4]
                 : theme.colors.gray[2]
             }`,
+            overflow: "hidden", // Prevent content overflow
           })}
         >
           {tickets.length === 0 ? (
             <Stack align="center" py="xl" gap="md">
-              <IconTicket size={48} style={{ opacity: 0.3 }} />
-              <Text c="dimmed">No tickets found</Text>
+              <IconTicket size={isMobile ? 32 : 48} style={{ opacity: 0.3 }} />
+              <Text c="dimmed" size={isMobile ? "sm" : "md"}>
+                No tickets found
+              </Text>
             </Stack>
           ) : (
-            <Box>
+            <Box style={{ overflowX: "auto" }}>
               {tickets
                 .slice()
                 .sort(
                   (a, b) =>
                     new Date(b.ticket_date_created).getTime() -
-                    new Date(a.ticket_date_created).getTime(),
+                    new Date(a.ticket_date_created).getTime()
                 )
                 .slice(0, 5)
-                .map((ticket, index) => (
+                .map((ticket, index, arr) => (
                   <Box
                     key={ticket.ticket_id}
-                    p="md"
+                    p={isMobile ? "xs" : "md"}
                     style={(theme) => ({
                       borderRadius: 0,
                       backgroundColor: "transparent",
                       borderBottom:
-                        index !== tickets.length - 1
+                        index !== arr.length - 1
                           ? `1px solid ${
                               colorScheme === "dark"
                                 ? theme.colors.dark[4]
@@ -374,34 +429,55 @@ const DashboardPage = () => {
                           : "none",
                     })}
                   >
-                    <Group align="center" justify="space-between" wrap="nowrap">
-                      <Group wrap="nowrap" style={{ flex: 1 }}>
+                    <Group
+                      align="center"
+                      justify="space-between"
+                      wrap={isMobile ? "wrap" : "nowrap"}
+                      gap={isMobile ? "xs" : "md"}
+                    >
+                      <Group wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
                         <Box
                           style={(theme) => ({
                             width: rem(8),
                             height: rem(8),
                             borderRadius: "50%",
+                            flexShrink: 0,
                             backgroundColor:
                               theme.colors[
                                 getStatusColor(ticket.ticket_status)
                               ][colorScheme === "dark" ? 4 : 6],
                           })}
                         />
-                        <Stack gap={4} style={{ flex: 1 }}>
-                          <Text fw={500} size="sm" lineClamp={1}>
+                        <Stack gap={4} style={{ flex: 1, minWidth: 0 }}>
+                          <Text
+                            fw={500}
+                            size={isMobile ? "xs" : "sm"}
+                            lineClamp={1}
+                          >
                             {ticket.ticket_item_name}
                           </Text>
-                          <Group gap="xs">
-                            <Text size="xs" c="dimmed">
+                          <Group gap="xs" wrap="nowrap">
+                            <Text
+                              size="xs"
+                              c="dimmed"
+                              lineClamp={1}
+                              style={{ minWidth: 0 }}
+                            >
                               ID: #{ticket.ticket_name}
                             </Text>
-                            <Text size="xs" c="dimmed">
+                            <Text
+                              size="xs"
+                              c="dimmed"
+                              style={{ flexShrink: 0 }}
+                            >
                               •
                             </Text>
                             <Text
                               size="xs"
                               c={getStatusColor(ticket.ticket_status)}
                               fw={500}
+                              lineClamp={1}
+                              style={{ flexShrink: 0 }}
                             >
                               {ticket.ticket_status}
                             </Text>
@@ -418,6 +494,7 @@ const DashboardPage = () => {
                             theme.colors[theme.primaryColor][
                               colorScheme === "dark" ? 4 : 6
                             ],
+                          flexShrink: 0,
                         })}
                         rightSection={
                           <IconChevronRight

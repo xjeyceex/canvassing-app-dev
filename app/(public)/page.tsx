@@ -17,6 +17,7 @@ import {
   useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 
 import {
   IconArrowRight,
@@ -29,43 +30,9 @@ import {
 export default function HomePage() {
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
+  const isSmallScreen = useMediaQuery(`(max-width: ${theme.breakpoints.sm})`);
 
   const styles = {
-    title: {
-      fontWeight: 800,
-      fontSize: rem(40),
-      letterSpacing: -1,
-      paddingLeft: theme.spacing.md,
-      paddingRight: theme.spacing.md,
-      color: colorScheme === "dark" ? theme.white : theme.black,
-      marginBottom: theme.spacing.xs,
-    },
-
-    highlight: {
-      color: theme.colors[theme.primaryColor][colorScheme === "dark" ? 4 : 6],
-      fontWeight: 800,
-      letterSpacing: -1,
-      paddingRight: theme.spacing.sm,
-    },
-
-    description: {
-      color:
-        colorScheme === "dark" ? theme.colors.dark[1] : theme.colors.gray[7],
-      paddingLeft: theme.spacing.md,
-      paddingRight: theme.spacing.md,
-      marginBottom: rem(30),
-    },
-
-    controls: {
-      paddingLeft: theme.spacing.md,
-      paddingRight: theme.spacing.md,
-    },
-
-    control: {
-      height: rem(54),
-      fontSize: theme.fontSizes.md,
-    },
-
     testimonialCard: {
       backgroundColor:
         colorScheme === "dark" ? theme.colors.dark[6] : theme.colors.gray[0],
@@ -85,18 +52,6 @@ export default function HomePage() {
       alignItems: "center",
       paddingTop: theme.spacing.xl,
       paddingBottom: theme.spacing.xl,
-    },
-
-    pricing: {
-      backgroundColor:
-        colorScheme === "dark" ? theme.colors.dark[7] : theme.white,
-      marginTop: rem(100),
-    },
-
-    pricingTitle: {
-      fontSize: rem(34),
-      fontWeight: 900,
-      marginBottom: rem(50),
     },
 
     pricingCard: {
@@ -228,7 +183,7 @@ export default function HomePage() {
         {/* ----------------------- */}
         {/*  Hero Section           */}
         {/* ----------------------- */}
-        <Box py={rem(80)}>
+        <Box py={rem(50)}>
           <Card
             bg={
               colorScheme === "dark"
@@ -246,29 +201,58 @@ export default function HomePage() {
             }}
             withBorder
           >
-            <Box style={{ position: "relative", zIndex: 1 }}>
-              <Title style={styles.title}>
-                <span style={styles.highlight}>Revolutionize</span>
+            <Box>
+              <Title
+                ta={{ sm: "left", base: "center" }}
+                mb={rem(20)}
+                fw={800}
+                fz={{ base: rem(36), sm: rem(40) }}
+              >
+                <Text
+                  span
+                  fz={{ base: rem(36), sm: rem(40) }}
+                  fw={800}
+                  lts={-1}
+                  c={
+                    theme.colors[theme.primaryColor][
+                      colorScheme === "dark" ? 4 : 6
+                    ]
+                  }
+                >
+                  Revolutionize{" "}
+                </Text>
                 Canvassing Operations with Data-Driven Insights
               </Title>
 
-              <Text style={styles.description} size="xl">
+              <Text
+                mb={rem(30)}
+                fz={{ sm: "xl", base: "lg" }}
+                ta={{ base: "center", sm: "left" }}
+              >
                 Simplify procurement with a seamless, all-in-one platform for
                 sourcing, comparing supplier quotes, and managing approvals.
                 Boost efficiency, enhance transparency, and make smarter
                 decisions—all in one place.
               </Text>
 
-              <Group style={styles.controls}>
+              <Group>
                 <Button
                   size="xl"
                   rightSection={<IconArrowRight size={20} />}
-                  style={styles.control}
+                  h={54}
+                  fz="md"
+                  w={{ base: "100%", sm: "auto" }}
                 >
                   Get Started Today
                 </Button>
 
-                <Button size="xl" variant="outline" style={styles.control}>
+                <Button
+                  size="xl"
+                  variant="outline"
+                  h={54}
+                  fz="md"
+                  w={{ base: "100%", sm: "auto" }}
+                >
                   Watch the Demo
                 </Button>
               </Group>
@@ -282,9 +266,25 @@ export default function HomePage() {
         {/* ----------------------- */}
         {/*  Featured Section       */}
         {/* ----------------------- */}
-        <Container mt={{ base: "md", sm: "xl", md: "xl" }} size="xl">
-          <Title fw={800} ta="center" mb={50} fz={rem(40)}>
-            Built for <span style={styles.highlight}>Modern Campaigns</span>
+        <Container mt={{ base: "md", sm: "xl", md: "xl" }} size="xl" p={0}>
+          <Title
+            fw={800}
+            ta="center"
+            mb={50}
+            fz={{ base: rem(36), sm: rem(40) }}
+          >
+            Built for{" "}
+            <Text
+              span
+              fw={800}
+              fz={{ base: rem(36), sm: rem(40) }}
+              lts={-1}
+              c={
+                theme.colors[theme.primaryColor][colorScheme === "dark" ? 4 : 6]
+              }
+            >
+              Modern Campaigns
+            </Text>
           </Title>
 
           <SimpleGrid
@@ -333,7 +333,6 @@ export default function HomePage() {
             ))}
           </SimpleGrid>
         </Container>
-
         {/* ----------------------- */}
         {/*  Featured Section       */}
         {/* ----------------------- */}
@@ -341,9 +340,25 @@ export default function HomePage() {
         {/* ----------------------- */}
         {/*  Testimonials Section   */}
         {/* ----------------------- */}
-        <Container mt={100} size="xl">
-          <Title fw={800} ta="center" mb={50} fz={rem(40)}>
-            Trusted by <span style={styles.highlight}>Leading Campaigns</span>
+        <Box mt={100}>
+          <Title
+            fw={800}
+            ta="center"
+            mb={50}
+            fz={{ base: rem(36), sm: rem(40) }}
+          >
+            Trusted by{" "}
+            <Text
+              span
+              fw={800}
+              fz={{ base: rem(36), sm: rem(40) }}
+              lts={-1}
+              c={
+                theme.colors[theme.primaryColor][colorScheme === "dark" ? 4 : 6]
+              }
+            >
+              Leading Campaigns
+            </Text>
           </Title>
 
           <SimpleGrid cols={{ base: 1, sm: 2 }} spacing={30}>
@@ -375,7 +390,7 @@ export default function HomePage() {
               </Card>
             ))}
           </SimpleGrid>
-        </Container>
+        </Box>
         {/* ----------------------- */}
         {/*  Testimonials Section   */}
         {/* ----------------------- */}
@@ -383,12 +398,32 @@ export default function HomePage() {
         {/* ----------------------- */}
         {/*  Pricing Section        */}
         {/* ----------------------- */}
-        <Container size="lg" py="xl" style={styles.pricing}>
-          <Title fw={800} ta="center" style={styles.pricingTitle} fz={rem(40)}>
-            <span style={styles.highlight}>Pricing</span>Plans
+        <Box
+          py="xl"
+          bg={colorScheme === "dark" ? theme.colors.dark[7] : theme.white}
+          mt={rem(100)}
+        >
+          <Title
+            fw={800}
+            ta="center"
+            mb={50}
+            fz={{ base: rem(36), sm: rem(40) }}
+          >
+            <Text
+              span
+              fw={800}
+              lts={-1}
+              fz={{ base: rem(36), sm: rem(40) }}
+              c={
+                theme.colors[theme.primaryColor][colorScheme === "dark" ? 4 : 6]
+              }
+            >
+              Pricing{" "}
+            </Text>
+            Plans
           </Title>
 
-          <SimpleGrid cols={{ base: 1, sm: 3 }} spacing={30}>
+          <SimpleGrid cols={{ base: 1, md: 3, sm: 2 }} spacing={30}>
             {pricingPlans.map((plan, index) => (
               <Card
                 key={index}
@@ -399,11 +434,16 @@ export default function HomePage() {
                   ...(plan.active ? styles.pricingCardActive : {}),
                 }}
               >
-                <div style={styles.pricingHeader}>
-                  <Text fw={700} size="xl">
+                <Box style={styles.pricingHeader}>
+                  <Text fw={700} size="xl" ta={{ sm: "left", base: "center" }}>
                     {plan.title}
                   </Text>
-                  <Group gap={5} mt="xs">
+                  <Group
+                    gap={5}
+                    mt="xs"
+                    w={{ base: "100%", sm: "auto" }}
+                    justify={isSmallScreen ? "center" : "flex-start"}
+                  >
                     <Text fw={700} size="xl">
                       {plan.price}
                     </Text>
@@ -411,12 +451,17 @@ export default function HomePage() {
                       {plan.period}
                     </Text>
                   </Group>
-                  <Text size="sm" c="dimmed" mt="xs">
+                  <Text
+                    size="sm"
+                    c="dimmed"
+                    mt="xs"
+                    ta={{ sm: "left", base: "center" }}
+                  >
                     {plan.description}
                   </Text>
-                </div>
+                </Box>
 
-                <div style={styles.pricingFeatures}>
+                <Box style={styles.pricingFeatures}>
                   <List
                     spacing="sm"
                     size="sm"
@@ -434,20 +479,20 @@ export default function HomePage() {
                       <List.Item key={featureIndex}>{feature}</List.Item>
                     ))}
                   </List>
-                </div>
+                </Box>
 
-                <div style={styles.pricingFooter}>
+                <Box style={styles.pricingFooter}>
                   <Button
                     fullWidth
                     variant={plan.active ? "filled" : "outline"}
                   >
                     {plan.cta}
                   </Button>
-                </div>
+                </Box>
               </Card>
             ))}
           </SimpleGrid>
-        </Container>
+        </Box>
         {/* ----------------------- */}
         {/*  Pricing Section        */}
         {/* ----------------------- */}
@@ -455,7 +500,7 @@ export default function HomePage() {
         {/* ----------------------- */}
         {/*  CTA Section            */}
         {/* ----------------------- */}
-        <Container mt={100} mb={30} size="xl">
+        <Box mt={100} mb={30}>
           <Card
             withBorder
             p={40}
@@ -473,10 +518,10 @@ export default function HomePage() {
           >
             <Grid>
               <Grid.Col span={{ base: 12, md: 8 }}>
-                <Title size={28} mb="xs">
+                <Title size={28} mb="lg" ta={{ base: "center", sm: "left" }}>
                   Ready to revolutionize your canvassing operation?
                 </Title>
-                <Text size="lg">
+                <Text size="lg" ta={{ base: "center", sm: "left" }} mb="lg">
                   Join thousands of campaigns using CanvassingApp to reach more
                   voters and drive better results.
                 </Text>
@@ -489,13 +534,13 @@ export default function HomePage() {
                   justifyContent: "flex-end",
                 }}
               >
-                <Button size="xl" fz="md">
+                <Button size="xl" fz="md" w={{ base: "100%", sm: "auto" }}>
                   Start Free Trial
                 </Button>
               </Grid.Col>
             </Grid>
           </Card>
-        </Container>
+        </Box>
         {/* ----------------------- */}
         {/*  CTA Section            */}
         {/* ----------------------- */}

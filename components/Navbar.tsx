@@ -126,7 +126,7 @@ const Navbar = () => {
                 textTransform: "uppercase",
               }}
             >
-              CanvassingApp
+              CanvassingApps
             </Text>
           </Anchor>
         </Group>
@@ -196,7 +196,7 @@ const Navbar = () => {
                     component={Link}
                     href="/profile"
                     leftSection={
-                      <IconUser style={{ width: rem(14), height: rem(14) }} />
+                      <IconUser style={{ width: rem(18), height: rem(18) }} />
                     }
                   >
                     View Profile
@@ -205,7 +205,7 @@ const Navbar = () => {
                     color="red"
                     onClick={handleLogout}
                     leftSection={
-                      <IconLogout style={{ width: rem(14), height: rem(14) }} />
+                      <IconLogout style={{ width: rem(18), height: rem(18) }} />
                     }
                   >
                     Logout

@@ -25,6 +25,7 @@ import {
   useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconChecks,
   IconChevronDown,
@@ -32,6 +33,7 @@ import {
   IconFileDescription,
   IconFileText,
   IconFilter,
+  IconMenu2,
   IconNotes,
   IconPlus,
   IconRefresh,
@@ -89,6 +91,14 @@ const TicketList = () => {
   const [expandedTickets, setExpandedTickets] = useState<
     Record<string, boolean>
   >({});
+  const [tabsMenuOpen, setTabsMenuOpen] = useState(false);
+
+  // Responsive breakpoints
+  const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.xs})`);
+  const isTablet = useMediaQuery(`(max-width: ${theme.breakpoints.md})`);
+
+  // Calculate content padding based on screen size
+  const contentPadding = isMobile ? "xs" : isTablet ? "md" : "lg";
 
   // Track manually expanded tickets to not auto-collapse them when search changes
   const manuallyExpandedTickets = useRef<Record<string, boolean>>({});
@@ -169,6 +179,9 @@ const TicketList = () => {
   const handleTabChange = (value: string | null) => {
     if (value) {
       setActiveTab(value as TicketStatus);
+      if (isTablet) {
+        setTabsMenuOpen(false);
+      }
     }
   };
 
@@ -191,7 +204,7 @@ const TicketList = () => {
   const availableTickets = tickets.filter((ticket) => {
     const isPurchaser = user?.user_role === "PURCHASER";
     const isSharedWithUser = ticket.shared_users?.some(
-      (sharedUser) => sharedUser.user_id === user?.user_id,
+      (sharedUser) => sharedUser.user_id === user?.user_id
     );
     const isTicketOwner = ticket.ticket_created_by === user?.user_id;
 
@@ -246,7 +259,7 @@ const TicketList = () => {
     const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
     return text.replace(
       regex,
-      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
     );
   };
 
@@ -269,7 +282,7 @@ const TicketList = () => {
             const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
             const highlighted = node.textContent.replace(
               regex,
-              '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+              '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
             );
 
             const wrapper = document.createElement("span");
@@ -294,29 +307,106 @@ const TicketList = () => {
     return sanitized;
   };
 
+  // Render mobile tabs menu
+  const renderMobileTabsMenu = () => (
+    <Box mb="md">
+      <Menu
+        opened={tabsMenuOpen}
+        onChange={setTabsMenuOpen}
+        width="100%"
+        shadow="md"
+        position="bottom-start"
+      >
+        <Menu.Target>
+          <Button
+            fullWidth
+            variant="outline"
+            leftSection={<IconMenu2 size={16} />}
+            rightSection={<IconChevronDown size={16} />}
+          >
+            {tabItems.find((tab) => tab.value === activeTab)?.label || "All"}
+            <Badge
+              size="sm"
+              ml={8}
+              variant="filled"
+              color={
+                activeTab !== "all" ? getStatusColor(activeTab) : undefined
+              }
+            >
+              {getTicketCountByStatus(activeTab as TicketStatus)}
+            </Badge>
+          </Button>
+        </Menu.Target>
+        <Menu.Dropdown>
+          {tabItems.map((tab) => (
+            <Menu.Item
+              key={tab.value}
+              onClick={() => handleTabChange(tab.value)}
+              leftSection={
+                <IconChecks
+                  size={16}
+                  opacity={activeTab === tab.value ? 1 : 0}
+                />
+              }
+            >
+              <Group gap={8}>
+                {tab.label}
+                <Badge
+                  size="sm"
+                  variant="filled"
+                  color={
+                    tab.value !== "all" ? getStatusColor(tab.value) : undefined
+                  }
+                >
+                  {getTicketCountByStatus(tab.value)}
+                </Badge>
+              </Group>
+            </Menu.Item>
+          ))}
+        </Menu.Dropdown>
+      </Menu>
+    </Box>
+  );
+
   if (!user || loading) {
     return <LoadingStateProtected />;
   }
 
   return (
-    <Box p="lg">
+    <Box p={contentPadding} style={{ maxWidth: "100%" }}>
       {/* Ticket List Header */}
       <Box mb="lg">
-        <Group justify="space-between" align="center" mb="lg">
-          <Group gap="xs">
-            <Title order={2}>Tickets</Title>
-            <Badge size="lg" variant="light">
+        <Group
+          justify="space-between"
+          align="center"
+          mb="lg"
+          wrap={isMobile ? "wrap" : "nowrap"}
+        >
+          <Group
+            gap="xs"
+            style={{ flexGrow: 1, flexBasis: isMobile ? "100%" : "auto" }}
+          >
+            <Title order={isMobile ? 3 : 2}>Tickets</Title>
+            <Badge size={isMobile ? "md" : "lg"} variant="light">
               {availableTickets.length} total
             </Badge>
           </Group>
 
-          <Group gap="sm">
+          <Group
+            gap="sm"
+            style={{
+              flexWrap: isMobile ? "wrap" : "nowrap",
+              justifyContent: isMobile ? "space-between" : "flex-end",
+              width: isMobile ? "100%" : "auto",
+              marginTop: isMobile ? theme.spacing.xs : 0,
+            }}
+          >
             <Menu shadow="md" width={200} position="bottom-end">
               <Menu.Target>
                 <Button
                   variant="light"
-                  size="sm"
                   leftSection={<IconFilter size={16} />}
+                  style={{ flexGrow: isMobile ? 1 : 0 }}
                 >
                   {sortBy === "newest" ? "Newest First" : "Oldest First"}
                 </Button>
@@ -354,7 +444,7 @@ const TicketList = () => {
                 onClick={fetchTickets}
                 loading={loading}
               >
-                <IconRefresh size={18} />
+                <IconRefresh size={isMobile ? 16 : 18} />
               </ActionIcon>
             </Tooltip>
 
@@ -362,8 +452,9 @@ const TicketList = () => {
               <Button
                 leftSection={<IconPlus size={16} />}
                 onClick={() => router.push("/tickets/create-ticket")}
+                style={{ flexGrow: isMobile ? 1 : 0 }}
               >
-                New Ticket
+                {isMobile ? "New" : "New Ticket"}
               </Button>
             )}
           </Group>
@@ -372,48 +463,52 @@ const TicketList = () => {
         <Input
           placeholder="Search tickets..."
           mb="md"
-          size="md"
-          leftSection={<IconSearch size={18} stroke={1.5} />}
+          size={isMobile ? "sm" : "md"}
+          leftSection={<IconSearch size={isMobile ? 16 : 18} stroke={1.5} />}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.currentTarget.value)}
         />
 
-        <Tabs value={activeTab} onChange={handleTabChange}>
-          <Tabs.List>
-            {tabItems.map((tab) => (
-              <Tabs.Tab
-                key={tab.value}
-                value={tab.value}
-                color={
-                  tab.value !== "all" ? getStatusColor(tab.value) : undefined
-                }
-              >
-                <Group gap={8}>
-                  {tab.label}
-                  <Badge
-                    size="sm"
-                    radius="xl"
-                    variant="filled"
-                    color={
-                      tab.value !== "all"
-                        ? getStatusColor(tab.value)
-                        : undefined
-                    }
-                  >
-                    {getTicketCountByStatus(tab.value)}
-                  </Badge>
-                </Group>
-              </Tabs.Tab>
-            ))}
-          </Tabs.List>
-        </Tabs>
+        {isTablet ? (
+          renderMobileTabsMenu()
+        ) : (
+          <Tabs value={activeTab} onChange={handleTabChange}>
+            <Tabs.List style={{ overflowX: "auto" }}>
+              {tabItems.map((tab) => (
+                <Tabs.Tab
+                  key={tab.value}
+                  value={tab.value}
+                  color={
+                    tab.value !== "all" ? getStatusColor(tab.value) : undefined
+                  }
+                >
+                  <Group gap={8}>
+                    {tab.label}
+                    <Badge
+                      size="sm"
+                      radius="xl"
+                      variant="filled"
+                      color={
+                        tab.value !== "all"
+                          ? getStatusColor(tab.value)
+                          : undefined
+                      }
+                    >
+                      {getTicketCountByStatus(tab.value)}
+                    </Badge>
+                  </Group>
+                </Tabs.Tab>
+              ))}
+            </Tabs.List>
+          </Tabs>
+        )}
       </Box>
 
       {filteredTickets.length > 0 ? (
         <Stack gap="lg">
           {filteredTickets.map((ticket) => (
             <Paper
-              p="lg"
+              p={isMobile ? "md" : "lg"}
               key={ticket.ticket_id}
               radius="md"
               withBorder
@@ -428,12 +523,12 @@ const TicketList = () => {
               {/* Ticket Header - Always Visible */}
               <Group
                 justify="space-between"
-                wrap="nowrap"
+                wrap="wrap"
                 onClick={() => toggleTicketExpand(ticket.ticket_id)}
                 style={{ cursor: "pointer" }}
               >
-                <Box style={{ flex: 1 }}>
-                  <Group mb={8}>
+                <Box style={{ flex: 1, minWidth: isMobile ? "100%" : "auto" }}>
+                  <Group mb={8} wrap="wrap">
                     <Badge
                       variant="filled"
                       color={getStatusColor(ticket.ticket_status)}
@@ -444,7 +539,7 @@ const TicketList = () => {
                       Created {formatDate(ticket.ticket_date_created)}
                     </Text>
                   </Group>
-                  <Group gap="md">
+                  <Group gap="md" wrap="wrap">
                     <Text
                       fw={600}
                       size="sm"
@@ -460,12 +555,20 @@ const TicketList = () => {
                     />
                   </Group>
                 </Box>
-                <Group gap="xs">
+                <Group
+                  gap="xs"
+                  style={{
+                    marginTop: isMobile ? theme.spacing.xs : 0,
+                    width: isMobile ? "100%" : "auto",
+                    justifyContent: isMobile ? "space-between" : "flex-end",
+                  }}
+                >
                   <Button
                     component={Link}
                     href={`/tickets/${ticket.ticket_id}`}
                     variant="light"
                     size="sm"
+                    style={{ flexGrow: isMobile ? 1 : 0 }}
                     rightSection={<IconChevronRight size={14} />}
                     onClick={(e) => e.stopPropagation()} // Prevent toggling when clicking the button
                   >
@@ -525,7 +628,7 @@ const TicketList = () => {
                           size="sm"
                           dangerouslySetInnerHTML={{
                             __html: highlightSearchTerm(
-                              ticket.ticket_item_description,
+                              ticket.ticket_item_description
                             ),
                           }}
                         />
@@ -603,7 +706,7 @@ const TicketList = () => {
                           className="rich-text-content"
                           dangerouslySetInnerHTML={{
                             __html: sanitizeAndHighlight(
-                              ticket.ticket_specifications,
+                              ticket.ticket_specifications
                             ),
                           }}
                         />
@@ -616,17 +719,22 @@ const TicketList = () => {
           ))}
         </Stack>
       ) : (
-        <Paper p="xl" withBorder radius="md">
+        <Paper p={isMobile ? "md" : "xl"} withBorder radius="md">
           <Flex
             justify="center"
             align="center"
             direction="column"
             h="100%"
-            mih={250}
+            mih={isMobile ? 150 : 250}
           >
             <Group justify="center">
-              <ThemeIcon size={48} radius="xl" variant="light" color="gray">
-                <IconTicket size={24} />
+              <ThemeIcon
+                size={isMobile ? 36 : 48}
+                radius="xl"
+                variant="light"
+                color="gray"
+              >
+                <IconTicket size={isMobile ? 18 : 24} />
               </ThemeIcon>
             </Group>
             <Text c="dimmed" ta="center" mt="md">
@@ -638,9 +746,9 @@ const TicketList = () => {
               <Group justify="center" mt="md">
                 <Button
                   variant="light"
-                  size="sm"
+                  size={isMobile ? "xs" : "sm"}
                   onClick={() => router.push("/tickets/create-ticket")}
-                  leftSection={<IconPlus size={14} />}
+                  leftSection={<IconPlus size={isMobile ? 12 : 14} />}
                 >
                   Create New Ticket
                 </Button>

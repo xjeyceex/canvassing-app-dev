@@ -21,11 +21,7 @@ const PublicLayout = ({ children }: PublicLayoutProps) => {
     return <LoadingStatePublic />;
   }
   return (
-    <AppShell
-      header={{
-        height: 70,
-      }}
-    >
+    <AppShell>
       <AppShell.Header>
         <Header />
       </AppShell.Header>

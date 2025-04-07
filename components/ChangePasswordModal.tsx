@@ -36,7 +36,7 @@ const ChangePasswordModal = ({
   const [isPending, startTransition] = useTransition();
 
   const handleChangePassword = (
-    values: z.infer<typeof ChangePasswordSchema>,
+    values: z.infer<typeof ChangePasswordSchema>
   ) => {
     const validatedFields = ChangePasswordSchema.safeParse(values);
 
@@ -44,7 +44,7 @@ const ChangePasswordModal = ({
       startTransition(async () => {
         const result = await changePassword(
           values.currentPassword,
-          values.newPassword,
+          values.newPassword
         );
 
         if (result?.error && result.OldPasswordErrorMessage) {
@@ -83,7 +83,7 @@ const ChangePasswordModal = ({
         form.clearErrors();
       }}
       title={
-        <Text fz="h3" fw={700} px="sm" pt="sm">
+        <Text fz="h3" fw={700} p="xs" pb={0}>
           Change your password
         </Text>
       }
@@ -92,7 +92,7 @@ const ChangePasswordModal = ({
       withCloseButton={false}
     >
       <form onSubmit={form.handleSubmit(handleChangePassword)}>
-        <Stack gap="md" p="sm" pt="0">
+        <Stack gap="md" p="xs" pt="0">
           <PasswordInput
             {...form.register("currentPassword")}
             error={form.formState.errors.currentPassword?.message}
@@ -123,7 +123,7 @@ const ChangePasswordModal = ({
             withAsterisk
           />
 
-          <Group justify="flex-end" mt="md">
+          <Group justify="flex-end" mt="md" p={0}>
             <Button
               variant="light"
               onClick={() => {
