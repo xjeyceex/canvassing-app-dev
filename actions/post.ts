@@ -20,7 +20,7 @@ const loginSchema = z.object({
 });
 
 export async function userLogin(
-  formData: FormData
+  formData: FormData,
 ): Promise<{ error?: LoginError }> {
   const supabase = await createClient();
 
@@ -148,7 +148,7 @@ export const updateDisplayName = async (newDisplayName: string) => {
 
 export const createTicket = async (
   values: z.infer<typeof TicketFormSchema>,
-  userId: string
+  userId: string,
 ) => {
   const supabase = await createClient();
   const validatedData = TicketFormSchema.parse(values);
@@ -166,7 +166,7 @@ export const createTicket = async (
 
     const { data: sequenceData, error: sequenceError } = await supabase.rpc(
       "get_next_ticket_sequence",
-      { date_prefix: formattedDate }
+      { date_prefix: formattedDate },
     );
 
     if (sequenceError) {
@@ -178,7 +178,7 @@ export const createTicket = async (
 
     const newTicketName = `${String(nextSequenceValue).padStart(
       5,
-      "0"
+      "0",
     )}-${formattedDate}`;
 
     // 4. Insert the new ticket with the generated ticket name
@@ -238,7 +238,7 @@ export const createTicket = async (
           approval_reviewed_by: reviewerId,
           approval_review_status: "PENDING",
           approval_review_date: new Date().toISOString(),
-        }))
+        })),
       );
 
     if (reviewersError) {
@@ -280,7 +280,7 @@ export const updateProfilePicture = async (file: File) => {
   // Remove old avatar if it exists
   const oldFilePath = userData?.user_avatar?.replace(
     /^.*\/avatars\//,
-    "avatars/"
+    "avatars/",
   );
   if (oldFilePath) await supabase.storage.from("avatars").remove([oldFilePath]);
 
@@ -407,7 +407,7 @@ export const createCanvass = async ({
     if (filesList && filesList.length > 0) {
       // Create an array of file paths to delete
       const filesToDelete = filesList.map(
-        (file) => `${draftFolderPath}${file.name}`
+        (file) => `${draftFolderPath}${file.name}`,
       );
 
       // Delete all files in the drafts folder
@@ -473,8 +473,8 @@ export const createCanvass = async ({
     // Upload all quotations
     const quotationResults = await Promise.all(
       quotations.map((quotation, index) =>
-        uploadFile(quotation, `quotation_${index + 1}`)
-      )
+        uploadFile(quotation, `quotation_${index + 1}`),
+      ),
     );
 
     // Store canvass form data using the first quotation as the primary one
@@ -494,7 +494,7 @@ export const createCanvass = async ({
 
     if (canvassFormError) {
       throw new Error(
-        `Failed to insert canvass form: ${canvassFormError.message}`
+        `Failed to insert canvass form: ${canvassFormError.message}`,
       );
     }
 
@@ -527,7 +527,7 @@ export const createCanvass = async ({
 
     if (attachmentsError) {
       throw new Error(
-        `Failed to insert attachments: ${attachmentsError.message}`
+        `Failed to insert attachments: ${attachmentsError.message}`,
       );
     }
 
@@ -543,7 +543,7 @@ export const createCanvass = async ({
 
     if (approvalError) {
       throw new Error(
-        `Failed to fetch approval data: ${approvalError.message}`
+        `Failed to fetch approval data: ${approvalError.message}`,
       );
     }
 
@@ -576,7 +576,7 @@ export const createCanvass = async ({
 
         if (updateApprovalError) {
           throw new Error(
-            `Failed to update approval status for reviewer: ${updateApprovalError.message}`
+            `Failed to update approval status for reviewer: ${updateApprovalError.message}`,
           );
         }
 
@@ -705,7 +705,7 @@ export const saveCanvassDraft = async ({
 
       if (insertError || !newDraft) {
         throw new Error(
-          `Failed to create draft: ${insertError?.message || "Unknown error"}`
+          `Failed to create draft: ${insertError?.message || "Unknown error"}`,
         );
       }
 
@@ -730,7 +730,7 @@ export const saveCanvassDraft = async ({
       if (canvassSheet instanceof File) {
         const canvassSheetResult = await uploadFile(
           canvassSheet,
-          "canvass_sheet"
+          "canvass_sheet",
         );
         attachments.push({
           canvass_attachment_draft_id: draftId,
@@ -749,7 +749,7 @@ export const saveCanvassDraft = async ({
           if (quotation instanceof File) {
             const quotationResult = await uploadFile(
               quotation,
-              `quotation_${i + 1}`
+              `quotation_${i + 1}`,
             );
             attachments.push({
               canvass_attachment_draft_id: draftId,
@@ -771,7 +771,7 @@ export const saveCanvassDraft = async ({
 
         if (attachmentsError) {
           throw new Error(
-            `Failed to insert draft attachments: ${attachmentsError.message}`
+            `Failed to insert draft attachments: ${attachmentsError.message}`,
           );
         }
       }
@@ -794,7 +794,7 @@ export const saveCanvassDraft = async ({
 export const addComment = async (
   ticket_id: string,
   content: string,
-  user_id: string
+  user_id: string,
 ) => {
   const supabase = await createClient();
 
@@ -811,7 +811,7 @@ export const addComment = async (
         p_ticket_id: ticket_id,
         p_content: content,
         p_user_id: user_id,
-      }
+      },
     );
 
     if (error) throw error;
@@ -825,7 +825,7 @@ export const addComment = async (
 export const canvassAction = async (
   ticket_id: string,
   user_id: string,
-  status: string
+  status: string,
 ) => {
   const supabase = await createClient();
 
@@ -915,7 +915,7 @@ export const canvassAction = async (
       if (revisionError) {
         console.error(
           "Error updating canvass form revision flag:",
-          revisionError.message
+          revisionError.message,
         );
         throw new Error("Failed to mark canvass form as revised.");
       }
@@ -945,7 +945,7 @@ export const notifyUser = async (
   user_id: string,
   message: string,
   ticket_id: string,
-  comment_id: string | null = null
+  comment_id: string | null = null,
 ) => {
   const supabase = await createClient();
 

@@ -17,6 +17,7 @@ import {
   useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconBell,
   IconChevronRight,
@@ -62,6 +63,7 @@ const MobileSidebar = () => {
   const router = useRouter();
   const pathname = usePathname();
   const { colorScheme } = useMantineColorScheme();
+  const isMediumScreen = useMediaQuery("(max-width: 62em)");
   const theme = useMantineTheme();
 
   const { user } = useUserStore();
@@ -88,6 +90,12 @@ const MobileSidebar = () => {
   const isActive = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`);
   };
+
+  useEffect(() => {
+    if (!isMediumScreen) {
+      closeMobileSidebar();
+    }
+  }, [isMediumScreen, isMobileSidebarOpen]);
 
   if (!mounted || !user) return null;
 
@@ -177,8 +185,8 @@ const MobileSidebar = () => {
                               colorScheme === "dark" ? 4 : 6
                             ]
                           : colorScheme === "dark"
-                            ? theme.colors.dark[0]
-                            : theme.colors.gray[7],
+                          ? theme.colors.dark[0]
+                          : theme.colors.gray[7],
                         position: "relative",
                         top: 3,
                       }}

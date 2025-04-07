@@ -41,6 +41,7 @@ import {
   Tooltip,
   useMantineColorScheme,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconArrowLeft,
   IconChevronDown,
@@ -57,9 +58,10 @@ import { useEffect, useState } from "react";
 const TicketDetailsPage = () => {
   const { ticket_id } = useParams() as { ticket_id: string };
   const router = useRouter();
+  const isSmallScreen = useMediaQuery("(max-width: 48em)");
+  const isExtraSmallScreen = useMediaQuery("(max-width: 36em)");
 
   const { user } = useUserStore();
-  // const { setComments } = useCommentsStore();
   const { colorScheme } = useMantineColorScheme();
 
   const [comments, setComments] = useState<CommentType[]>([]);
@@ -170,7 +172,7 @@ const TicketDetailsPage = () => {
   }
 
   return (
-    <Box p={{ base: "lg", sm: "xl" }}>
+    <Box px={{ base: 0, md: "xl", sm: "lg" }} py="xl">
       {/* Header Section with Back Button */}
       <Stack gap={2} mb="sm">
         <Button
@@ -184,16 +186,7 @@ const TicketDetailsPage = () => {
           Back to Tickets
         </Button>
         <Group>
-          <Title
-            pl="xs"
-            order={2}
-            styles={(theme) => ({
-              root: {
-                borderLeft: `4px solid ${theme.colors.blue[5]}`,
-                position: "relative",
-              },
-            })}
-          >
+          <Title pl="xs" order={2}>
             Ticket:{" "}
             <Badge
               fz="sm"
@@ -210,7 +203,7 @@ const TicketDetailsPage = () => {
       {/* Main Content Grid */}
       <Grid gutter="lg">
         {/* Left Column */}
-        <Grid.Col span={{ base: 12, md: 8 }}>
+        <Grid.Col span={{ base: 12, lg: 8 }}>
           <Paper
             radius="lg"
             shadow="sm"
@@ -231,8 +224,8 @@ const TicketDetailsPage = () => {
                 <Box pos="relative">
                   <Avatar
                     src={ticket.ticket_created_by_avatar || undefined}
-                    radius="xl"
-                    size={56}
+                    radius="50%"
+                    size={isExtraSmallScreen ? "md" : "lg"}
                   >
                     {ticket.ticket_created_by_avatar
                       ? null
@@ -243,7 +236,7 @@ const TicketDetailsPage = () => {
                   <Text size="xs" fw={600} tt="uppercase" c="dimmed">
                     Raised by
                   </Text>
-                  <Text size="lg" fw={700}>
+                  <Text fw={700} fz={{ base: "md", xs: "lg" }}>
                     {ticket.ticket_created_by_name}
                   </Text>
                   <Group gap={4}>
@@ -366,7 +359,7 @@ const TicketDetailsPage = () => {
                   {ticket?.ticket_status !== "FOR CANVASS" && (
                     <>
                       <Divider mb="lg" mt="xl" />
-                      <Box px="sm">
+                      <Box>
                         {canvasLoading ? (
                           <Center>
                             <Loader size="sm" variant="dots" />
@@ -383,8 +376,10 @@ const TicketDetailsPage = () => {
                                 >
                                   <IconFileText size={20} stroke={1.5} />
                                 </ThemeIcon>
-                                <Text fz="lg" fw={600}>
-                                  Canvass Form{" "}
+                                <Stack gap={0}>
+                                  <Text fz="lg" fw={600} tw="break-words">
+                                    Canvass Form{" "}
+                                  </Text>
                                   {canvassDetails &&
                                     canvassDetails.length > 0 &&
                                     canvassDetails[0]
@@ -393,7 +388,7 @@ const TicketDetailsPage = () => {
                                         (Revised)
                                       </Text>
                                     )}
-                                </Text>
+                                </Stack>
                               </Group>
 
                               <ActionIcon
@@ -426,7 +421,7 @@ const TicketDetailsPage = () => {
                                         mb="md"
                                       >
                                         <Grid gutter="lg">
-                                          <Grid.Col span={6}>
+                                          <Grid.Col span={{ sm: 6, base: 12 }}>
                                             <Stack gap="xl">
                                               {/* RF Date Received */}
                                               <Stack gap={4}>
@@ -481,59 +476,64 @@ const TicketDetailsPage = () => {
                                               </Stack>
 
                                               {/* Submitted By */}
-                                              <Stack gap={4}>
-                                                <Text
-                                                  size="md"
-                                                  c="dimmed"
-                                                  fw={500}
-                                                >
-                                                  Submitted By:
-                                                </Text>
-                                                <Group gap="md">
-                                                  <Avatar
-                                                    variant="light"
-                                                    radius="xl"
+                                              {!isSmallScreen && (
+                                                <Stack gap={4}>
+                                                  <Text
                                                     size="md"
-                                                    src={
-                                                      canvass.submitted_by_avatar ||
-                                                      undefined
-                                                    }
+                                                    c="dimmed"
+                                                    fw={500}
                                                   >
-                                                    {canvass.submitted_by_avatar
-                                                      ? null
-                                                      : getNameInitials(
-                                                          canvass.submitted_by_name ||
-                                                            ""
+                                                    Submitted By:
+                                                  </Text>
+                                                  <Group gap="md">
+                                                    <Avatar
+                                                      variant="light"
+                                                      radius="xl"
+                                                      size="md"
+                                                      src={
+                                                        canvass.submitted_by_avatar ||
+                                                        undefined
+                                                      }
+                                                    >
+                                                      {canvass.submitted_by_avatar
+                                                        ? null
+                                                        : getNameInitials(
+                                                            canvass.submitted_by_name ||
+                                                              ""
+                                                          )}
+                                                    </Avatar>
+                                                    <Stack gap={0}>
+                                                      <Text fw={500}>
+                                                        {canvass.submitted_by_name ||
+                                                          "Unknown"}
+                                                      </Text>
+                                                      <Text
+                                                        size="xs"
+                                                        c="dimmed"
+                                                      >
+                                                        {new Date(
+                                                          canvass.canvass_form_date_submitted
+                                                        ).toLocaleString(
+                                                          "en-US",
+                                                          {
+                                                            timeZone:
+                                                              "Asia/Manila",
+                                                            month: "short",
+                                                            day: "2-digit",
+                                                            year: "numeric",
+                                                            hour: "2-digit",
+                                                            minute: "2-digit",
+                                                            hour12: true,
+                                                          }
                                                         )}
-                                                  </Avatar>
-                                                  <Stack gap={0}>
-                                                    <Text fw={500}>
-                                                      {canvass.submitted_by_name ||
-                                                        "Unknown"}
-                                                    </Text>
-                                                    <Text size="xs" c="dimmed">
-                                                      {new Date(
-                                                        canvass.canvass_form_date_submitted
-                                                      ).toLocaleString(
-                                                        "en-US",
-                                                        {
-                                                          timeZone:
-                                                            "Asia/Manila",
-                                                          month: "short",
-                                                          day: "2-digit",
-                                                          year: "numeric",
-                                                          hour: "2-digit",
-                                                          minute: "2-digit",
-                                                          hour12: true,
-                                                        }
-                                                      )}
-                                                    </Text>
-                                                  </Stack>
-                                                </Group>
-                                              </Stack>
+                                                      </Text>
+                                                    </Stack>
+                                                  </Group>
+                                                </Stack>
+                                              )}
                                             </Stack>
                                           </Grid.Col>
-                                          <Grid.Col span={6}>
+                                          <Grid.Col span={{ sm: 6, base: 12 }}>
                                             <Stack gap="xl">
                                               {/* Recommended Supplier */}
                                               <Stack gap={4}>
@@ -619,7 +619,62 @@ const TicketDetailsPage = () => {
                                                   </Group>
                                                 </Stack>
                                               )}
-
+                                              {/* Submitted By */}
+                                              {isSmallScreen && (
+                                                <Stack gap={4}>
+                                                  <Text
+                                                    size="md"
+                                                    c="dimmed"
+                                                    fw={500}
+                                                  >
+                                                    Submitted By:
+                                                  </Text>
+                                                  <Group gap="md">
+                                                    <Avatar
+                                                      variant="light"
+                                                      radius="xl"
+                                                      size="md"
+                                                      src={
+                                                        canvass.submitted_by_avatar ||
+                                                        undefined
+                                                      }
+                                                    >
+                                                      {canvass.submitted_by_avatar
+                                                        ? null
+                                                        : getNameInitials(
+                                                            canvass.submitted_by_name ||
+                                                              ""
+                                                          )}
+                                                    </Avatar>
+                                                    <Stack gap={0}>
+                                                      <Text fw={500}>
+                                                        {canvass.submitted_by_name ||
+                                                          "Unknown"}
+                                                      </Text>
+                                                      <Text
+                                                        size="xs"
+                                                        c="dimmed"
+                                                      >
+                                                        {new Date(
+                                                          canvass.canvass_form_date_submitted
+                                                        ).toLocaleString(
+                                                          "en-US",
+                                                          {
+                                                            timeZone:
+                                                              "Asia/Manila",
+                                                            month: "short",
+                                                            day: "2-digit",
+                                                            year: "numeric",
+                                                            hour: "2-digit",
+                                                            minute: "2-digit",
+                                                            hour12: true,
+                                                          }
+                                                        )}
+                                                      </Text>
+                                                    </Stack>
+                                                  </Group>
+                                                </Stack>
+                                              )}
                                               {/* Revised By */}
                                               {canvass &&
                                                 canvass.canvass_form_revised_by && (
