@@ -20,6 +20,7 @@ import {
   IconHome,
   IconTicket,
   IconUser,
+  IconUsersGroup,
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -49,6 +50,12 @@ const links = [
     label: "Notifications",
     icon: <IconBell style={{ width: rem(18), height: rem(18) }} />,
     href: "/notifications",
+  },
+  {
+    key: "users",
+    label: "Users",
+    icon: <IconUsersGroup style={{ width: rem(18), height: rem(18) }} />,
+    href: "/users",
   },
 ];
 

@@ -79,7 +79,7 @@ export const getTicketDetails = async (ticket_id: string) => {
 
 export const checkReviewerResponse = async (
   ticket_id: string,
-  user_id: string,
+  user_id: string
 ) => {
   const supabase = await createClient();
 
@@ -158,17 +158,17 @@ export const getAllUsers = async (ticket_id: string) => {
     console.error(
       "Error fetching related users:",
       sharedUsersResponse.error?.message,
-      reviewersResponse.error?.message,
+      reviewersResponse.error?.message
     );
     return { error: true, message: "Failed to fetch related users." };
   }
 
   const ticketCreatorId = ticketResponse.data.ticket_created_by;
   const sharedUserIds = sharedUsersResponse.data.map(
-    (u: SharedUser) => u.ticket_shared_user_id,
+    (u: SharedUser) => u.ticket_shared_user_id
   );
   const reviewerIds = reviewersResponse.data.map(
-    (r: Reviewer) => r.approval_reviewed_by,
+    (r: Reviewer) => r.approval_reviewed_by
   );
 
   // Collect all users to exclude
@@ -234,7 +234,7 @@ export const getCanvassDetails = async ({
 
   const { data: canvassDetails, error } = await supabase.rpc(
     "get_canvass_details",
-    { ticket_uuid: ticketId },
+    { ticket_uuid: ticketId }
   );
 
   if (error) {
@@ -282,13 +282,13 @@ export const getCurrentUserNotification = async () => {
 };
 
 export const getComments = async (
-  ticket_id: string,
+  ticket_id: string
 ): Promise<CommentType[]> => {
   const supabase = await createClient();
 
   const { data: comments, error: commentsError } = await supabase.rpc(
     "get_comments_with_avatars",
-    { ticket_id },
+    { ticket_id }
   );
 
   if (commentsError) {
@@ -359,7 +359,7 @@ export const getDraftCanvass = async (ticketId: string, userId: string) => {
 
     if (attachmentsError) {
       throw new Error(
-        `Failed to fetch draft attachments: ${attachmentsError.message}`,
+        `Failed to fetch draft attachments: ${attachmentsError.message}`
       );
     }
 
@@ -412,7 +412,7 @@ export const getUserDataById = async (user_id: string) => {
 
     if (revisedTicketError) {
       throw new Error(
-        revisedTicketError?.message || "Error fetching revised ticket count",
+        revisedTicketError?.message || "Error fetching revised ticket count"
       );
     }
 
@@ -422,6 +422,83 @@ export const getUserDataById = async (user_id: string) => {
       user: userData,
       ticketCount: tickets?.length || 0,
       revisedTicketCount: revisedTickets?.length || 0,
+    };
+  } catch (error) {
+    return {
+      error: true,
+      success: false,
+      message:
+        error instanceof Error ? error.message : "An unknown error occurred",
+    };
+  }
+};
+
+export const getUsers = async () => {
+  const supabase = await createClient();
+
+  try {
+    // Fetch all users
+    const { data: users, error: userError } = await supabase
+      .from("user_table")
+      .select("*");
+
+    if (userError) {
+      throw new Error(userError?.message || "Error fetching users");
+    }
+
+    // Fetch ticket count for each user
+    const userWithTicketCountPromises = users.map(async (user) => {
+      // Fetch tickets created by the user
+      const { data: tickets, error: ticketError } = await supabase
+        .from("ticket_table")
+        .select("*", { count: "exact" })
+        .eq("ticket_created_by", user.user_id);
+
+      if (ticketError) {
+        throw new Error(ticketError?.message || "Error fetching ticket count");
+      }
+
+      // Fetch revised tickets created by the user (tickets that were revised by someone else)
+      const { data: revisedTickets, error: revisedTicketError } = await supabase
+        .from("ticket_table")
+        .select("*", { count: "exact" })
+        .eq("ticket_created_by", user.user_id)
+        .not("ticket_revised_by", "is", null);
+
+      if (revisedTicketError) {
+        throw new Error(
+          revisedTicketError?.message || "Error fetching revised ticket count"
+        );
+      }
+
+      // Fetch revised tickets where the user is the reviewer (tickets that the user revised)
+      const { data: ticketsRevisedByUser, error: ticketsRevisedByUserError } =
+        await supabase
+          .from("ticket_table")
+          .select("*", { count: "exact" })
+          .eq("ticket_revised_by", user.user_id);
+
+      if (ticketsRevisedByUserError) {
+        throw new Error(
+          ticketsRevisedByUserError?.message ||
+            "Error fetching revised tickets by user"
+        );
+      }
+
+      return {
+        ...user,
+        ticketCount: tickets?.length || 0,
+        revisedTicketCount: revisedTickets?.length || 0,
+        ticketsRevisedByUserCount: ticketsRevisedByUser?.length || 0, // Count of tickets this user has revised
+      };
+    });
+
+    const usersWithTicketData = await Promise.all(userWithTicketCountPromises);
+
+    return {
+      error: false,
+      success: true,
+      users: usersWithTicketData,
     };
   } catch (error) {
     return {

@@ -24,6 +24,7 @@ import {
   IconHome,
   IconTicket,
   IconUser,
+  IconUsersGroup,
   IconX,
 } from "@tabler/icons-react";
 import Link from "next/link";
@@ -54,6 +55,12 @@ const links = [
     label: "Notifications",
     icon: <IconBell style={{ width: rem(18), height: rem(18) }} />,
     href: "/notifications",
+  },
+  {
+    key: "users",
+    label: "Users",
+    icon: <IconUsersGroup style={{ width: rem(18), height: rem(18) }} />,
+    href: "/users",
   },
 ];
 
@@ -185,8 +192,8 @@ const MobileSidebar = () => {
                               colorScheme === "dark" ? 4 : 6
                             ]
                           : colorScheme === "dark"
-                            ? theme.colors.dark[0]
-                            : theme.colors.gray[7],
+                          ? theme.colors.dark[0]
+                          : theme.colors.gray[7],
                         position: "relative",
                         top: 3,
                       }}
