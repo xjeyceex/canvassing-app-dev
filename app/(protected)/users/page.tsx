@@ -108,14 +108,6 @@ const UsersPage = () => {
     );
   });
 
-  const usersByRole = filteredUsers?.reduce((acc, user) => {
-    if (!acc[user.user_role]) {
-      acc[user.user_role] = [];
-    }
-    acc[user.user_role].push(user);
-    return acc;
-  }, {} as Record<string, UserType[]>);
-
   const highlightMatch = (text: string, query: string) => {
     if (!query.trim() || !text) return text;
 
@@ -140,7 +132,7 @@ const UsersPage = () => {
     );
   };
 
-  if (loading) {
+  if (loading || !users) {
     return (
       <Box p="md">
         <Skeleton height={40} mb="xl" width="200px" />
@@ -194,7 +186,7 @@ const UsersPage = () => {
       </Title>
 
       <Input
-        placeholder="Search tickets..."
+        placeholder="Search users..."
         mb="md"
         size={isMobile ? "sm" : "md"}
         leftSection={<IconSearch size={isMobile ? 16 : 18} stroke={1.5} />}
@@ -202,112 +194,113 @@ const UsersPage = () => {
         onChange={(e) => setSearchQuery(e.currentTarget.value)}
       />
 
-      {Object.entries(usersByRole || {}).map(([role, roleUsers]) => (
-        <Box key={role} mb="xl">
-          <Title order={3} mb="md" c={roleColors[role.toLowerCase()] || "gray"}>
-            {role.charAt(0).toUpperCase() + role.slice(1)} ({roleUsers.length})
-          </Title>
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
+        {users
+          .filter((user) =>
+            [user.user_full_name, user.user_email]
+              .join(" ")
+              .toLowerCase()
+              .includes(searchQuery.toLowerCase())
+          )
+          .sort((a, b) => {
+            const roleOrder = ["purchaser", "reviewer", "other"]; // Adjust roles as needed
+            return (
+              roleOrder.indexOf(a.user_role.toLowerCase()) -
+              roleOrder.indexOf(b.user_role.toLowerCase())
+            );
+          })
+          .map((user) => (
+            <Card
+              key={user.user_id}
+              withBorder
+              padding="lg"
+              radius="md"
+              style={{
+                transition: "transform 0.2s, box-shadow 0.2s",
+                "&:hover": {
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
+                },
+              }}
+            >
+              <Group mb="md" wrap="nowrap">
+                <Avatar
+                  src={user.user_avatar || "/default-avatar.png"}
+                  alt={user.user_full_name}
+                  size="lg"
+                  radius="xl"
+                />
+                <Box style={{ flex: 1, overflow: "hidden" }}>
+                  <Text size="lg" fw={600} truncate>
+                    {highlightMatch(user.user_full_name, searchQuery)}
+                  </Text>
+                  <Text size="sm" c="dimmed" truncate>
+                    {highlightMatch(user.user_email, searchQuery)}
+                  </Text>
+                </Box>
+              </Group>
 
-          <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
-            {roleUsers.map((user) => (
-              <Card
-                key={user.user_id}
-                withBorder
-                padding="lg"
-                radius="md"
-                style={{
-                  transition: "transform 0.2s, box-shadow 0.2s",
-                  "&:hover": {
-                    transform: "translateY(-2px)",
-                    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-                  },
-                }}
-              >
-                <Group mb="md" wrap="nowrap">
-                  <Avatar
-                    src={user.user_avatar || "/default-avatar.png"}
-                    alt={user.user_full_name}
-                    size="lg"
-                    radius="xl"
-                  />
-                  <Box style={{ flex: 1, overflow: "hidden" }}>
-                    <Text size="lg" fw={600} truncate>
-                      {highlightMatch(user.user_full_name, searchQuery)}
-                    </Text>
-                    <Text size="sm" c="dimmed" truncate>
-                      {highlightMatch(user.user_email, searchQuery)}
-                    </Text>
-                  </Box>
-                </Group>
+              <Group justify="space-between" mb="sm">
+                <Badge
+                  color={roleColors[user.user_role.toLowerCase()] || "gray"}
+                  variant="light"
+                  leftSection={
+                    <IconUser size={12} style={{ marginRight: 4 }} />
+                  }
+                >
+                  {user.user_role}
+                </Badge>
 
-                <Group justify="space-between" mb="sm">
-                  <Badge
-                    color={roleColors[user.user_role.toLowerCase()] || "gray"}
-                    variant="light"
-                    leftSection={
-                      <IconUser size={12} style={{ marginRight: 4 }} />
-                    }
-                  >
-                    {user.user_role}
-                  </Badge>
-
-                  <Group gap="xs">
-                    {/* Only show total tickets and revised ticket count for "purchaser" */}
-                    {user.user_role.toLowerCase() === "purchaser" && (
-                      <>
-                        <Badge
-                          variant="light"
-                          color="blue"
-                          leftSection={
-                            <IconTicket size={12} style={{ marginRight: 4 }} />
-                          }
-                        >
-                          {user.ticketCount}
-                        </Badge>
-                        <Badge
-                          variant="light"
-                          color="red"
-                          leftSection={
-                            <IconCheckbox
-                              size={12}
-                              style={{ marginRight: 4 }}
-                            />
-                          }
-                        >
-                          {user.revisedTicketCount}
-                        </Badge>
-                      </>
-                    )}
-
-                    {/* Show tickets revised by user count only for reviewers */}
-                    {user.user_role.toLowerCase() === "reviewer" && (
+                <Group gap="xs">
+                  {user.user_role.toLowerCase() === "purchaser" && (
+                    <>
                       <Badge
                         variant="light"
-                        color="green"
+                        color="blue"
+                        leftSection={
+                          <IconTicket size={12} style={{ marginRight: 4 }} />
+                        }
+                      >
+                        {user.ticketCount}
+                      </Badge>
+                      <Badge
+                        variant="light"
+                        color="red"
                         leftSection={
                           <IconCheckbox size={12} style={{ marginRight: 4 }} />
                         }
                       >
-                        {user.ticketsRevisedByUserCount}
+                        {user.revisedTicketCount}
                       </Badge>
-                    )}
-                  </Group>
-                </Group>
+                    </>
+                  )}
 
-                <Button
-                  component={Link}
-                  href={`/users/${user.user_id}`}
-                  fullWidth
-                  variant="outline"
-                  mt="sm"
-                >
-                  View Profile
-                </Button>
-              </Card>
-            ))}
-          </SimpleGrid>
-        </Box>
-      ))}
+                  {user.user_role.toLowerCase() === "reviewer" && (
+                    <Badge
+                      variant="light"
+                      color="green"
+                      leftSection={
+                        <IconCheckbox size={12} style={{ marginRight: 4 }} />
+                      }
+                    >
+                      {user.ticketsRevisedByUserCount}
+                    </Badge>
+                  )}
+                </Group>
+              </Group>
+
+              <Button
+                component={Link}
+                href={`/users/${user.user_id}`}
+                fullWidth
+                variant="outline"
+                mt="sm"
+              >
+                View Profile
+              </Button>
+            </Card>
+          ))}
+      </SimpleGrid>
     </Box>
   );
 };
