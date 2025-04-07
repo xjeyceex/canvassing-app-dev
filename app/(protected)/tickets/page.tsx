@@ -61,6 +61,8 @@ const getStatusColor = (status: string) => {
       return "green.6";
     case "CANCELED":
       return "red.7";
+    case "REVISED":
+      return "yellow.4";
     default:
       return "gray.6";
   }
@@ -75,6 +77,7 @@ type TicketStatus =
   | "FOR REVIEW OF SUBMISSIONS"
   | "FOR REVISION"
   | "DECLINED"
+  | "REVISED"
   | "all";
 
 const TicketList = () => {
@@ -174,6 +177,7 @@ const TicketList = () => {
     { value: "CANCELED", label: "Canceled" },
     { value: "DONE", label: "Done" },
     { value: "DECLINED", label: "Declined" },
+    { value: "REVISED", label: "Revised" },
   ];
 
   const handleTabChange = (value: string | null) => {
@@ -204,7 +208,7 @@ const TicketList = () => {
   const availableTickets = tickets.filter((ticket) => {
     const isPurchaser = user?.user_role === "PURCHASER";
     const isSharedWithUser = ticket.shared_users?.some(
-      (sharedUser) => sharedUser.user_id === user?.user_id,
+      (sharedUser) => sharedUser.user_id === user?.user_id
     );
     const isTicketOwner = ticket.ticket_created_by === user?.user_id;
 
@@ -216,10 +220,18 @@ const TicketList = () => {
   });
 
   // Count tickets by status
-  const getTicketCountByStatus = (status: TicketStatus) => {
+  type ExtendedStatus = TicketStatus | "all" | "revised";
+
+  const getTicketCountByStatus = (status: ExtendedStatus) => {
     if (status === "all") {
       return availableTickets.length;
     }
+
+    if (status === "REVISED") {
+      return availableTickets.filter((ticket) => !!ticket.ticket_revised_by)
+        .length;
+    }
+
     return availableTickets.filter((ticket) => ticket.ticket_status === status)
       .length;
   };
@@ -228,6 +240,10 @@ const TicketList = () => {
   const filteredTickets = availableTickets
     .filter((ticket) => {
       // Filter by tab
+      if (activeTab === "REVISED") {
+        return !!ticket.ticket_revised_by;
+      }
+
       if (activeTab !== "all" && ticket.ticket_status !== activeTab) {
         return false;
       }
@@ -259,7 +275,7 @@ const TicketList = () => {
     const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
     return text.replace(
       regex,
-      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
     );
   };
 
@@ -282,7 +298,7 @@ const TicketList = () => {
             const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
             const highlighted = node.textContent.replace(
               regex,
-              '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+              '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
             );
 
             const wrapper = document.createElement("span");
@@ -628,7 +644,7 @@ const TicketList = () => {
                           size="sm"
                           dangerouslySetInnerHTML={{
                             __html: highlightSearchTerm(
-                              ticket.ticket_item_description,
+                              ticket.ticket_item_description
                             ),
                           }}
                         />
@@ -706,7 +722,7 @@ const TicketList = () => {
                           className="rich-text-content"
                           dangerouslySetInnerHTML={{
                             __html: sanitizeAndHighlight(
-                              ticket.ticket_specifications,
+                              ticket.ticket_specifications
                             ),
                           }}
                         />
