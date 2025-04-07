@@ -15,6 +15,8 @@ import {
   Group,
   Input,
   Menu,
+  NativeSelect,
+  Pagination,
   Paper,
   Stack,
   Tabs,
@@ -70,7 +72,10 @@ const TicketList = () => {
   const [expandedTickets, setExpandedTickets] = useState<
     Record<string, boolean>
   >({});
-  const [tabsMenuOpen, setTabsMenuOpen] = useState(false);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   // Responsive breakpoints
   const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.xs})`);
@@ -98,6 +103,11 @@ const TicketList = () => {
   useEffect(() => {
     fetchTickets();
   }, [user?.user_id]);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab, searchQuery, sortBy]);
 
   // Handle search query change and auto-expand matching tickets
   useEffect(() => {
@@ -159,9 +169,6 @@ const TicketList = () => {
   const handleTabChange = (value: string | null) => {
     if (value) {
       setActiveTab(value as TicketStatus);
-      if (isTablet) {
-        setTabsMenuOpen(false);
-      }
     }
   };
 
@@ -184,7 +191,7 @@ const TicketList = () => {
   const availableTickets = tickets.filter((ticket) => {
     const isPurchaser = user?.user_role === "PURCHASER";
     const isSharedWithUser = ticket.shared_users?.some(
-      (sharedUser) => sharedUser.user_id === user?.user_id,
+      (sharedUser) => sharedUser.user_id === user?.user_id
     );
     const isTicketOwner = ticket.ticket_created_by === user?.user_id;
 
@@ -244,6 +251,19 @@ const TicketList = () => {
       return sortBy === "newest" ? dateB - dateA : dateA - dateB;
     });
 
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredTickets.length / rowsPerPage);
+  const startIndex = (currentPage - 1) * rowsPerPage;
+  const endIndex = Math.min(startIndex + rowsPerPage, filteredTickets.length);
+  const currentTickets = filteredTickets.slice(startIndex, endIndex);
+  const showingInfoText =
+    filteredTickets.length > 0
+      ? `${startIndex + 1}–${endIndex} of ${filteredTickets.length}`
+      : "0 of 0";
+
+  // Options for rows per page
+  const rowsPerPageOptions = [5, 10, 25, 50];
+
   // Highlight search terms in text
   const highlightSearchTerm = (text: string) => {
     if (!searchQuery.trim() || !text) return text;
@@ -251,7 +271,7 @@ const TicketList = () => {
     const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
     return text.replace(
       regex,
-      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
     );
   };
 
@@ -274,7 +294,7 @@ const TicketList = () => {
             const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
             const highlighted = node.textContent.replace(
               regex,
-              '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+              '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
             );
 
             const wrapper = document.createElement("span");
@@ -299,66 +319,12 @@ const TicketList = () => {
     return sanitized;
   };
 
-  // Render mobile tabs menu
-  const renderMobileTabsMenu = () => (
-    <Box mb="md">
-      <Menu
-        opened={tabsMenuOpen}
-        onChange={setTabsMenuOpen}
-        width="100%"
-        shadow="md"
-        position="bottom-start"
-      >
-        <Menu.Target>
-          <Button
-            fullWidth
-            variant="light"
-            color="gray"
-            rightSection={<IconChevronDown size={16} />}
-          >
-            {tabItems.find((tab) => tab.value === activeTab)?.label || "All"}
-            <Badge
-              size="sm"
-              ml={8}
-              variant="filled"
-              color={
-                activeTab !== "all" ? getStatusColor(activeTab) : undefined
-              }
-            >
-              {getTicketCountByStatus(activeTab as TicketStatus)}
-            </Badge>
-          </Button>
-        </Menu.Target>
-        <Menu.Dropdown>
-          {tabItems.map((tab) => (
-            <Menu.Item
-              key={tab.value}
-              onClick={() => handleTabChange(tab.value)}
-              leftSection={
-                <IconChecks
-                  size={16}
-                  opacity={activeTab === tab.value ? 1 : 0}
-                />
-              }
-            >
-              <Group gap={8}>
-                {tab.label}
-                <Badge
-                  size="sm"
-                  variant="filled"
-                  color={
-                    tab.value !== "all" ? getStatusColor(tab.value) : undefined
-                  }
-                >
-                  {getTicketCountByStatus(tab.value)}
-                </Badge>
-              </Group>
-            </Menu.Item>
-          ))}
-        </Menu.Dropdown>
-      </Menu>
-    </Box>
-  );
+  const handleRowsPerPageChange = (value: string) => {
+    const newRowsPerPage = parseInt(value, 10);
+    setRowsPerPage(newRowsPerPage);
+    // Reset to first page when changing rows per page
+    setCurrentPage(1);
+  };
 
   if (!user || loading) {
     return <LoadingStateProtected />;
@@ -379,93 +345,35 @@ const TicketList = () => {
             style={{ flexGrow: 1, flexBasis: isMobile ? "100%" : "auto" }}
           >
             <Title order={isMobile ? 3 : 2}>Tickets</Title>
-            <Badge size={isMobile ? "md" : "lg"} variant="light">
-              {availableTickets.length} total
-            </Badge>
           </Group>
 
-          <Group
-            gap="sm"
-            style={{
-              flexWrap: isMobile ? "wrap" : "nowrap",
-              justifyContent: isMobile ? "space-between" : "flex-end",
-              width: isMobile ? "100%" : "auto",
-              marginTop: isMobile ? theme.spacing.xs : 0,
-            }}
-          >
-            <Menu shadow="md" width={200} position="bottom-end">
-              <Menu.Target>
-                <Button
-                  variant="light"
-                  leftSection={<IconFilter size={16} />}
-                  style={{ flexGrow: isMobile ? 1 : 0 }}
-                >
-                  {sortBy === "newest" ? "Newest First" : "Oldest First"}
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item
-                  onClick={() => setSortBy("newest")}
-                  leftSection={
-                    <IconChecks
-                      size={16}
-                      opacity={sortBy === "newest" ? 1 : 0}
-                    />
-                  }
-                >
-                  Newest First
-                </Menu.Item>
-                <Menu.Item
-                  onClick={() => setSortBy("oldest")}
-                  leftSection={
-                    <IconChecks
-                      size={16}
-                      opacity={sortBy === "oldest" ? 1 : 0}
-                    />
-                  }
-                >
-                  Oldest First
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-
-            <Tooltip label="Refresh">
-              <ActionIcon
-                variant="light"
-                size="lg"
-                onClick={fetchTickets}
-                loading={loading}
-              >
-                <IconRefresh size={isMobile ? 16 : 18} />
-              </ActionIcon>
-            </Tooltip>
-
-            {(user.user_role === "PURCHASER" || user.user_role === "ADMIN") && (
-              <Button
-                leftSection={<IconPlus size={16} />}
-                onClick={() => router.push("/tickets/create-ticket")}
-                style={{ flexGrow: isMobile ? 1 : 0 }}
-              >
-                {isMobile ? "New" : "New Ticket"}
-              </Button>
-            )}
-          </Group>
+          {(user.user_role === "PURCHASER" || user.user_role === "ADMIN") && (
+            <Button
+              leftSection={<IconPlus size={16} />}
+              onClick={() => router.push("/tickets/create-ticket")}
+              style={{ flexGrow: isMobile ? 1 : 0 }}
+            >
+              New Ticket
+            </Button>
+          )}
         </Group>
+      </Box>
 
-        <Input
-          placeholder="Search tickets..."
-          mb="md"
-          size={isMobile ? "sm" : "md"}
-          leftSection={<IconSearch size={isMobile ? 16 : 18} stroke={1.5} />}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.currentTarget.value)}
-        />
-
-        {isMobile ? (
-          renderMobileTabsMenu()
-        ) : (
+      <Paper
+        shadow="sm"
+        withBorder
+        style={{
+          border: `1px solid ${
+            colorScheme === "dark" ? theme.colors.dark[5] : theme.colors.gray[2]
+          }`,
+          borderRadius: "md",
+        }}
+        radius="md"
+      >
+        {/* Tools Option */}
+        <Stack gap={0}>
           <Tabs value={activeTab} onChange={handleTabChange}>
-            <Tabs.List style={{ overflowX: "auto" }}>
+            <Tabs.List>
               {tabItems.map((tab) => (
                 <Tabs.Tab
                   key={tab.value}
@@ -473,13 +381,14 @@ const TicketList = () => {
                   color={
                     tab.value !== "all" ? getStatusColor(tab.value) : undefined
                   }
+                  py="md"
                 >
                   <Group gap={8}>
                     {tab.label}
                     <Badge
                       size="sm"
-                      radius="xl"
-                      variant="filled"
+                      radius="sm"
+                      variant="light"
                       color={
                         tab.value !== "all"
                           ? getStatusColor(tab.value)
@@ -493,225 +402,366 @@ const TicketList = () => {
               ))}
             </Tabs.List>
           </Tabs>
-        )}
-      </Box>
 
-      {filteredTickets.length > 0 ? (
-        <Stack gap="lg">
-          {filteredTickets.map((ticket) => (
-            <Paper
-              p={isMobile ? "md" : "lg"}
-              key={ticket.ticket_id}
-              radius="md"
-              withBorder
-              shadow="sm"
-              style={{
-                borderColor:
-                  colorScheme === "dark"
-                    ? theme.colors.dark[5]
-                    : theme.colors.gray[1],
-              }}
-            >
-              {/* Ticket Header - Always Visible */}
-              <Group
-                justify="space-between"
-                wrap="wrap"
-                onClick={() => toggleTicketExpand(ticket.ticket_id)}
-                style={{ cursor: "pointer" }}
-              >
-                <Box style={{ flex: 1, minWidth: isMobile ? "100%" : "auto" }}>
-                  <Group mb={8} wrap="wrap">
-                    <Badge
-                      variant="filled"
-                      color={getStatusColor(ticket.ticket_status)}
-                    >
-                      {ticket.ticket_status}
-                    </Badge>
-                    <Text size="xs" c="dimmed">
-                      Created {formatDate(ticket.ticket_date_created)}
-                    </Text>
-                  </Group>
-                  <Group gap="md" wrap="wrap">
-                    <Text
-                      fw={600}
-                      size="sm"
-                      dangerouslySetInnerHTML={{
-                        __html: `#${highlightSearchTerm(ticket.ticket_name)}`,
-                      }}
-                    />
-                    <Text
-                      size="sm"
-                      dangerouslySetInnerHTML={{
-                        __html: highlightSearchTerm(ticket.ticket_item_name),
-                      }}
-                    />
-                  </Group>
-                </Box>
-                <Group
-                  gap="xs"
+          <Group
+            align="center"
+            justify="space-between"
+            py="sm"
+            px="md"
+            wrap="nowrap"
+            style={{
+              borderBottom: `1px solid ${
+                colorScheme === "dark"
+                  ? theme.colors.dark[5]
+                  : theme.colors.gray[2]
+              }`,
+            }}
+          >
+            <Input
+              placeholder="Search tickets..."
+              w="100%"
+              leftSection={
+                <IconSearch size={isMobile ? 16 : 18} stroke={1.5} />
+              }
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.currentTarget.value)}
+            />
+            <Group align="center" justify="center" wrap="nowrap">
+              <Menu shadow="md" width="fit-content" position="bottom-start">
+                <Menu.Target>
+                  <Button
+                    variant="light"
+                    color="gray"
+                    leftSection={<IconFilter size={16} />}
+                    style={{ flexGrow: isMobile ? 1 : 0 }}
+                    size="sm"
+                  >
+                    {sortBy === "newest" ? "Newest First" : "Oldest First"}
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    onClick={() => setSortBy("newest")}
+                    leftSection={
+                      <IconChecks
+                        size={16}
+                        opacity={sortBy === "newest" ? 1 : 0}
+                      />
+                    }
+                  >
+                    Newest First
+                  </Menu.Item>
+                  <Menu.Item
+                    onClick={() => setSortBy("oldest")}
+                    leftSection={
+                      <IconChecks
+                        size={16}
+                        opacity={sortBy === "oldest" ? 1 : 0}
+                      />
+                    }
+                  >
+                    Oldest First
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+
+              <Tooltip label="Refresh">
+                <ActionIcon
+                  variant="light"
+                  size="lg"
+                  onClick={fetchTickets}
+                  loading={loading}
+                  color="gray"
+                >
+                  <IconRefresh size={isMobile ? 16 : 18} />
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          </Group>
+        </Stack>
+
+        {filteredTickets.length > 0 ? (
+          <>
+            <Stack gap={5}>
+              {currentTickets.map((ticket) => (
+                <Paper
+                  p={isMobile ? "md" : "lg"}
+                  key={ticket.ticket_id}
+                  radius="none"
+                  shadow="none"
                   style={{
-                    marginTop: isMobile ? theme.spacing.xs : 0,
-                    width: isMobile ? "100%" : "auto",
-                    justifyContent: isMobile ? "space-between" : "flex-end",
+                    borderBottom: `1px solid ${
+                      colorScheme === "dark"
+                        ? theme.colors.dark[5]
+                        : theme.colors.gray[2]
+                    }`,
                   }}
                 >
-                  <Button
-                    component={Link}
-                    href={`/tickets/${ticket.ticket_id}`}
-                    variant="light"
-                    size="sm"
-                    style={{ flexGrow: isMobile ? 1 : 0 }}
-                    rightSection={<IconChevronRight size={14} />}
-                    onClick={(e) => e.stopPropagation()} // Prevent toggling when clicking the button
+                  {/* Ticket Header - Always Visible */}
+                  <Group
+                    justify="space-between"
+                    wrap="wrap"
+                    onClick={() => toggleTicketExpand(ticket.ticket_id)}
+                    style={{ cursor: "pointer" }}
                   >
-                    View Details
-                  </Button>
-                  <ActionIcon
-                    variant="subtle"
-                    size="lg"
-                    color="gray"
-                    aria-label="Expand"
-                  >
-                    <IconChevronDown
-                      size={16}
-                      style={{
-                        transform: expandedTickets[ticket.ticket_id]
-                          ? "rotate(180deg)"
-                          : "rotate(0)",
-                        transition: "transform 200ms ease",
-                      }}
-                    />
-                  </ActionIcon>
-                </Group>
-              </Group>
-
-              {/* Collapsible Details Section */}
-              <Collapse in={expandedTickets[ticket.ticket_id]}>
-                <Stack gap="lg" pt="xl">
-                  {ticket.ticket_item_description && (
-                    <Box>
-                      <Group mb={8} gap={10}>
-                        <ThemeIcon
-                          size="sm"
-                          color="blue"
+                    <Box
+                      style={{ flex: 1, minWidth: isMobile ? "100%" : "auto" }}
+                    >
+                      <Group mb={8} wrap="wrap">
+                        <Badge
                           variant="light"
-                          radius="xl"
+                          color={getStatusColor(ticket.ticket_status)}
+                          radius="sm"
                         >
-                          <IconFileDescription size={14} />
-                        </ThemeIcon>
-                        <Text fw={500} size="sm">
-                          Item Description
+                          {ticket.ticket_status}
+                        </Badge>
+                        <Text size="xs" c="dimmed">
+                          Created {formatDate(ticket.ticket_date_created)}
                         </Text>
                       </Group>
-                      <Paper
-                        p="sm"
-                        radius="md"
-                        shadow="none"
-                        bg={colorScheme === "dark" ? "dark.7" : "gray.0"}
-                        style={{
-                          borderColor:
-                            colorScheme === "dark"
-                              ? theme.colors.dark[5]
-                              : theme.colors.gray[1],
-                        }}
-                        withBorder
-                      >
+                      <Group gap="md" wrap="wrap">
+                        <Text
+                          fw={600}
+                          size="sm"
+                          dangerouslySetInnerHTML={{
+                            __html: `#${highlightSearchTerm(
+                              ticket.ticket_name
+                            )}`,
+                          }}
+                        />
                         <Text
                           size="sm"
                           dangerouslySetInnerHTML={{
                             __html: highlightSearchTerm(
-                              ticket.ticket_item_description,
+                              ticket.ticket_item_name
                             ),
                           }}
                         />
-                      </Paper>
-                    </Box>
-                  )}
-
-                  {ticket.ticket_notes && (
-                    <Box>
-                      <Group mb={4} gap={10}>
-                        <ThemeIcon
-                          size="sm"
-                          color="teal"
-                          variant="light"
-                          radius="xl"
-                        >
-                          <IconNotes size={14} />
-                        </ThemeIcon>
-                        <Text fw={500} size="sm">
-                          Notes
-                        </Text>
                       </Group>
-                      <Paper
-                        p="sm"
-                        radius="md"
-                        shadow="none"
-                        withBorder
-                        bg={colorScheme === "dark" ? "dark.7" : "gray.0"}
-                        style={{
-                          borderColor:
-                            colorScheme === "dark"
-                              ? theme.colors.dark[5]
-                              : theme.colors.gray[1],
-                        }}
+                    </Box>
+                    <Group
+                      gap="xs"
+                      style={{
+                        marginTop: isMobile ? theme.spacing.xs : 0,
+                        width: isMobile ? "100%" : "auto",
+                        justifyContent: isMobile ? "space-between" : "flex-end",
+                      }}
+                    >
+                      <Button
+                        component={Link}
+                        href={`/tickets/${ticket.ticket_id}`}
+                        variant="light"
+                        size="xs"
+                        style={{ flexGrow: isMobile ? 1 : 0 }}
+                        rightSection={<IconChevronRight size={14} />}
+                        onClick={(e) => e.stopPropagation()} // Prevent toggling when clicking the button
                       >
-                        <Text
-                          size="sm"
-                          dangerouslySetInnerHTML={{
-                            __html: sanitizeAndHighlight(ticket.ticket_notes),
+                        View Details
+                      </Button>
+                      <ActionIcon
+                        variant="subtle"
+                        size="md"
+                        color="gray"
+                        aria-label="Expand"
+                      >
+                        <IconChevronDown
+                          size={16}
+                          style={{
+                            transform: expandedTickets[ticket.ticket_id]
+                              ? "rotate(180deg)"
+                              : "rotate(0)",
+                            transition: "transform 200ms ease",
                           }}
                         />
-                      </Paper>
-                    </Box>
-                  )}
+                      </ActionIcon>
+                    </Group>
+                  </Group>
 
-                  {ticket.ticket_specifications && (
-                    <Box>
-                      <Group mb={4} gap={10}>
-                        <ThemeIcon
-                          size="sm"
-                          color="violet"
-                          variant="light"
-                          radius="xl"
-                        >
-                          <IconFileText size={14} />
-                        </ThemeIcon>
-                        <Text fw={500} size="sm">
-                          Specifications
-                        </Text>
-                      </Group>
-                      <Paper
-                        p="sm"
-                        radius="md"
-                        shadow="none"
-                        withBorder
-                        bg={colorScheme === "dark" ? "dark.6" : "gray.0"}
-                        style={{
-                          borderColor:
-                            colorScheme === "dark"
-                              ? theme.colors.dark[5]
-                              : theme.colors.gray[1],
-                        }}
-                      >
-                        <Box
-                          className="rich-text-content"
-                          dangerouslySetInnerHTML={{
-                            __html: sanitizeAndHighlight(
-                              ticket.ticket_specifications,
-                            ),
-                          }}
-                        />
-                      </Paper>
-                    </Box>
-                  )}
-                </Stack>
-              </Collapse>
-            </Paper>
-          ))}
-        </Stack>
-      ) : (
-        <Paper p={isMobile ? "md" : "xl"} withBorder radius="md">
+                  {/* Collapsible Details Section */}
+                  <Collapse in={expandedTickets[ticket.ticket_id]}>
+                    <Stack gap="lg" pt="xl">
+                      {ticket.ticket_item_description && (
+                        <Box>
+                          <Group mb={8} gap={10}>
+                            <ThemeIcon
+                              size="sm"
+                              color="blue"
+                              variant="light"
+                              radius="xl"
+                            >
+                              <IconFileDescription size={14} />
+                            </ThemeIcon>
+                            <Text fw={500} size="sm">
+                              Item Description
+                            </Text>
+                          </Group>
+                          <Paper
+                            p="sm"
+                            radius="md"
+                            shadow="none"
+                            bg={colorScheme === "dark" ? "dark.7" : "gray.0"}
+                            style={{
+                              borderColor:
+                                colorScheme === "dark"
+                                  ? theme.colors.dark[5]
+                                  : theme.colors.gray[1],
+                            }}
+                            withBorder
+                          >
+                            <Text
+                              size="sm"
+                              dangerouslySetInnerHTML={{
+                                __html: highlightSearchTerm(
+                                  ticket.ticket_item_description
+                                ),
+                              }}
+                            />
+                          </Paper>
+                        </Box>
+                      )}
+
+                      {ticket.ticket_notes && (
+                        <Box>
+                          <Group mb={4} gap={10}>
+                            <ThemeIcon
+                              size="sm"
+                              color="teal"
+                              variant="light"
+                              radius="xl"
+                            >
+                              <IconNotes size={14} />
+                            </ThemeIcon>
+                            <Text fw={500} size="sm">
+                              Notes
+                            </Text>
+                          </Group>
+                          <Paper
+                            p="sm"
+                            radius="md"
+                            shadow="none"
+                            withBorder
+                            bg={colorScheme === "dark" ? "dark.7" : "gray.0"}
+                            style={{
+                              borderColor:
+                                colorScheme === "dark"
+                                  ? theme.colors.dark[5]
+                                  : theme.colors.gray[1],
+                            }}
+                          >
+                            <Text
+                              size="sm"
+                              dangerouslySetInnerHTML={{
+                                __html: sanitizeAndHighlight(
+                                  ticket.ticket_notes
+                                ),
+                              }}
+                            />
+                          </Paper>
+                        </Box>
+                      )}
+
+                      {ticket.ticket_specifications && (
+                        <Box>
+                          <Group mb={4} gap={10}>
+                            <ThemeIcon
+                              size="sm"
+                              color="violet"
+                              variant="light"
+                              radius="xl"
+                            >
+                              <IconFileText size={14} />
+                            </ThemeIcon>
+                            <Text fw={500} size="sm">
+                              Specifications
+                            </Text>
+                          </Group>
+                          <Paper
+                            p="sm"
+                            radius="md"
+                            shadow="none"
+                            withBorder
+                            bg={colorScheme === "dark" ? "dark.6" : "gray.0"}
+                            style={{
+                              borderColor:
+                                colorScheme === "dark"
+                                  ? theme.colors.dark[5]
+                                  : theme.colors.gray[1],
+                            }}
+                          >
+                            <Box
+                              className="rich-text-content"
+                              dangerouslySetInnerHTML={{
+                                __html: sanitizeAndHighlight(
+                                  ticket.ticket_specifications
+                                ),
+                              }}
+                            />
+                          </Paper>
+                        </Box>
+                      )}
+                    </Stack>
+                  </Collapse>
+                </Paper>
+              ))}
+            </Stack>
+
+            {/* Pagination Component */}
+            <Box p={isMobile ? "xs" : "md"}>
+              <Group
+                justify="apart"
+                align="center"
+                wrap={isMobile ? "wrap" : "nowrap"}
+              >
+                <Group
+                  align="center"
+                  gap="sm"
+                  style={{
+                    order: isMobile ? 2 : 1,
+                    width: isMobile ? "100%" : "auto",
+                    justifyContent: isMobile ? "center" : "flex-start",
+                    marginTop: isMobile ? theme.spacing.xs : 0,
+                  }}
+                >
+                  <Text size="sm" c="dimmed">
+                    Rows per page:
+                  </Text>
+                  <NativeSelect
+                    value={rowsPerPage.toString()}
+                    onChange={(event) =>
+                      handleRowsPerPageChange(event.currentTarget.value)
+                    }
+                    data={rowsPerPageOptions.map((option) => option.toString())}
+                    style={{
+                      width: "70px",
+                      marginRight: theme.spacing.md,
+                    }}
+                    size="sm"
+                  />
+                  <Text size="sm" c="dimmed">
+                    {showingInfoText}
+                  </Text>
+                </Group>
+
+                <Group
+                  style={{
+                    order: isMobile ? 1 : 2,
+                    width: isMobile ? "100%" : "auto",
+                    justifyContent: isMobile ? "center" : "flex-end",
+                  }}
+                >
+                  <Pagination
+                    value={currentPage}
+                    onChange={setCurrentPage}
+                    total={totalPages}
+                    siblings={isMobile ? 0 : 1}
+                    boundaries={isMobile ? 1 : 1}
+                    size={isMobile ? "sm" : "md"}
+                  />
+                </Group>
+              </Group>
+            </Box>
+          </>
+        ) : (
           <Flex
             justify="center"
             align="center"
@@ -720,12 +770,7 @@ const TicketList = () => {
             mih={isMobile ? 150 : 250}
           >
             <Group justify="center">
-              <ThemeIcon
-                size={isMobile ? 36 : 48}
-                radius="xl"
-                variant="light"
-                color="gray"
-              >
+              <ThemeIcon size={isMobile ? 36 : 48} radius="xl" variant="light">
                 <IconTicket size={isMobile ? 18 : 24} />
               </ThemeIcon>
             </Group>
@@ -747,8 +792,8 @@ const TicketList = () => {
               </Group>
             )}
           </Flex>
-        </Paper>
-      )}
+        )}
+      </Paper>
     </Box>
   );
 };
