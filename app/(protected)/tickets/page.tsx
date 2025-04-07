@@ -3,7 +3,7 @@
 import { getAllMyTickets } from "@/actions/get";
 import LoadingStateProtected from "@/components/LoadingStateProtected";
 import { useUserStore } from "@/stores/userStore";
-import { formatDate } from "@/utils/functions";
+import { formatDate, getStatusColor } from "@/utils/functions";
 import { MyTicketType } from "@/utils/types";
 import {
   ActionIcon,
@@ -33,7 +33,6 @@ import {
   IconFileDescription,
   IconFileText,
   IconFilter,
-  IconMenu2,
   IconNotes,
   IconPlus,
   IconRefresh,
@@ -44,29 +43,6 @@ import DOMPurify from "dompurify";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case "FOR CANVASS":
-      return "indigo.6";
-    case "WORK IN PROGRESS":
-      return "blue.6";
-    case "FOR REVIEW OF SUBMISSIONS":
-      return "violet.6";
-    case "FOR APPROVAL":
-      return "teal.6";
-    case "FOR REVISION":
-      return "orange.6";
-    case "DONE":
-      return "green.6";
-    case "CANCELED":
-      return "red.7";
-    case "REVISED":
-      return "yellow.4";
-    default:
-      return "gray.6";
-  }
-};
 
 type TicketStatus =
   | "FOR CANVASS"
@@ -208,7 +184,7 @@ const TicketList = () => {
   const availableTickets = tickets.filter((ticket) => {
     const isPurchaser = user?.user_role === "PURCHASER";
     const isSharedWithUser = ticket.shared_users?.some(
-      (sharedUser) => sharedUser.user_id === user?.user_id,
+      (sharedUser) => sharedUser.user_id === user?.user_id
     );
     const isTicketOwner = ticket.ticket_created_by === user?.user_id;
 
@@ -275,7 +251,7 @@ const TicketList = () => {
     const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
     return text.replace(
       regex,
-      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
     );
   };
 
@@ -298,7 +274,7 @@ const TicketList = () => {
             const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
             const highlighted = node.textContent.replace(
               regex,
-              '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+              '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
             );
 
             const wrapper = document.createElement("span");
@@ -336,8 +312,8 @@ const TicketList = () => {
         <Menu.Target>
           <Button
             fullWidth
-            variant="outline"
-            leftSection={<IconMenu2 size={16} />}
+            variant="light"
+            color="gray"
             rightSection={<IconChevronDown size={16} />}
           >
             {tabItems.find((tab) => tab.value === activeTab)?.label || "All"}
@@ -485,7 +461,7 @@ const TicketList = () => {
           onChange={(e) => setSearchQuery(e.currentTarget.value)}
         />
 
-        {isTablet ? (
+        {isMobile ? (
           renderMobileTabsMenu()
         ) : (
           <Tabs value={activeTab} onChange={handleTabChange}>
@@ -644,7 +620,7 @@ const TicketList = () => {
                           size="sm"
                           dangerouslySetInnerHTML={{
                             __html: highlightSearchTerm(
-                              ticket.ticket_item_description,
+                              ticket.ticket_item_description
                             ),
                           }}
                         />
@@ -722,7 +698,7 @@ const TicketList = () => {
                           className="rich-text-content"
                           dangerouslySetInnerHTML={{
                             __html: sanitizeAndHighlight(
-                              ticket.ticket_specifications,
+                              ticket.ticket_specifications
                             ),
                           }}
                         />
