@@ -48,18 +48,18 @@ const CommentThread: React.FC<CommentThreadProps> = ({
   const [newComment, setNewComment] = useState<string>("");
 
   const [editingComment, setEditingComment] = useState<CommentType | null>(
-    null,
+    null
   );
   const [editContent, setEditContent] = useState<string>("");
 
   const [loadingStates, setLoadingStates] = useState<Record<string, boolean>>(
-    {},
+    {}
   );
   const [isFocused, setIsFocus] = useState(false);
 
   const [isAddingComment, setIsAddingComment] = useState<boolean>(false);
   const [deletingComment, setDeletingComment] = useState<CommentType | null>(
-    null,
+    null
   );
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState<boolean>(false);
 
@@ -124,8 +124,8 @@ const CommentThread: React.FC<CommentThreadProps> = ({
         await deleteComment(deletingComment.comment_id);
         setComments((prevComments) =>
           prevComments.filter(
-            (comment) => comment.comment_id !== deletingComment.comment_id,
-          ),
+            (comment) => comment.comment_id !== deletingComment.comment_id
+          )
         );
       } catch (error) {
         console.error("Unexpected error:", error);
@@ -152,8 +152,8 @@ const CommentThread: React.FC<CommentThreadProps> = ({
                 comment_content: editContent,
                 comment_is_edited: true,
               }
-            : comment,
-        ),
+            : comment
+        )
       );
       setEditingComment(null);
       setEditContent("");
@@ -199,7 +199,7 @@ const CommentThread: React.FC<CommentThreadProps> = ({
         <div>
           {comments.map((comment) => (
             <Group key={comment.comment_id} align="flex-start" gap="xs">
-              <Link href={`/profile/${comment.comment_user_id}`} passHref>
+              <Link href={`/users/${comment.comment_user_id}`} passHref>
                 <Avatar
                   src={comment.comment_user_avatar || undefined}
                   radius="xl"
@@ -232,7 +232,7 @@ const CommentThread: React.FC<CommentThreadProps> = ({
                   <Box style={{ flex: 1 }} pl="xs">
                     <Group gap="0" align="center">
                       <Link
-                        href={`/profile/${comment.comment_user_id}`}
+                        href={`/users/${comment.comment_user_id}`}
                         passHref
                         legacyBehavior
                       >
