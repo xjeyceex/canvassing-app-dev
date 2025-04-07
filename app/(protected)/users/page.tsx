@@ -8,15 +8,20 @@ import {
   Button,
   Card,
   Group,
+  Input,
+  Mark,
   SimpleGrid,
   Skeleton,
   Text,
   Title,
+  useMantineTheme,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { notifications } from "@mantine/notifications";
 import {
   IconAlertCircle,
   IconCheckbox,
+  IconSearch,
   IconTicket,
   IconUser,
 } from "@tabler/icons-react";
@@ -45,8 +50,13 @@ const roleColors: Record<string, string> = {
 };
 
 const UsersPage = () => {
+  const theme = useMantineTheme();
+
   const [users, setUsers] = useState<UserType[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.xs})`);
 
   useEffect(() => {
     let isMounted = true;
@@ -90,14 +100,45 @@ const UsersPage = () => {
     };
   }, []);
 
-  // Group users by role
-  const usersByRole = users?.reduce((acc, user) => {
+  const filteredUsers = users?.filter((user) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      user.user_full_name.toLowerCase().includes(query) ||
+      user.user_email.toLowerCase().includes(query)
+    );
+  });
+
+  const usersByRole = filteredUsers?.reduce((acc, user) => {
     if (!acc[user.user_role]) {
       acc[user.user_role] = [];
     }
     acc[user.user_role].push(user);
     return acc;
   }, {} as Record<string, UserType[]>);
+
+  const highlightMatch = (text: string, query: string) => {
+    if (!query.trim() || !text) return text;
+
+    const regex = new RegExp(`(${query.trim()})`, "gi");
+    const parts = text.split(regex);
+
+    return parts.map((part, index) =>
+      part.toLowerCase() === query.trim().toLowerCase() ? (
+        <Mark
+          key={index}
+          style={{
+            backgroundColor: "#FFF3BF",
+            borderRadius: 2,
+            padding: "0 2px",
+          }}
+        >
+          {part}
+        </Mark>
+      ) : (
+        part
+      )
+    );
+  };
 
   if (loading) {
     return (
@@ -121,15 +162,25 @@ const UsersPage = () => {
     );
   }
 
-  if (!users || users.length === 0) {
+  if (!filteredUsers || filteredUsers.length === 0) {
     return (
       <Box p="md">
         <Title order={2} mb="md">
           Users
         </Title>
+
+        <Input
+          placeholder="Search tickets..."
+          mb="md"
+          size={isMobile ? "sm" : "md"}
+          leftSection={<IconSearch size={isMobile ? 16 : 18} stroke={1.5} />}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.currentTarget.value)}
+        />
+
         <Card withBorder>
           <Text c="dimmed" ta="center" py="xl">
-            No users found
+            No users found for <strong>{searchQuery}</strong>
           </Text>
         </Card>
       </Box>
@@ -138,9 +189,18 @@ const UsersPage = () => {
 
   return (
     <Box p="md">
-      <Title order={2} mb="xl">
+      <Title order={2} mb="sm">
         Users
       </Title>
+
+      <Input
+        placeholder="Search tickets..."
+        mb="md"
+        size={isMobile ? "sm" : "md"}
+        leftSection={<IconSearch size={isMobile ? 16 : 18} stroke={1.5} />}
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.currentTarget.value)}
+      />
 
       {Object.entries(usersByRole || {}).map(([role, roleUsers]) => (
         <Box key={role} mb="xl">
@@ -172,10 +232,10 @@ const UsersPage = () => {
                   />
                   <Box style={{ flex: 1, overflow: "hidden" }}>
                     <Text size="lg" fw={600} truncate>
-                      {user.user_full_name}
+                      {highlightMatch(user.user_full_name, searchQuery)}
                     </Text>
                     <Text size="sm" c="dimmed" truncate>
-                      {user.user_email}
+                      {highlightMatch(user.user_email, searchQuery)}
                     </Text>
                   </Box>
                 </Group>
