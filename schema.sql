@@ -1273,7 +1273,77 @@ begin
 end;
 $$;
 
-create index if not exists idx_ticket_created_by on ticket_table(ticket_created_by);
-create index if not exists idx_canvass_form_submitted_by on canvass_form_table(canvass_form_submitted_by);
-create index if not exists idx_canvass_form_revised_by on canvass_form_table(canvass_form_revised_by);
-create index if not exists idx_approval_reviewed_by on approval_table(approval_reviewed_by);
+CREATE OR REPLACE FUNCTION get_all_users_with_stats()
+RETURNS TABLE (
+  user_id UUID,
+  user_name TEXT,
+  user_email TEXT,
+  user_role TEXT,
+  user_avatar TEXT,
+  user_created_at TIMESTAMPTZ,
+  user_updated_at TIMESTAMPTZ,
+  ticket_count BIGINT,
+  revised_ticket_count BIGINT,
+  tickets_revised_by_user_count BIGINT,
+  tickets_reviewed_by_user_count BIGINT
+)
+LANGUAGE SQL
+AS $$
+SELECT 
+  u.user_id,
+  u.user_full_name AS user_name,
+  u.user_email,
+  u.user_role,
+  u.user_avatar,
+  u.user_created_at,
+  u.user_updated_at,
+  COALESCE(t.ticket_count, 0) AS ticket_count,
+  COALESCE(rt.revised_ticket_count, 0) AS revised_ticket_count,
+  COALESCE(rv.tickets_revised_by_user_count, 0) AS tickets_revised_by_user_count,
+  COALESCE(ap.tickets_reviewed_by_user_count, 0) AS tickets_reviewed_by_user_count
+FROM 
+  user_table u
+LEFT JOIN (
+  SELECT 
+    ticket_created_by,
+    COUNT(*) AS ticket_count
+  FROM 
+    ticket_table
+  GROUP BY 
+    ticket_created_by
+) t ON t.ticket_created_by = u.user_id
+LEFT JOIN (
+  SELECT 
+    canvass_form_submitted_by,
+    COUNT(*) AS revised_ticket_count
+  FROM 
+    canvass_form_table
+  WHERE 
+    canvass_form_revised_by IS NOT NULL
+  GROUP BY 
+    canvass_form_submitted_by
+) rt ON rt.canvass_form_submitted_by = u.user_id
+LEFT JOIN (
+  SELECT 
+    canvass_form_revised_by,
+    COUNT(*) AS tickets_revised_by_user_count
+  FROM 
+    canvass_form_table
+  GROUP BY 
+    canvass_form_revised_by
+) rv ON rv.canvass_form_revised_by = u.user_id
+LEFT JOIN (
+  SELECT 
+    approval_reviewed_by,
+    COUNT(DISTINCT approval_ticket_id) AS tickets_reviewed_by_user_count
+  FROM 
+    approval_table
+  GROUP BY 
+    approval_reviewed_by
+) ap ON ap.approval_reviewed_by = u.user_id;
+$$;
+
+CREATE INDEX IF NOT EXISTS idx_ticket_created_by ON ticket_table (ticket_created_by);
+CREATE INDEX IF NOT EXISTS idx_canvass_form_submitted_by ON canvass_form_table (canvass_form_submitted_by);
+CREATE INDEX IF NOT EXISTS idx_canvass_form_revised_by ON canvass_form_table (canvass_form_revised_by);
+CREATE INDEX IF NOT EXISTS idx_approval_reviewed_by ON approval_table (approval_reviewed_by);

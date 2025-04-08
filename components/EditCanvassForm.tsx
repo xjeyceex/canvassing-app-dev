@@ -203,6 +203,23 @@ const EditCanvassForm = ({
 
             if (isOnlyReviewer) {
               await handleCanvassAction("FOR APPROVAL");
+
+              for (const manager of ticket?.reviewers.filter(
+                (r) => r.reviewer_role === "MANAGER",
+              ) || []) {
+                await updateApprovalStatus({
+                  approval_ticket_id: ticket?.ticket_id,
+                  approval_review_status: "AWAITING ACTION",
+                  approval_reviewed_by: manager.reviewer_id,
+                });
+
+                const message = `The ticket ${ticket?.ticket_name} has been approved by the reviewer and is now awaiting your action.`;
+                await notifyUser(
+                  manager.reviewer_id,
+                  message,
+                  ticket?.ticket_id,
+                );
+              }
             } else {
               await handleCanvassAction("FOR REVIEW OF SUBMISSIONS");
             }

@@ -1,7 +1,7 @@
 "use client";
 
 import { getAllUsers, getTicketDetails } from "@/actions/get";
-import { addComment, notifyUser, shareTicket } from "@/actions/post";
+import { notifyUser, shareTicket } from "@/actions/post";
 import { revertApprovalStatus, updateApprovalStatus } from "@/actions/update";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { useUserStore } from "@/stores/userStore";
@@ -45,9 +45,7 @@ type Props = {
   isDisabled: boolean;
   handleCanvassAction: (action: string) => void;
   fetchTicketDetails: () => Promise<void>;
-  updateCanvassDetails?: () => void;
   updateTicketDetails: () => void;
-  updateComments: () => void;
 };
 
 const TicketStatusAndActions = ({
@@ -56,14 +54,12 @@ const TicketStatusAndActions = ({
   fetchTicketDetails,
   handleCanvassAction,
   updateTicketDetails,
-  updateComments,
 }: Props) => {
   const { user } = useUserStore();
 
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isSharing, setIsSharing] = useState(false);
   const [isSharingLoading, setIsSharingLoading] = useState(false);
-  const [newComment, setNewComment] = useState("");
   const [approvalStatus, setApprovalStatus] = useState<string | null>(null);
 
   // Confirmation Modal States
@@ -132,12 +128,6 @@ const TicketStatusAndActions = ({
 
     setIsStatusLoading(true);
     try {
-      if (newComment.trim()) {
-        await addComment(ticket.ticket_id, newComment, user.user_id);
-        updateComments();
-        setNewComment("");
-      }
-
       handleCanvassAction("WORK IN PROGRESS");
       updateTicketDetails();
     } catch (error) {
@@ -216,11 +206,6 @@ const TicketStatusAndActions = ({
         : currentTicket.ticket_status;
 
     try {
-      if (newComment.trim()) {
-        await addComment(currentTicket.ticket_id, newComment, user.user_id);
-        updateComments();
-      }
-
       await updateApprovalStatus({
         approval_ticket_id: currentTicket.ticket_id,
         approval_review_status: newApprovalStatus,
@@ -327,11 +312,6 @@ const TicketStatusAndActions = ({
         : currentTicket.ticket_status;
 
     try {
-      if (newComment.trim()) {
-        await addComment(currentTicket.ticket_id, newComment, user.user_id);
-        updateComments();
-      }
-
       await updateApprovalStatus({
         approval_ticket_id: currentTicket.ticket_id,
         approval_review_status: newApprovalStatus,
@@ -356,11 +336,6 @@ const TicketStatusAndActions = ({
     setIsStatusLoading(true);
 
     try {
-      if (newComment.trim()) {
-        await addComment(ticket.ticket_id, newComment, user.user_id);
-        updateComments();
-      }
-
       // Revert approval status
       await revertApprovalStatus(ticket.ticket_id);
       handleCanvassAction("FOR REVISION");
@@ -381,13 +356,6 @@ const TicketStatusAndActions = ({
     setIsStatusLoading(true);
 
     try {
-      if (newComment.trim()) {
-        // Add comment before reverting approval status
-        await addComment(ticket.ticket_id, newComment, user.user_id);
-
-        updateComments();
-      }
-
       // Revert approval status
       await revertApprovalStatus(ticket.ticket_id);
 
