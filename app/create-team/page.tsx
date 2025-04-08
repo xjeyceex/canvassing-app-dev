@@ -167,15 +167,19 @@ const CreateTeamPage = () => {
 
       {/* Main Content */}
       <Container size="sm" py={rem(48)}>
-        <Card withBorder padding={0} bg={isDark ? "dark.7" : "white"}>
+        <Card withBorder padding={0} bg={isDark ? "dark.7" : "white"} pt={0}>
           <form onSubmit={handleSubmit(onSubmit)}>
             <Stack gap={0}>
               {/* Form Header */}
-              <Box p={rem(24)} pb={rem(16)}>
-                <Text size="lg" fw={600} c={isDark ? "white" : "dark.9"}>
-                  Let{"'"}s set up your new team
-                </Text>
-              </Box>
+              <Text
+                size="lg"
+                fw={600}
+                c={isDark ? "white" : "dark.9"}
+                px="lg"
+                py="md"
+              >
+                Let{"'"}s set up your new team
+              </Text>
 
               <Divider />
 
@@ -261,7 +265,6 @@ const CreateTeamPage = () => {
                           accept="image/*"
                           placeholder="Choose an image"
                           radius="md"
-                          size="md"
                           leftSection={<IconUpload size={16} />}
                           onChange={handleFileChange}
                         />
@@ -278,14 +281,15 @@ const CreateTeamPage = () => {
               <Divider />
 
               {/* Form Actions */}
-              <Box p={rem(24)}>
-                <Group justify="space-between">
+              <Box p={rem(24)} py="md">
+                <Group justify="flex-end">
                   <Button
                     variant={isDark ? "subtle" : "light"}
                     color="gray"
                     radius="md"
                     component={Link}
                     href="/teams"
+                    fz="sm"
                   >
                     Cancel
                   </Button>
@@ -294,6 +298,7 @@ const CreateTeamPage = () => {
                     loading={isSubmitting}
                     disabled={isSubmitting}
                     radius="md"
+                    fz="sm"
                   >
                     Create Team
                   </Button>

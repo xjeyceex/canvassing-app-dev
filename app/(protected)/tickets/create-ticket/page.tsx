@@ -2,6 +2,7 @@
 
 import { getManagers, getReviewers } from "@/actions/get";
 import { createTicket } from "@/actions/post";
+import PageHeader from "@/components/PageHeader";
 import {
   RichTextEditor,
   RichTextEditorRef,
@@ -27,14 +28,12 @@ import {
   Textarea,
   TextInput,
   ThemeIcon,
-  Title,
   Tooltip,
   useMantineColorScheme,
 } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
 import { notifications } from "@mantine/notifications";
 import {
-  IconArrowLeft,
   IconCheck,
   IconClipboard,
   IconPencil,
@@ -63,7 +62,7 @@ const CreateTicketPage = () => {
   const [specificationsValue, setSpecificationsValue] = useState<string>("");
   const [reviewerOptions, setReviewerOptions] = useState<ReviewerType[]>([]);
   const [selectedReviewers, setSelectedReviewers] = useState<ReviewerType[]>(
-    [],
+    []
   );
   const [managerOptions, setManagerOptions] = useState<ReviewerType[]>([]);
   const [selectedManagers, setSelectedManagers] = useState<ReviewerType[]>([]);
@@ -85,8 +84,8 @@ const CreateTicketPage = () => {
     const filteredReviewers = reviewerOptions.filter(
       (option) =>
         !selectedReviewers.some(
-          (reviewer) => reviewer.user_id === option.user_id,
-        ),
+          (reviewer) => reviewer.user_id === option.user_id
+        )
     );
 
     return filteredReviewers.map((reviewer) => ({
@@ -98,7 +97,7 @@ const CreateTicketPage = () => {
   const getManagersFilteredOptions = () => {
     const filteredManagers = managerOptions.filter(
       (option) =>
-        !selectedManagers.some((manager) => manager.user_id === option.user_id),
+        !selectedManagers.some((manager) => manager.user_id === option.user_id)
     );
 
     return filteredManagers.map((manager) => ({
@@ -111,7 +110,7 @@ const CreateTicketPage = () => {
     if (!value) return;
 
     const selectedOption = reviewerOptions.find(
-      (option) => option.user_id === value,
+      (option) => option.user_id === value
     );
     if (
       selectedOption &&
@@ -137,7 +136,7 @@ const CreateTicketPage = () => {
     if (!value) return;
 
     const selectedOption = managerOptions.find(
-      (option) => option.user_id === value,
+      (option) => option.user_id === value
     );
     if (
       selectedOption &&
@@ -161,23 +160,23 @@ const CreateTicketPage = () => {
 
   const removeReviewer = (id: string) => {
     const updatedReviewers = selectedReviewers.filter(
-      (reviewer) => reviewer.user_id !== id,
+      (reviewer) => reviewer.user_id !== id
     );
     setSelectedReviewers(updatedReviewers);
     form.setValue(
       "ticketReviewer",
-      updatedReviewers.map((r) => r.user_id),
+      updatedReviewers.map((r) => r.user_id)
     );
   };
 
   const removeManager = (id: string) => {
     const updatedManagers = selectedManagers.filter(
-      (manager) => manager.user_id !== id,
+      (manager) => manager.user_id !== id
     );
     setSelectedManagers(updatedManagers);
     form.setValue(
       "ticketManager",
-      updatedManagers.map((r) => r.user_id),
+      updatedManagers.map((r) => r.user_id)
     );
   };
 
@@ -198,12 +197,13 @@ const CreateTicketPage = () => {
             title: "Success",
             message: "Your ticket has been created successfully.",
             color: "green",
-            icon: <IconCheck size={20} />,
+            icon: <IconCheck size={16} />,
             autoClose: 5000,
           });
           form.clearErrors();
           form.reset();
           setSelectedReviewers([]);
+          setSelectedManagers([]);
           setNoteValue("");
           setSpecificationsValue("");
           noteEditorRef.current?.reset();
@@ -214,7 +214,7 @@ const CreateTicketPage = () => {
             title: "Error",
             message: res.message || "Failed to create ticket.", // ✅ Show the actual error
             color: "red",
-            icon: <IconX size={20} />,
+            icon: <IconX size={16} />,
             autoClose: 5000,
           });
         }
@@ -245,26 +245,36 @@ const CreateTicketPage = () => {
     return null;
   }
 
+  const breadcrumbs = [
+    {
+      title: "Dashboard",
+      href: "/dashboard",
+    },
+    {
+      title: "Tickets",
+      href: "/tickets",
+    },
+    {
+      title: "Create Ticket",
+      href: "/tickets/create-ticket",
+    },
+  ];
+
   return (
     <Box p={{ base: "md", sm: "xl" }}>
-      <Stack gap={2}>
-        <Button
-          variant="light"
-          onClick={() => router.push("/tickets")}
-          leftSection={<IconArrowLeft size={20} />}
-          radius="md"
-          w="fit-content"
-          mb="xl"
-        >
-          Back to Tickets
-        </Button>
-        <Title order={2}>Create New Ticket</Title>
-        <Text c="dimmed" size="md" mb="xl">
-          Fill out the form below to create a new ticket. Fields marked with
-          <span style={{ color: "red" }}> * </span>
-          are required.
-        </Text>
-      </Stack>
+      <Box mb="lg">
+        <PageHeader
+          title="Create New Ticket"
+          description={
+            <>
+              Fill out the form below to create a new ticket. Fields marked with
+              <span style={{ color: "red" }}> * </span>
+              are required.
+            </>
+          }
+          breadcrumbs={breadcrumbs}
+        />
+      </Box>
 
       <form onSubmit={form.handleSubmit(onSubmit)}>
         <Grid gutter="xl">
@@ -283,8 +293,8 @@ const CreateTicketPage = () => {
                 disabled={isPending}
                 required
                 radius="md"
-                leftSection={<IconClipboard size={20} />}
-                size="md"
+                leftSection={<IconClipboard size={16} />}
+                size="sm"
               />
 
               <TextInput
@@ -295,8 +305,8 @@ const CreateTicketPage = () => {
                 disabled={isPending}
                 required
                 radius="md"
-                leftSection={<IconPencil size={20} />}
-                size="md"
+                leftSection={<IconPencil size={16} />}
+                size="sm"
               />
 
               <Textarea
@@ -308,7 +318,7 @@ const CreateTicketPage = () => {
                 required
                 radius="md"
                 minRows={3}
-                size="md"
+                size="sm"
               />
 
               <TextInput
@@ -323,258 +333,284 @@ const CreateTicketPage = () => {
                 required
                 disabled={isPending}
                 radius="md"
-                leftSection={<IconSettings size={20} />}
+                leftSection={<IconSettings size={16} />}
                 descriptionProps={{ fz: "sm" }}
-                size="md"
+                size="sm"
               />
 
-              {/* Specification */}
-              <Stack gap={0}>
-                <Stack gap={0}>
-                  <Text fw={500} size="md">
-                    Specifications{" "}
-                    <Text component="span" c="red">
-                      *
-                    </Text>
+              {/* Managers */}
+              <Stack gap={8}>
+                <Group justify="space-between">
+                  <Text fw={500} size="sm">
+                    Select Managers <span style={{ color: "red" }}> * </span>
                   </Text>
-                  <Text size="md" c="dimmed" mb="xs">
-                    Add technical specifications or requirements
-                  </Text>
-                </Stack>
-                <RichTextEditor
-                  ref={specificationsEditorRef}
-                  value={specificationsValue}
-                  onChange={(value) => {
-                    setSpecificationsValue(value);
-                    form.setValue("ticketSpecification", value);
-                  }}
+                  <Badge variant="light" radius="sm" size="sm" color="teal">
+                    {selectedManagers.length} manager(s)
+                  </Badge>
+                </Group>
+
+                <Select
+                  key={selectedManagers.length}
+                  placeholder="Search and select managers"
+                  data={getManagersFilteredOptions()}
+                  onChange={addManager}
+                  disabled={isPending}
+                  clearable
+                  searchable
+                  leftSection={<IconUsers size={16} />}
+                  radius="md"
+                  nothingFoundMessage="No more managers available"
+                  size="sm"
                 />
-                {form.formState.errors.ticketSpecification?.message && (
-                  <Text c="red" size="sm" mt={5}>
-                    {form.formState.errors.ticketSpecification?.message}
+
+                {form.formState.errors.ticketManager?.message && (
+                  <Text size="xs" c="red">
+                    {form.formState.errors.ticketManager.message}
                   </Text>
+                )}
+
+                {selectedManagers.length > 0 ? (
+                  <Stack gap="xs">
+                    {selectedManagers.map((manager) => (
+                      <Paper
+                        key={manager.user_id}
+                        p="sm"
+                        withBorder
+                        radius="md"
+                      >
+                        <Flex
+                          align="center"
+                          justify="space-between"
+                          direction="row"
+                        >
+                          <Group justify="center">
+                            <Avatar
+                              radius="xl"
+                              color={isDark ? "teal" : "teal"}
+                            >
+                              {getNameInitials(manager.user_full_name)}
+                            </Avatar>
+                            <Stack gap={0}>
+                              <Text fw={500} fz="sm">
+                                {manager.user_full_name}
+                              </Text>
+                              <Text fz="xs" c="dimmed">
+                                {manager.user_email}
+                              </Text>
+                            </Stack>
+                          </Group>
+                          <Tooltip label="Remove manager">
+                            <ActionIcon
+                              color="red"
+                              variant="subtle"
+                              onClick={() => removeManager(manager.user_id)}
+                            >
+                              <IconTrash size={16} />
+                            </ActionIcon>
+                          </Tooltip>
+                        </Flex>
+                      </Paper>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Paper withBorder p="xl" radius="md" ta="center">
+                    <Stack align="center" gap="sm">
+                      <ThemeIcon
+                        size="xl"
+                        radius="xl"
+                        color="teal"
+                        variant="light"
+                      >
+                        <IconUserSearch size={28} />
+                      </ThemeIcon>
+                      <Stack gap={0}>
+                        <Text fw={500} size="sm">
+                          No managers selected
+                        </Text>
+                        <Text c="dimmed" size="sm">
+                          Assign a managers to this ticket
+                        </Text>
+                      </Stack>
+                    </Stack>
+                  </Paper>
                 )}
               </Stack>
 
-              {/* Notes */}
-              <Stack gap={0}>
-                <Stack gap={0}>
-                  <Text fw={500} size="md">
-                    Notes
+              {/* Reviewers */}
+              <Stack gap={8}>
+                <Group justify="space-between">
+                  <Text fw={500} size="sm">
+                    Select Reviewers <span style={{ color: "red" }}> * </span>
                   </Text>
-                  <Text size="md" c="dimmed" mb="xs">
-                    Add any additional notes or comments
-                  </Text>
-                </Stack>
-                <RichTextEditor
-                  ref={noteEditorRef}
-                  value={noteValue}
-                  onChange={(value) => {
-                    setNoteValue(value);
-                    form.setValue("ticketNotes", value);
-                  }}
+                  <Badge variant="light" radius="sm" size="sm">
+                    {selectedReviewers.length} reviewer(s)
+                  </Badge>
+                </Group>
+
+                <Select
+                  key={selectedReviewers.length}
+                  placeholder="Search and select reviewer"
+                  data={getReviewersFilteredOptions()}
+                  onChange={addReviewer}
+                  disabled={isPending}
+                  clearable
+                  searchable
+                  leftSection={<IconUsers size={16} />}
+                  radius="md"
+                  nothingFoundMessage="No more reviewers available"
+                  size="sm"
                 />
+
+                {form.formState.errors.ticketReviewer?.message && (
+                  <Text size="xs" c="red">
+                    {form.formState.errors.ticketReviewer.message}
+                  </Text>
+                )}
+
+                {selectedReviewers.length > 0 ? (
+                  <Stack gap="xs">
+                    {selectedReviewers.map((reviewer) => (
+                      <Paper
+                        key={reviewer.user_id}
+                        p="sm"
+                        withBorder
+                        radius="md"
+                      >
+                        <Flex
+                          align="center"
+                          justify="space-between"
+                          direction="row"
+                        >
+                          <Group justify="center">
+                            <Avatar
+                              radius="xl"
+                              color={isDark ? "blue.8" : "blue.5"}
+                            >
+                              {getNameInitials(reviewer.user_full_name)}
+                            </Avatar>
+                            <Stack gap={0}>
+                              <Text fw={500} fz="sm">
+                                {reviewer.user_full_name}
+                              </Text>
+                              <Text fz="xs" c="dimmed">
+                                {reviewer.user_email}
+                              </Text>
+                            </Stack>
+                          </Group>
+                          <Tooltip label="Remove reviewer">
+                            <ActionIcon
+                              color="red"
+                              variant="subtle"
+                              onClick={() => removeReviewer(reviewer.user_id)}
+                            >
+                              <IconTrash size={16} />
+                            </ActionIcon>
+                          </Tooltip>
+                        </Flex>
+                      </Paper>
+                    ))}
+                  </Stack>
+                ) : (
+                  <Paper withBorder p="xl" radius="md" ta="center">
+                    <Stack align="center" gap="sm">
+                      <ThemeIcon
+                        size="xl"
+                        radius="xl"
+                        color="blue.5"
+                        variant="light"
+                      >
+                        <IconUserSearch size={28} />
+                      </ThemeIcon>
+                      <Stack gap={0}>
+                        <Text fw={500} size="sm">
+                          No reviewers selected
+                        </Text>
+                        <Text c="dimmed" size="sm">
+                          Assign a reviewers to this ticket
+                        </Text>
+                      </Stack>
+                    </Stack>
+                  </Paper>
+                )}
               </Stack>
             </Stack>
           </Grid.Col>
 
           {/* Right Column */}
           <Grid.Col span={{ base: 12, md: 6 }}>
-            {/* Managers */}
-            <Stack gap={8} mb="xl">
-              <Group justify="space-between">
-                <Text fw={500} size="md">
-                  Select Managers <span style={{ color: "red" }}> * </span>
+            {/* Specification */}
+            <Stack gap={0} mb="xl">
+              <Stack gap={0}>
+                <Text fw={500} size="sm">
+                  Specifications{" "}
+                  <Text component="span" c="red">
+                    *
+                  </Text>
                 </Text>
-                <Badge radius="xl" size="md" color="green.7">
-                  {selectedManagers.length} manager(s)
-                </Badge>
-              </Group>
-
-              <Select
-                key={selectedManagers.length}
-                placeholder="Search and select managers"
-                data={getManagersFilteredOptions()}
-                onChange={addManager}
-                disabled={isPending}
-                clearable
-                searchable
-                leftSection={<IconUsers size={20} />}
-                radius="md"
-                nothingFoundMessage="No more managers available"
-                size="md"
+                <Text size="sm" c="dimmed" mb="xs">
+                  Add technical specifications or requirements
+                </Text>
+              </Stack>
+              <RichTextEditor
+                ref={specificationsEditorRef}
+                value={specificationsValue}
+                onChange={(value) => {
+                  setSpecificationsValue(value);
+                  form.setValue("ticketSpecification", value);
+                }}
               />
-
-              {form.formState.errors.ticketManager?.message && (
-                <Text size="xs" c="red">
-                  {form.formState.errors.ticketManager.message}
+              {form.formState.errors.ticketSpecification?.message && (
+                <Text c="red" size="sm" mt={5}>
+                  {form.formState.errors.ticketSpecification?.message}
                 </Text>
-              )}
-
-              {selectedManagers.length > 0 ? (
-                <Stack gap="xs">
-                  {selectedManagers.map((manager) => (
-                    <Paper key={manager.user_id} p="sm" withBorder radius="md">
-                      <Flex
-                        align="center"
-                        justify="space-between"
-                        direction="row"
-                      >
-                        <Group justify="center">
-                          <Avatar
-                            radius="xl"
-                            color={isDark ? "green.8" : "green.7"}
-                          >
-                            {getNameInitials(manager.user_full_name)}
-                          </Avatar>
-                          <Stack gap={0}>
-                            <Text fw={500} fz="md">
-                              {manager.user_full_name}
-                            </Text>
-                            <Text fz="sm" c="dimmed">
-                              {manager.user_email}
-                            </Text>
-                          </Stack>
-                        </Group>
-                        <Tooltip label="Remove manager">
-                          <ActionIcon
-                            color="red"
-                            variant="subtle"
-                            onClick={() => removeManager(manager.user_id)}
-                          >
-                            <IconTrash size={20} />
-                          </ActionIcon>
-                        </Tooltip>
-                      </Flex>
-                    </Paper>
-                  ))}
-                </Stack>
-              ) : (
-                <Paper withBorder p="xl" radius="md" ta="center">
-                  <Stack align="center" gap="sm">
-                    <ThemeIcon
-                      size="xl"
-                      radius="xl"
-                      color="green.7"
-                      variant="light"
-                    >
-                      <IconUserSearch size={28} />
-                    </ThemeIcon>
-                    <Stack gap={0}>
-                      <Text fw={500} size="md">
-                        No managers selected
-                      </Text>
-                      <Text c="dimmed" size="sm">
-                        Assign a managers to this ticket
-                      </Text>
-                    </Stack>
-                  </Stack>
-                </Paper>
               )}
             </Stack>
 
-            {/* Reviewers */}
-            <Stack gap={8} mb="lg">
-              <Group justify="space-between">
-                <Text fw={500} size="md">
-                  Select Reviewers <span style={{ color: "red" }}> * </span>
+            {/* Notes */}
+            <Stack gap={0} mb="lg">
+              <Stack gap={0}>
+                <Text fw={500} size="sm">
+                  Notes
                 </Text>
-                <Badge radius="xl" size="md">
-                  {selectedReviewers.length} reviewer(s)
-                </Badge>
-              </Group>
-
-              <Select
-                key={selectedReviewers.length}
-                placeholder="Search and select reviewer"
-                data={getReviewersFilteredOptions()}
-                onChange={addReviewer}
-                disabled={isPending}
-                clearable
-                searchable
-                leftSection={<IconUsers size={20} />}
-                radius="md"
-                nothingFoundMessage="No more reviewers available"
-                size="md"
+                <Text size="sm" c="dimmed" mb="xs">
+                  Add any additional notes or comments
+                </Text>
+              </Stack>
+              <RichTextEditor
+                ref={noteEditorRef}
+                value={noteValue}
+                onChange={(value) => {
+                  setNoteValue(value);
+                  form.setValue("ticketNotes", value);
+                }}
               />
-
-              {form.formState.errors.ticketReviewer?.message && (
-                <Text size="xs" c="red">
-                  {form.formState.errors.ticketReviewer.message}
-                </Text>
-              )}
-
-              {selectedReviewers.length > 0 ? (
-                <Stack gap="xs">
-                  {selectedReviewers.map((reviewer) => (
-                    <Paper key={reviewer.user_id} p="sm" withBorder radius="md">
-                      <Flex
-                        align="center"
-                        justify="space-between"
-                        direction="row"
-                      >
-                        <Group justify="center">
-                          <Avatar
-                            radius="xl"
-                            color={isDark ? "blue.8" : "blue.5"}
-                          >
-                            {getNameInitials(reviewer.user_full_name)}
-                          </Avatar>
-                          <Stack gap={0}>
-                            <Text fw={500} fz="md">
-                              {reviewer.user_full_name}
-                            </Text>
-                            <Text fz="sm" c="dimmed">
-                              {reviewer.user_email}
-                            </Text>
-                          </Stack>
-                        </Group>
-                        <Tooltip label="Remove reviewer">
-                          <ActionIcon
-                            color="red"
-                            variant="subtle"
-                            onClick={() => removeReviewer(reviewer.user_id)}
-                          >
-                            <IconTrash size={20} />
-                          </ActionIcon>
-                        </Tooltip>
-                      </Flex>
-                    </Paper>
-                  ))}
-                </Stack>
-              ) : (
-                <Paper withBorder p="xl" radius="md" ta="center">
-                  <Stack align="center" gap="sm">
-                    <ThemeIcon
-                      size="xl"
-                      radius="xl"
-                      color="blue.5"
-                      variant="light"
-                    >
-                      <IconUserSearch size={28} />
-                    </ThemeIcon>
-                    <Stack gap={0}>
-                      <Text fw={500} size="md">
-                        No reviewers selected
-                      </Text>
-                      <Text c="dimmed" size="sm">
-                        Assign a reviewers to this ticket
-                      </Text>
-                    </Stack>
-                  </Stack>
-                </Paper>
-              )}
             </Stack>
 
-            <Group align="column" gap="md" style={{ width: "100%" }}>
+            <Group
+              align="row"
+              justify="flex-end"
+              gap="md"
+              style={{ width: "100%" }}
+            >
+              {/* Cancel button */}
+              <Button
+                color="gray"
+                variant="light"
+                type="button"
+                loading={isPending}
+                disabled={isPending}
+                radius="md"
+                size="sm"
+              >
+                Cancel
+              </Button>
               <Button
                 type="submit"
                 loading={isPending}
                 disabled={isPending}
                 radius="md"
                 color={isDark ? "blue.6" : "blue.5"}
-                size="md"
-                fullWidth
+                size="sm"
               >
                 Create Ticket
               </Button>

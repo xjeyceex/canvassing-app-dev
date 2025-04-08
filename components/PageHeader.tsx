@@ -19,7 +19,7 @@ type BreadcrumbItem = {
 
 type PageHeaderProps = {
   title: string | React.ReactNode;
-  description?: string;
+  description?: string | React.ReactNode;
   breadcrumbs?: BreadcrumbItem[];
 };
 
@@ -94,7 +94,7 @@ const PageHeader = ({ title, description, breadcrumbs }: PageHeaderProps) => {
         </Title>
 
         {description && (
-          <Text c={isDark ? "gray.4" : "gray.6"} size="md">
+          <Text c={isDark ? "gray.4" : "gray.6"} size="sm">
             {description}
           </Text>
         )}
