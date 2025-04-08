@@ -153,3 +153,15 @@ export type CommentType = {
   comment_user_full_name: string;
   replies: CommentType[];
 };
+
+export type TicketStatus =
+  | "FOR CANVASS"
+  | "WORK IN PROGRESS"
+  | "FOR APPROVAL"
+  | "DONE"
+  | "CANCELED"
+  | "FOR REVIEW OF SUBMISSIONS"
+  | "FOR REVISION"
+  | "DECLINED"
+  | "REVISED"
+  | "all";

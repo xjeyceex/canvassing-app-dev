@@ -1,10 +1,5 @@
 "use client";
 
-import { getAllMyTickets } from "@/actions/get";
-import LoadingStateProtected from "@/components/LoadingStateProtected";
-import { useUserStore } from "@/stores/userStore";
-import { formatDate, getStatusColor } from "@/utils/functions";
-import { MyTicketType } from "@/utils/types";
 import {
   ActionIcon,
   Badge,
@@ -22,7 +17,6 @@ import {
   Tabs,
   Text,
   ThemeIcon,
-  Title,
   Tooltip,
   useMantineColorScheme,
   useMantineTheme,
@@ -46,27 +40,24 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-type TicketStatus =
-  | "FOR CANVASS"
-  | "WORK IN PROGRESS"
-  | "FOR APPROVAL"
-  | "DONE"
-  | "CANCELED"
-  | "FOR REVIEW OF SUBMISSIONS"
-  | "FOR REVISION"
-  | "DECLINED"
-  | "REVISED"
-  | "all";
+import LoadingStateProtected from "@/components/LoadingStateProtected";
+
+import { getAllMyTickets } from "@/actions/get";
+import PageHeader from "@/components/PageHeader";
+import { useUserStore } from "@/stores/userStore";
+import { formatDate, getStatusColor } from "@/utils/functions";
+import { MyTicketType, TicketStatus } from "@/utils/types";
 
 const TicketList = () => {
   const { colorScheme } = useMantineColorScheme();
   const { user } = useUserStore();
   const theme = useMantineTheme();
+  const router = useRouter();
+
   const [activeTab, setActiveTab] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
   const [tickets, setTickets] = useState<MyTicketType[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-  const router = useRouter();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedTickets, setExpandedTickets] = useState<
@@ -76,6 +67,12 @@ const TicketList = () => {
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  // Breadcrumbs
+  const breadcrumbs = [
+    { title: "Dashboard", href: "/dashboard" },
+    { title: "Tickets", href: "/tickets" },
+  ];
 
   // Responsive breakpoints
   const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.xs})`);
@@ -191,7 +188,7 @@ const TicketList = () => {
   const availableTickets = tickets.filter((ticket) => {
     const isPurchaser = user?.user_role === "PURCHASER";
     const isSharedWithUser = ticket.shared_users?.some(
-      (sharedUser) => sharedUser.user_id === user?.user_id,
+      (sharedUser) => sharedUser.user_id === user?.user_id
     );
     const isTicketOwner = ticket.ticket_created_by === user?.user_id;
 
@@ -271,7 +268,7 @@ const TicketList = () => {
     const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
     return text.replace(
       regex,
-      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
     );
   };
 
@@ -294,7 +291,7 @@ const TicketList = () => {
             const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
             const highlighted = node.textContent.replace(
               regex,
-              '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+              '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
             );
 
             const wrapper = document.createElement("span");
@@ -334,29 +331,26 @@ const TicketList = () => {
     <Box p={contentPadding} style={{ maxWidth: "100%" }}>
       {/* Ticket List Header */}
       <Box mb="lg">
-        <Group
+        <Flex
           justify="space-between"
-          align="center"
+          align={isMobile ? "flex-start" : "center"}
           mb="lg"
           wrap={isMobile ? "wrap" : "nowrap"}
+          direction={isMobile ? "column" : "row"}
+          gap="sm"
         >
-          <Group
-            gap="xs"
-            style={{ flexGrow: 1, flexBasis: isMobile ? "100%" : "auto" }}
-          >
-            <Title order={isMobile ? 3 : 2}>Tickets</Title>
-          </Group>
+          <PageHeader title="Tickets" breadcrumbs={breadcrumbs} />
 
           {(user.user_role === "PURCHASER" || user.user_role === "ADMIN") && (
             <Button
               leftSection={<IconPlus size={16} />}
               onClick={() => router.push("/tickets/create-ticket")}
-              style={{ flexGrow: isMobile ? 1 : 0 }}
+              w={isMobile ? "100%" : "auto"}
             >
               New Ticket
             </Button>
           )}
-        </Group>
+        </Flex>
       </Box>
 
       <Paper
@@ -525,7 +519,7 @@ const TicketList = () => {
                           size="sm"
                           dangerouslySetInnerHTML={{
                             __html: `#${highlightSearchTerm(
-                              ticket.ticket_name,
+                              ticket.ticket_name
                             )}`,
                           }}
                         />
@@ -533,7 +527,7 @@ const TicketList = () => {
                           size="sm"
                           dangerouslySetInnerHTML={{
                             __html: highlightSearchTerm(
-                              ticket.ticket_item_name,
+                              ticket.ticket_item_name
                             ),
                           }}
                         />
@@ -612,7 +606,7 @@ const TicketList = () => {
                               size="sm"
                               dangerouslySetInnerHTML={{
                                 __html: highlightSearchTerm(
-                                  ticket.ticket_item_description,
+                                  ticket.ticket_item_description
                                 ),
                               }}
                             />
@@ -652,7 +646,7 @@ const TicketList = () => {
                               size="sm"
                               dangerouslySetInnerHTML={{
                                 __html: sanitizeAndHighlight(
-                                  ticket.ticket_notes,
+                                  ticket.ticket_notes
                                 ),
                               }}
                             />
@@ -692,7 +686,7 @@ const TicketList = () => {
                               className="rich-text-content"
                               dangerouslySetInnerHTML={{
                                 __html: sanitizeAndHighlight(
-                                  ticket.ticket_specifications,
+                                  ticket.ticket_specifications
                                 ),
                               }}
                             />

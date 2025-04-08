@@ -4,6 +4,7 @@ import { checkIfUserPasswordExists } from "@/actions/get";
 import { updateDisplayName, updateProfilePicture } from "@/actions/post";
 import ChangePasswordModal from "@/components/ChangePasswordModal";
 import LoadingStateProtected from "@/components/LoadingStateProtected";
+import PageHeader from "@/components/PageHeader";
 import SetPasswordModal from "@/components/SetPasswordModal";
 import { useUserStore } from "@/stores/userStore";
 import { getNameInitials } from "@/utils/functions";
@@ -74,7 +75,7 @@ const ProfilePage = () => {
   }
 
   const handleAvatarUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
+    event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -127,16 +128,17 @@ const ProfilePage = () => {
     }
   };
 
+  const breadcrumbs = [
+    { title: "Dashboard", href: "/dashboard" },
+    { title: "Profile Settings", href: "/profile" },
+  ];
+
   return (
     <Box p={{ base: "md", sm: "xl" }} mx="auto" maw={800}>
       {/* Header with Breadcrumbs */}
       <Stack gap={4} mb="xl">
         <Group justify="space-between" align="flex-end">
-          <Stack gap={0}>
-            <Title order={2} fw={700}>
-              Profile Settings
-            </Title>
-          </Stack>
+          <PageHeader title="Profile Settings" breadcrumbs={breadcrumbs} />
           <Badge variant="light" color="blue" radius="sm" size="lg">
             {user.user_role.toLowerCase()}
           </Badge>

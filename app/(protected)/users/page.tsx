@@ -1,6 +1,7 @@
 "use client";
 
 import { getUsers } from "@/actions/get";
+import PageHeader from "@/components/PageHeader";
 import {
   Avatar,
   Badge,
@@ -179,11 +180,14 @@ const UsersPage = () => {
     );
   }
 
+  const breadcrumbs = [
+    { title: "Dashboard", href: "/dashboard" },
+    { title: "Users", href: "/users" },
+  ];
+
   return (
     <Box p="md">
-      <Title order={2} mb="sm">
-        Users
-      </Title>
+      <PageHeader title="Users" breadcrumbs={breadcrumbs} />
 
       <Input
         placeholder="Search users..."

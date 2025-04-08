@@ -5,6 +5,7 @@ import {
   markAllUserNotificationsAsRead,
   markNotificationAsRead,
 } from "@/actions/update";
+import PageHeader from "@/components/PageHeader";
 import { useNotificationStore } from "@/stores/notificationStore";
 import { formatDate } from "@/utils/functions";
 import { NotificationType } from "@/utils/types";
@@ -18,7 +19,6 @@ import {
   Select,
   Stack,
   Text,
-  Title,
   Tooltip,
   useMantineColorScheme,
 } from "@mantine/core";
@@ -47,7 +47,7 @@ const NotificationsPage = () => {
   const [sortBy, setSortBy] = useState<string>("newest");
 
   const filteredNotifications = notifications.filter((notification) =>
-    filter === "unread" ? !notification.notification_read : true,
+    filter === "unread" ? !notification.notification_read : true
   );
 
   const sortedNotifications = [...filteredNotifications].sort((a, b) => {
@@ -77,8 +77,8 @@ const NotificationsPage = () => {
       prev.map((notification) =>
         notification.notification_id === notificationId
           ? { ...notification, notification_read: true }
-          : notification,
-      ),
+          : notification
+      )
     );
   };
 
@@ -99,7 +99,7 @@ const NotificationsPage = () => {
       prev.map((notification) => ({
         ...notification,
         notification_read: true,
-      })),
+      }))
     );
 
     Notifications.show({
@@ -130,13 +130,16 @@ const NotificationsPage = () => {
     fetchNotifications();
   }, [notifications.length === 0]);
 
+  const breadcrumbs = [
+    { title: "Dashboard", href: "/dashboard" },
+    { title: "Notifications", href: "/notification" },
+  ];
+
   return (
     <Box p={{ base: "md", sm: "xl" }}>
       <Stack gap="lg">
         <Group justify="space-between" align="center">
-          <Title order={2} fw={600}>
-            Notifications
-          </Title>
+          <PageHeader title="Notifications" breadcrumbs={breadcrumbs} />
           <Group gap="sm">
             <Tooltip label="Mark all as read">
               <ActionIcon
@@ -205,7 +208,7 @@ const NotificationsPage = () => {
                       w="fit-content"
                       onClick={() =>
                         router.push(
-                          `/tickets/${notification.notification_ticket_id}`,
+                          `/tickets/${notification.notification_ticket_id}`
                         )
                       } // Use ticket_id here
                       leftSection={<IconExternalLink size={16} />}

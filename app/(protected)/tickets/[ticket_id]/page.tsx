@@ -11,6 +11,7 @@ import CanvassForm from "@/components/CanvassForm";
 import CommentThread from "@/components/CommentThread";
 import EditCanvassForm from "@/components/EditCanvassForm";
 import LoadingStateProtected from "@/components/LoadingStateProtected";
+import PageHeader from "@/components/PageHeader";
 import { useUserStore } from "@/stores/userStore";
 import { formatDate, getNameInitials } from "@/utils/functions";
 import {
@@ -43,7 +44,6 @@ import {
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import {
-  IconArrowLeft,
   IconChevronDown,
   IconChevronUp,
   IconClock,
@@ -52,12 +52,11 @@ import {
 } from "@tabler/icons-react";
 import DOMPurify from "dompurify";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const TicketDetailsPage = () => {
   const { ticket_id } = useParams() as { ticket_id: string };
-  const router = useRouter();
   const isSmallScreen = useMediaQuery("(max-width: 48em)");
   const isExtraSmallScreen = useMediaQuery("(max-width: 36em)");
 
@@ -67,7 +66,7 @@ const TicketDetailsPage = () => {
   const [comments, setComments] = useState<CommentType[]>([]);
   const [ticket, setTicket] = useState<TicketDetailsType | null>(null);
   const [canvassDetails, setCanvassDetails] = useState<CanvassDetail[] | null>(
-    null,
+    null
   );
   const [isFormVisible, setIsFormVisible] = useState(true);
   const [isCanvasVisible, setIsCanvasVisible] = useState(true);
@@ -76,7 +75,7 @@ const TicketDetailsPage = () => {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const userApprovalStatus = ticket?.reviewers.find(
-    (reviewer) => reviewer.reviewer_id === user?.user_id,
+    (reviewer) => reviewer.reviewer_id === user?.user_id
   )?.approval_status;
 
   const isDisabled =
@@ -149,10 +148,10 @@ const TicketDetailsPage = () => {
 
   const isAdmin = user?.user_role === "ADMIN";
   const isSharedToMe = ticket.shared_users?.some(
-    (u) => u.user_id === user?.user_id,
+    (u) => u.user_id === user?.user_id
   );
   const isReviewer = ticket.reviewers?.some(
-    (r) => r.reviewer_id === user?.user_id,
+    (r) => r.reviewer_id === user?.user_id
   );
   // const isManager = user?.user_role === "MANAGER";
 
@@ -171,34 +170,30 @@ const TicketDetailsPage = () => {
     );
   }
 
+  const breadcrumbs = [
+    { title: "Dashboard", href: "/dashboard" },
+    { title: "Tickets", href: "/tickets" },
+    { title: `#${ticket.ticket_id}`, href: `/tickets/${ticket_id}` },
+  ];
+
   return (
     <Box px={{ base: 0, md: "xl", sm: "lg" }} py="xl">
-      {/* Header Section with Back Button */}
-      <Stack gap={2} mb="sm">
-        <Button
-          variant="light"
-          onClick={() => router.push("/tickets")}
-          leftSection={<IconArrowLeft size={16} />}
-          radius="md"
-          w="fit-content"
-          mb="xl"
-        >
-          Back to Tickets
-        </Button>
-        <Group>
-          <Title pl="xs" order={2}>
-            Ticket:{" "}
-            <Badge
-              fz="sm"
-              fw="500"
-              p="xs"
-              style={{ position: "relative", top: -3 }}
-            >
-              {ticket.ticket_name}
-            </Badge>
-          </Title>
-        </Group>
-      </Stack>
+      {/* Header Section */}
+      <Box mb="md">
+        <PageHeader
+          title={
+            <Group justify="flex-start" align="center">
+              <Title order={2} fw={600} lts="-0.03em">
+                Ticket:
+              </Title>
+              <Badge fz="sm" fw="500" p="xs">
+                {ticket.ticket_name}
+              </Badge>
+            </Group>
+          }
+          breadcrumbs={breadcrumbs}
+        />
+      </Box>
 
       {/* Main Content Grid */}
       <Grid gutter="lg">
@@ -301,7 +296,7 @@ const TicketDetailsPage = () => {
                             <Text
                               dangerouslySetInnerHTML={{
                                 __html: DOMPurify.sanitize(
-                                  ticket.ticket_specifications,
+                                  ticket.ticket_specifications
                                 ),
                               }}
                             />
@@ -320,7 +315,7 @@ const TicketDetailsPage = () => {
                           </Text>
                           <Text fw={500}>
                             {new Date(
-                              ticket.ticket_rf_date_received,
+                              ticket.ticket_rf_date_received
                             ).toLocaleString("en-US", {
                               timeZone: "Asia/Manila",
                               day: "2-digit",
@@ -434,7 +429,7 @@ const TicketDetailsPage = () => {
                                                 </Text>
                                                 <Text fw={500}>
                                                   {new Date(
-                                                    canvass.canvass_form_rf_date_received,
+                                                    canvass.canvass_form_rf_date_received
                                                   ).toLocaleString("en-US", {
                                                     day: "2-digit",
                                                     month: "short",
@@ -499,7 +494,7 @@ const TicketDetailsPage = () => {
                                                         ? null
                                                         : getNameInitials(
                                                             canvass.submitted_by_name ||
-                                                              "",
+                                                              ""
                                                           )}
                                                     </Avatar>
                                                     <Stack gap={0}>
@@ -512,7 +507,7 @@ const TicketDetailsPage = () => {
                                                         c="dimmed"
                                                       >
                                                         {new Date(
-                                                          canvass.canvass_form_date_submitted,
+                                                          canvass.canvass_form_date_submitted
                                                         ).toLocaleString(
                                                           "en-US",
                                                           {
@@ -524,7 +519,7 @@ const TicketDetailsPage = () => {
                                                             hour: "2-digit",
                                                             minute: "2-digit",
                                                             hour12: true,
-                                                          },
+                                                          }
                                                         )}
                                                       </Text>
                                                     </Stack>
@@ -563,7 +558,7 @@ const TicketDetailsPage = () => {
                                                 <Text fw={500}>
                                                   ₱
                                                   {canvass.canvass_form_total_amount.toFixed(
-                                                    2,
+                                                    2
                                                   )}
                                                 </Text>
                                               </Stack>
@@ -582,7 +577,7 @@ const TicketDetailsPage = () => {
                                                   <Group gap="xs">
                                                     {canvass.attachments.map(
                                                       (
-                                                        attachment: CanvassAttachment,
+                                                        attachment: CanvassAttachment
                                                       ) => (
                                                         <Link
                                                           key={
@@ -599,7 +594,7 @@ const TicketDetailsPage = () => {
                                                               attachment.canvass_attachment_type ||
                                                               "Document"
                                                             } - ${new Date(
-                                                              attachment.canvass_attachment_created_at,
+                                                              attachment.canvass_attachment_created_at
                                                             ).toLocaleDateString()}`}
                                                           >
                                                             <ActionIcon
@@ -614,7 +609,7 @@ const TicketDetailsPage = () => {
                                                             </ActionIcon>
                                                           </Tooltip>
                                                         </Link>
-                                                      ),
+                                                      )
                                                     )}
                                                   </Group>
                                                 </Stack>
@@ -643,7 +638,7 @@ const TicketDetailsPage = () => {
                                                         ? null
                                                         : getNameInitials(
                                                             canvass.submitted_by_name ||
-                                                              "",
+                                                              ""
                                                           )}
                                                     </Avatar>
                                                     <Stack gap={0}>
@@ -656,7 +651,7 @@ const TicketDetailsPage = () => {
                                                         c="dimmed"
                                                       >
                                                         {new Date(
-                                                          canvass.canvass_form_date_submitted,
+                                                          canvass.canvass_form_date_submitted
                                                         ).toLocaleString(
                                                           "en-US",
                                                           {
@@ -668,7 +663,7 @@ const TicketDetailsPage = () => {
                                                             hour: "2-digit",
                                                             minute: "2-digit",
                                                             hour12: true,
-                                                          },
+                                                          }
                                                         )}
                                                       </Text>
                                                     </Stack>
@@ -700,7 +695,7 @@ const TicketDetailsPage = () => {
                                                           ? undefined
                                                           : getNameInitials(
                                                               canvass.revised_by_name ||
-                                                                "",
+                                                                ""
                                                             )}
                                                       </Avatar>
                                                       <Stack gap={0}>
@@ -715,7 +710,7 @@ const TicketDetailsPage = () => {
                                                           {canvass &&
                                                           canvass.canvass_form_updated_at
                                                             ? new Date(
-                                                                canvass.canvass_form_updated_at,
+                                                                canvass.canvass_form_updated_at
                                                               ).toLocaleString(
                                                                 "en-US",
                                                                 {
@@ -729,7 +724,7 @@ const TicketDetailsPage = () => {
                                                                   minute:
                                                                     "2-digit",
                                                                   hour12: true,
-                                                                },
+                                                                }
                                                               )
                                                             : ""}
                                                         </Text>
@@ -741,7 +736,7 @@ const TicketDetailsPage = () => {
                                           </Grid.Col>
                                         </Grid>
                                       </Box>
-                                    ),
+                                    )
                                   )}
                                 </>
                               ) : user?.user_id === ticket?.ticket_created_by &&
