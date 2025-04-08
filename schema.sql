@@ -706,8 +706,8 @@ BEGIN
          t.ticket_name ILIKE '%' || search_query || '%' OR
          t.ticket_item_description ILIKE '%' || search_query || '%' OR
          t.ticket_specifications ILIKE '%' || search_query || '%')
-    -- Filter by status_filter if provided and it's not an empty string
-    AND (status_filter IS NULL OR status_filter = '' OR t.ticket_status = status_filter::ticket_status_enum);
+    -- Filter by status_filter if provided and it's not "all"
+    AND (status_filter IS NULL OR status_filter = 'all' OR t.ticket_status = status_filter::ticket_status_enum);
 
   -- Paginated ticket data query with search and status_filter filtering
   SELECT JSON_AGG(t) INTO ticket_rows
@@ -772,8 +772,8 @@ BEGIN
            t.ticket_name ILIKE '%' || search_query || '%' OR
            t.ticket_item_description ILIKE '%' || search_query || '%' OR
            t.ticket_specifications ILIKE '%' || search_query || '%')
-      -- Filter by status_filter if provided and it's not an empty string
-      AND (status_filter IS NULL OR status_filter = '' OR t.ticket_status = status_filter::ticket_status_enum)
+      -- Filter by status_filter if provided and it's not "all"
+      AND (status_filter IS NULL OR status_filter = 'all' OR t.ticket_status = status_filter::ticket_status_enum)
 
     ORDER BY t.ticket_date_created ASC
     LIMIT page_size
