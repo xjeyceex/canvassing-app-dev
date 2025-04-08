@@ -173,7 +173,7 @@ const TicketDetailsPage = () => {
   const breadcrumbs = [
     { title: "Dashboard", href: "/dashboard" },
     { title: "Tickets", href: "/tickets" },
-    { title: `#${ticket.ticket_id}`, href: `/tickets/${ticket_id}` },
+    { title: `#${ticket.ticket_name}`, href: `/tickets/${ticket_id}` },
   ];
 
   return (
