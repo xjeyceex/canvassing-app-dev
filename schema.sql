@@ -661,11 +661,13 @@ AS $$
     )
 $$;
 -- Drop existing function if it exists
-DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, TEXT, UUID);
+DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, TEXT, UUID, INT, INT);
 CREATE OR REPLACE FUNCTION get_all_my_tickets(
   user_id UUID, 
   ticket_status TEXT DEFAULT NULL, 
-  ticket_uuid UUID DEFAULT NULL
+  ticket_uuid UUID DEFAULT NULL,
+  page INT DEFAULT 1,
+  page_size INT DEFAULT 10
 )
 RETURNS TABLE (
   ticket_id UUID,
@@ -679,73 +681,94 @@ RETURNS TABLE (
   ticket_created_by UUID,
   ticket_date_created TIMESTAMPTZ,
   shared_users JSON,
-  reviewers JSON
+  reviewers JSON,
+  total_count INT
 )
 LANGUAGE sql
 SET search_path TO public  
 AS $$  
+  WITH ticket_data AS (
+    SELECT
+      t.ticket_id,
+      t.ticket_name, 
+      t.ticket_item_name,
+      t.ticket_status,
+      -- Get the canvass_form_revised_by from canvass_form_table
+      c.canvass_form_revised_by AS ticket_revised_by,
+      t.ticket_item_description,
+      t.ticket_specifications,
+      t.ticket_notes,
+      t.ticket_created_by,
+      t.ticket_date_created, 
+
+      -- Aggregate shared users
+      COALESCE(
+        (SELECT JSON_AGG(
+          JSON_BUILD_OBJECT(
+            'user_id', u2.user_id,
+            'user_full_name', u2.user_full_name,
+            'user_email', u2.user_email,
+            'user_avatar', u2.user_avatar
+          )
+        ) FROM public.ticket_shared_with_table ts
+        LEFT JOIN public.user_table u2 ON ts.ticket_shared_user_id = u2.user_id
+        WHERE ts.ticket_shared_ticket_id = t.ticket_id), '[]'::JSON
+      ) AS shared_users,
+
+      -- Aggregate reviewers
+      COALESCE(
+        (SELECT JSON_AGG(
+          JSON_BUILD_OBJECT(
+            'reviewer_id', a.approval_reviewed_by,
+            'reviewer_name', u3.user_full_name,
+            'approval_status', a.approval_review_status
+          )
+        ) FROM public.approval_table a
+        LEFT JOIN public.user_table u3 ON u3.user_id = a.approval_reviewed_by
+        WHERE a.approval_ticket_id = t.ticket_id), '[]'::JSON
+      ) AS reviewers
+
+    FROM
+      public.ticket_table t  
+    -- Left join with canvass_form_table to get the canvass_form_revised_by
+    LEFT JOIN public.canvass_form_table c ON t.ticket_id = c.canvass_form_ticket_id
+
+    WHERE
+      user_id IN (t.ticket_created_by)
+      OR EXISTS (
+        SELECT 1 FROM public.ticket_shared_with_table ts 
+        WHERE ts.ticket_shared_ticket_id = t.ticket_id 
+        AND ts.ticket_shared_user_id = user_id
+      )
+      OR EXISTS (
+        SELECT 1 FROM public.approval_table a 
+        WHERE a.approval_ticket_id = t.ticket_id 
+        AND a.approval_reviewed_by = user_id
+      )
+      AND (ticket_status IS NULL OR t.ticket_status = ticket_status)
+      AND (ticket_uuid IS NULL OR t.ticket_id = ticket_uuid)
+  )
+  
   SELECT
-    t.ticket_id,
-    t.ticket_name, 
-    t.ticket_item_name,
-    t.ticket_status,
-    -- Get the canvass_form_revised_by from canvass_form_table
-    c.canvass_form_revised_by AS ticket_revised_by,
-    t.ticket_item_description,
-    t.ticket_specifications,
-    t.ticket_notes,
-    t.ticket_created_by,
-    t.ticket_date_created, 
-
-    -- Aggregate shared users
-    COALESCE(
-      (SELECT JSON_AGG(
-        JSON_BUILD_OBJECT(
-          'user_id', u2.user_id,
-          'user_full_name', u2.user_full_name,
-          'user_email', u2.user_email,
-          'user_avatar', u2.user_avatar
-        )
-      ) FROM public.ticket_shared_with_table ts
-      LEFT JOIN public.user_table u2 ON ts.ticket_shared_user_id = u2.user_id
-      WHERE ts.ticket_shared_ticket_id = t.ticket_id), '[]'::JSON
-    ) AS shared_users,
-
-    -- Aggregate reviewers
-    COALESCE(
-      (SELECT JSON_AGG(
-        JSON_BUILD_OBJECT(
-          'reviewer_id', a.approval_reviewed_by,
-          'reviewer_name', u3.user_full_name,
-          'approval_status', a.approval_review_status
-        )
-      ) FROM public.approval_table a
-      LEFT JOIN public.user_table u3 ON u3.user_id = a.approval_reviewed_by
-      WHERE a.approval_ticket_id = t.ticket_id), '[]'::JSON
-    ) AS reviewers
-
-  FROM
-    public.ticket_table t  
-  -- Left join with canvass_form_table to get the canvass_form_revised_by
-  LEFT JOIN public.canvass_form_table c ON t.ticket_id = c.canvass_form_ticket_id
-
-  WHERE
-    user_id IN (t.ticket_created_by)
-    OR EXISTS (
-      SELECT 1 FROM public.ticket_shared_with_table ts 
-      WHERE ts.ticket_shared_ticket_id = t.ticket_id 
-      AND ts.ticket_shared_user_id = user_id
-    )
-    OR EXISTS (
-      SELECT 1 FROM public.approval_table a 
-      WHERE a.approval_ticket_id = t.ticket_id 
-      AND a.approval_reviewed_by = user_id
-    )
-    AND (ticket_status IS NULL OR t.ticket_status = ticket_status)
-    AND (ticket_uuid IS NULL OR t.ticket_id = ticket_uuid)
-
+    ticket_id,
+    ticket_name,
+    ticket_item_name,
+    ticket_status,
+    ticket_revised_by,
+    ticket_item_description,
+    ticket_specifications,
+    ticket_notes,
+    ticket_created_by,
+    ticket_date_created,
+    shared_users,
+    reviewers,
+    (SELECT COUNT(*) FROM ticket_data) AS total_count -- Counting total tickets available
+  
+  FROM ticket_data
   ORDER BY
-    t.ticket_date_created DESC
+    ticket_date_created DESC
+  LIMIT page_size
+  OFFSET (page - 1) * page_size
 $$;
 
 --view for realtime comment
