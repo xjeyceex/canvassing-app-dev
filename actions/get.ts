@@ -404,75 +404,22 @@ export const getUsers = async () => {
   const supabase = await createClient();
 
   try {
-    // Fetch all users
-    const { data: users, error: userError } = await supabase
-      .from("user_table")
-      .select("*");
+    const { data, error } = await supabase.rpc("get_all_users_with_stats");
 
-    if (userError) {
-      throw new Error(userError?.message || "Error fetching users");
+    if (error) {
+      throw new Error(error.message || "Error fetching users with stats");
     }
-
-    // Fetch ticket count and revised stats for each user
-    const userWithTicketCountPromises = users.map(async (user) => {
-      // Fetch tickets created by the user
-      const { data: tickets, error: ticketError } = await supabase
-        .from("ticket_table")
-        .select("*", { count: "exact" })
-        .eq("ticket_created_by", user.user_id);
-
-      if (ticketError) {
-        throw new Error(ticketError?.message || "Error fetching ticket count");
-      }
-
-      // Fetch revised tickets (canvass forms submitted by user that were later revised)
-      const { data: revisedTickets, error: revisedTicketError } = await supabase
-        .from("canvass_form_table")
-        .select("*", { count: "exact" })
-        .eq("canvass_form_submitted_by", user.user_id)
-        .not("canvass_form_revised_by", "is", null);
-
-      if (revisedTicketError) {
-        throw new Error(
-          revisedTicketError?.message || "Error fetching revised ticket count"
-        );
-      }
-
-      // Fetch tickets revised by this user (from canvass_form_table)
-      const { data: ticketsRevisedByUser, error: ticketsRevisedByUserError } =
-        await supabase
-          .from("canvass_form_table")
-          .select("*", { count: "exact" })
-          .eq("canvass_form_revised_by", user.user_id);
-
-      if (ticketsRevisedByUserError) {
-        throw new Error(
-          ticketsRevisedByUserError?.message ||
-            "Error fetching revised tickets by user"
-        );
-      }
-
-      return {
-        ...user,
-        ticketCount: tickets?.length || 0,
-        revisedTicketCount: revisedTickets?.length || 0,
-        ticketsRevisedByUserCount: ticketsRevisedByUser?.length || 0,
-      };
-    });
-
-    const usersWithTicketData = await Promise.all(userWithTicketCountPromises);
 
     return {
       error: false,
       success: true,
-      users: usersWithTicketData,
+      users: data,
     };
-  } catch (error) {
+  } catch (err) {
     return {
       error: true,
       success: false,
-      message:
-        error instanceof Error ? error.message : "An unknown error occurred",
+      message: err instanceof Error ? err.message : "An unknown error occurred",
     };
   }
 };

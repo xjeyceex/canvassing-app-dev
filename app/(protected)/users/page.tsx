@@ -32,14 +32,15 @@ import { useEffect, useState } from "react";
 export type UserType = {
   user_id: string;
   user_role: string;
-  user_full_name: string;
+  user_name: string;
   user_email: string;
   user_avatar: string;
   user_updated_at: string;
   user_created_at: string;
-  ticketCount: number;
-  revisedTicketCount: number;
-  ticketsRevisedByUserCount: number;
+  ticket_count: number;
+  revised_ticket_count: number;
+  tickets_revised_by_user_count: number;
+  tickets_reviewed_by_user_count: number;
 };
 
 const roleColors: Record<string, string> = {
@@ -104,7 +105,7 @@ const UsersPage = () => {
   const filteredUsers = users?.filter((user) => {
     const query = searchQuery.toLowerCase();
     return (
-      user.user_full_name.toLowerCase().includes(query) ||
+      user.user_name.toLowerCase().includes(query) ||
       user.user_email.toLowerCase().includes(query)
     );
   });
@@ -129,7 +130,7 @@ const UsersPage = () => {
         </Mark>
       ) : (
         part
-      ),
+      )
     );
   };
 
@@ -201,13 +202,13 @@ const UsersPage = () => {
       <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
         {users
           .filter((user) =>
-            [user.user_full_name, user.user_email]
+            [user.user_name, user.user_email]
               .join(" ")
               .toLowerCase()
-              .includes(searchQuery.toLowerCase()),
+              .includes(searchQuery.toLowerCase())
           )
-          .sort((a, b) => {
-            const roleOrder = ["purchaser", "reviewer", "other"]; // Adjust roles as needed
+          .sort((b, a) => {
+            const roleOrder = ["admin", "manager", "reviewer", "purchaser"]; // Adjust roles as needed
             return (
               roleOrder.indexOf(a.user_role.toLowerCase()) -
               roleOrder.indexOf(b.user_role.toLowerCase())
@@ -230,13 +231,13 @@ const UsersPage = () => {
               <Group mb="md" wrap="nowrap">
                 <Avatar
                   src={user.user_avatar}
-                  alt={user.user_full_name}
+                  alt={user.user_name}
                   size="lg"
                   radius="xl"
                 />
                 <Box style={{ flex: 1, overflow: "hidden" }}>
                   <Text size="lg" fw={600} truncate>
-                    {highlightMatch(user.user_full_name, searchQuery)}
+                    {highlightMatch(user.user_name, searchQuery)}
                   </Text>
                   <Text size="sm" c="dimmed" truncate>
                     {highlightMatch(user.user_email, searchQuery)}
@@ -265,7 +266,7 @@ const UsersPage = () => {
                           <IconTicket size={12} style={{ marginRight: 4 }} />
                         }
                       >
-                        {user.ticketCount}
+                        {user.ticket_count}
                       </Badge>
                       <Badge
                         variant="light"
@@ -274,7 +275,7 @@ const UsersPage = () => {
                           <IconCheckbox size={12} style={{ marginRight: 4 }} />
                         }
                       >
-                        {user.revisedTicketCount}
+                        {user.revised_ticket_count}
                       </Badge>
                     </>
                   )}
@@ -287,7 +288,7 @@ const UsersPage = () => {
                         <IconCheckbox size={12} style={{ marginRight: 4 }} />
                       }
                     >
-                      {user.ticketsRevisedByUserCount}
+                      {user.tickets_revised_by_user_count}
                     </Badge>
                   )}
                 </Group>
