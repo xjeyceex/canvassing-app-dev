@@ -100,7 +100,6 @@ export const checkReviewerResponse = async (
 
 export const getAllMyTickets = async ({
   user_id,
-  ticket_status,
   page = 1,
   page_size = 10,
 }: {
@@ -113,17 +112,19 @@ export const getAllMyTickets = async ({
 
   const { data, error } = await supabase.rpc("get_all_my_tickets", {
     user_id,
-    ticket_status,
     page,
     page_size,
   });
 
   if (error) {
     console.error("Supabase Error:", error.message);
-    return [];
+    return { tickets: [], total_count: 0 };
   }
 
-  return data || [];
+  return {
+    tickets: data?.[0]?.tickets || [],
+    total_count: data?.[0]?.total_count || 0,
+  };
 };
 
 type SharedUser = { ticket_shared_user_id: string };
