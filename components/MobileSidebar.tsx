@@ -192,8 +192,8 @@ const MobileSidebar = () => {
                               colorScheme === "dark" ? 4 : 6
                             ]
                           : colorScheme === "dark"
-                          ? theme.colors.dark[0]
-                          : theme.colors.gray[7],
+                            ? theme.colors.dark[0]
+                            : theme.colors.gray[7],
                         position: "relative",
                         top: 3,
                       }}

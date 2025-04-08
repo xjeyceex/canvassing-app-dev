@@ -129,7 +129,7 @@ const UsersPage = () => {
         </Mark>
       ) : (
         part
-      )
+      ),
     );
   };
 
@@ -204,7 +204,7 @@ const UsersPage = () => {
             [user.user_full_name, user.user_email]
               .join(" ")
               .toLowerCase()
-              .includes(searchQuery.toLowerCase())
+              .includes(searchQuery.toLowerCase()),
           )
           .sort((a, b) => {
             const roleOrder = ["purchaser", "reviewer", "other"]; // Adjust roles as needed

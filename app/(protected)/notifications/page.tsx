@@ -47,7 +47,7 @@ const NotificationsPage = () => {
   const [sortBy, setSortBy] = useState<string>("newest");
 
   const filteredNotifications = notifications.filter((notification) =>
-    filter === "unread" ? !notification.notification_read : true
+    filter === "unread" ? !notification.notification_read : true,
   );
 
   const sortedNotifications = [...filteredNotifications].sort((a, b) => {
@@ -77,8 +77,8 @@ const NotificationsPage = () => {
       prev.map((notification) =>
         notification.notification_id === notificationId
           ? { ...notification, notification_read: true }
-          : notification
-      )
+          : notification,
+      ),
     );
   };
 
@@ -99,7 +99,7 @@ const NotificationsPage = () => {
       prev.map((notification) => ({
         ...notification,
         notification_read: true,
-      }))
+      })),
     );
 
     Notifications.show({
@@ -208,7 +208,7 @@ const NotificationsPage = () => {
                       w="fit-content"
                       onClick={() =>
                         router.push(
-                          `/tickets/${notification.notification_ticket_id}`
+                          `/tickets/${notification.notification_ticket_id}`,
                         )
                       } // Use ticket_id here
                       leftSection={<IconExternalLink size={16} />}
