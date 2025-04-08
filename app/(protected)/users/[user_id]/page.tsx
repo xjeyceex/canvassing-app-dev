@@ -101,7 +101,7 @@ const ProfilePage = () => {
         }
 
         if (isMounted) {
-          setProfileUser(result.user);
+          setProfileUser(result.user ?? null);
           setTicketCount(result.ticketCount || 0);
           setRevisedTicketCount(result.revisedTicketCount || 0);
           setTicketsRevisedByUserCount(result.ticketsRevisedByUserCount || 0);
