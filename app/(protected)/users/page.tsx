@@ -300,6 +300,7 @@ const UsersPage = () => {
                 fullWidth
                 variant="outline"
                 mt="sm"
+                scroll={false}
               >
                 View Profile
               </Button>
