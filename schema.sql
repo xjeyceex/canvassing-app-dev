@@ -661,11 +661,13 @@ AS $$
     )
 $$;
 -- Drop existing function if it exists
-DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, TEXT, UUID);
+DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, TEXT, UUID, INT, INT);
 CREATE OR REPLACE FUNCTION get_all_my_tickets(
   user_id UUID, 
   ticket_status TEXT DEFAULT NULL, 
-  ticket_uuid UUID DEFAULT NULL
+  ticket_uuid UUID DEFAULT NULL,
+  page INT DEFAULT 1,
+  page_size INT DEFAULT 10
 )
 RETURNS TABLE (
   ticket_id UUID,
@@ -746,6 +748,8 @@ AS $$
 
   ORDER BY
     t.ticket_date_created DESC
+  LIMIT page_size
+  OFFSET (page - 1) * page_size
 $$;
 
 --view for realtime comment
