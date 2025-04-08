@@ -281,15 +281,26 @@ const UsersPage = () => {
                   )}
 
                   {user.user_role.toLowerCase() === "reviewer" && (
-                    <Badge
-                      variant="light"
-                      color="green"
-                      leftSection={
-                        <IconCheckbox size={12} style={{ marginRight: 4 }} />
-                      }
-                    >
-                      {user.tickets_revised_by_user_count}
-                    </Badge>
+                    <>
+                      <Badge
+                        variant="light"
+                        color="blue"
+                        leftSection={
+                          <IconTicket size={12} style={{ marginRight: 4 }} />
+                        }
+                      >
+                        {user.tickets_reviewed_by_user_count}
+                      </Badge>
+                      <Badge
+                        variant="light"
+                        color="green"
+                        leftSection={
+                          <IconCheckbox size={12} style={{ marginRight: 4 }} />
+                        }
+                      >
+                        {user.tickets_revised_by_user_count}
+                      </Badge>
+                    </>
                   )}
                 </Group>
               </Group>
