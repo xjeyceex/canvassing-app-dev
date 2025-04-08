@@ -618,7 +618,7 @@ DROP TRIGGER IF EXISTS after_user_signup ON auth.users;
 CREATE TRIGGER after_user_signup
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.create_user();
-  
+
 DROP FUNCTION IF EXISTS get_dashboard_tickets(UUID);
 CREATE OR REPLACE FUNCTION get_dashboard_tickets(_user_id UUID)
 RETURNS TABLE (
@@ -638,11 +638,14 @@ AS $$
     t.ticket_name, 
     t.ticket_item_name,
     t.ticket_status,
-    t.ticket_revised_by,
+    -- Get the canvass_form_revised_by from canvass_form_table
+    c.canvass_form_revised_by AS ticket_revised_by,
     t.ticket_item_description,
     t.ticket_date_created 
   FROM 
     public.ticket_table t
+  -- Left join with canvass_form_table to get the canvass_form_revised_by
+  LEFT JOIN public.canvass_form_table c ON t.ticket_id = c.canvass_form_ticket_id
   WHERE 
     _user_id IS NULL 
     OR t.ticket_created_by = _user_id
@@ -657,7 +660,6 @@ AS $$
       AND a.approval_reviewed_by = _user_id
     )
 $$;
-
 -- Drop existing function if it exists
 DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, TEXT, UUID);
 CREATE OR REPLACE FUNCTION get_all_my_tickets(
@@ -687,7 +689,8 @@ AS $$
     t.ticket_name, 
     t.ticket_item_name,
     t.ticket_status,
-    t.ticket_revised_by,
+    -- Get the canvass_form_revised_by from canvass_form_table
+    c.canvass_form_revised_by AS ticket_revised_by,
     t.ticket_item_description,
     t.ticket_specifications,
     t.ticket_notes,
@@ -723,6 +726,8 @@ AS $$
 
   FROM
     public.ticket_table t  
+  -- Left join with canvass_form_table to get the canvass_form_revised_by
+  LEFT JOIN public.canvass_form_table c ON t.ticket_id = c.canvass_form_ticket_id
 
   WHERE
     user_id IN (t.ticket_created_by)
@@ -1164,3 +1169,111 @@ LEFT JOIN public.user_table u_submitted ON u_submitted.user_id = c.canvass_form_
 LEFT JOIN public.user_table u_revised ON u_revised.user_id = c.canvass_form_revised_by
 WHERE c.canvass_form_ticket_id = ticket_uuid;
 $$;
+
+create or replace function get_user_data_by_id(p_user_id uuid)
+returns json
+language plpgsql
+as $$
+declare
+  user_data json;
+  role text;
+  ticket_count int := 0;
+  revised_ticket_count int := 0;
+  tickets_revised_by_user_count int := 0;
+  tickets_reviewed_by_user_count int := 0;
+begin
+  -- Get user data
+  select row_to_json(u.*), u.user_role into user_data, role
+  from user_table u
+  where u.user_id = p_user_id;
+
+  if user_data is null then
+    return json_build_object(
+      'error', true,
+      'success', false,
+      'message', 'User not found'
+    );
+  end if;
+
+  -- If Admin or Manager
+  if role = 'ADMIN' or role = 'MANAGER' then
+    return json_build_object(
+      'error', false,
+      'success', true,
+      'user', user_data
+    );
+  end if;
+
+  -- If Purchaser
+  if role = 'PURCHASER' then
+    select count(*) into ticket_count
+    from ticket_table
+    where ticket_created_by = p_user_id;
+
+    select count(*) into revised_ticket_count
+    from canvass_form_table
+    where canvass_form_submitted_by = p_user_id
+      and canvass_form_revised_by is not null;
+
+    return json_build_object(
+      'error', false,
+      'success', true,
+      'user', user_data,
+      'ticketCount', ticket_count,
+      'revisedTicketCount', revised_ticket_count
+    );
+  end if;
+
+  -- If Reviewer
+  if role = 'REVIEWER' then
+    select count(*) into tickets_revised_by_user_count
+    from canvass_form_table
+    where canvass_form_revised_by = p_user_id;
+
+    select count(*) into tickets_reviewed_by_user_count
+    from approval_table
+    where approval_reviewed_by = p_user_id;
+
+    return json_build_object(
+      'error', false,
+      'success', true,
+      'user', user_data,
+      'ticketsRevisedByUserCount', tickets_revised_by_user_count,
+      'ticketsReviewedByUserCount', tickets_reviewed_by_user_count
+    );
+  end if;
+
+  -- Default: return all counts
+  select count(*) into ticket_count
+  from ticket_table
+  where ticket_created_by = p_user_id;
+
+  select count(*) into revised_ticket_count
+  from canvass_form_table
+  where canvass_form_submitted_by = p_user_id
+    and canvass_form_revised_by is not null;
+
+  select count(*) into tickets_revised_by_user_count
+  from canvass_form_table
+  where canvass_form_revised_by = p_user_id;
+
+  select count(*) into tickets_reviewed_by_user_count
+  from approval_table
+  where approval_reviewed_by = p_user_id;
+
+  return json_build_object(
+    'error', false,
+    'success', true,
+    'user', user_data,
+    'ticketCount', ticket_count,
+    'revisedTicketCount', revised_ticket_count,
+    'ticketsRevisedByUserCount', tickets_revised_by_user_count,
+    'ticketsReviewedByUserCount', tickets_reviewed_by_user_count
+  );
+end;
+$$;
+
+create index if not exists idx_ticket_created_by on ticket_table(ticket_created_by);
+create index if not exists idx_canvass_form_submitted_by on canvass_form_table(canvass_form_submitted_by);
+create index if not exists idx_canvass_form_revised_by on canvass_form_table(canvass_form_revised_by);
+create index if not exists idx_approval_reviewed_by on approval_table(approval_reviewed_by);

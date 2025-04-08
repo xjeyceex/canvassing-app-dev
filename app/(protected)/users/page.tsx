@@ -229,7 +229,7 @@ const UsersPage = () => {
             >
               <Group mb="md" wrap="nowrap">
                 <Avatar
-                  src={user.user_avatar || "/default-avatar.png"}
+                  src={user.user_avatar}
                   alt={user.user_full_name}
                   size="lg"
                   radius="xl"
