@@ -32,7 +32,6 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -53,7 +52,6 @@ const CreateTeamPage = () => {
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
   const isDark = colorScheme === "dark";
-  const router = useRouter();
 
   const {
     register,
@@ -89,18 +87,12 @@ const CreateTeamPage = () => {
     setIsSubmitting(true);
 
     try {
-      console.log("Team data:", values);
-
       notifications.show({
         title: "Team Created Successfully",
         message: `${values.name} has been created and is ready to go!`,
         color: "teal",
         autoClose: 5000,
       });
-
-      setTimeout(() => {
-        router.push("/teams");
-      }, 1500);
     } catch (error) {
       console.error("Error creating team:", error);
       notifications.show({
