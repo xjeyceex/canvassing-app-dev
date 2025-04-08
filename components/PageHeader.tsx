@@ -34,7 +34,7 @@ const PageHeader = ({ title, description, breadcrumbs }: PageHeaderProps) => {
     <IconChevronRight
       size={15}
       stroke={1.5}
-      color={isDark ? "#909296" : "#868E96"}
+      color={isDark ? "#DEE2E6" : "#495057"}
     />
   );
 
@@ -64,7 +64,7 @@ const PageHeader = ({ title, description, breadcrumbs }: PageHeaderProps) => {
                     <Text
                       fz={15}
                       fw={500}
-                      c={isDark ? "gray.3" : "gray.7"}
+                      c={isDark ? "gray.5" : "gray.6"}
                       style={{ transition: "color 0.2s ease" }}
                     >
                       {item.title}
@@ -74,8 +74,8 @@ const PageHeader = ({ title, description, breadcrumbs }: PageHeaderProps) => {
                       component={Link}
                       href={item.href}
                       fz={15}
-                      fw={400}
-                      c={isDark ? "gray.5" : "gray.6"}
+                      fw={500}
+                      c={isDark ? "gray.3" : "gray.7"}
                     >
                       {item.title}
                     </Anchor>
