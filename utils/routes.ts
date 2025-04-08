@@ -20,7 +20,13 @@ export const authRoutes = [
  * @type {readonly string[]}
  * @description Routes that require authentication.
  */
-export const protectedRoutes = ["/dashboard", "/tickets", "/profile"] as const;
+export const protectedRoutes = [
+  "/dashboard",
+  "/tickets",
+  "/profile",
+  "/notifications",
+  "/users",
+] as const;
 
 /**
  * @constant {string}
