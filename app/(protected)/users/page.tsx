@@ -37,6 +37,7 @@ import {
 } from "@tabler/icons-react";
 import DOMPurify from "dompurify";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export type UserType = {
@@ -56,7 +57,7 @@ export type UserType = {
 const UsersPage = () => {
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
-
+  const router = useRouter();
   const [users, setUsers] = useState<UserType[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -137,7 +138,7 @@ const UsersPage = () => {
   // Pagination
   const currentPageUsers = filteredUsers.slice(
     (activePage - 1) * Number(rowsPerPage),
-    activePage * Number(rowsPerPage),
+    activePage * Number(rowsPerPage)
   );
 
   const breadcrumbs = [
@@ -173,7 +174,7 @@ const UsersPage = () => {
     const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
     const html = text.replace(
       regex,
-      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
     );
 
     return DOMPurify.sanitize(html);
@@ -286,7 +287,21 @@ const UsersPage = () => {
               </Table.Tr>
             ) : (
               currentPageUsers.map((user) => (
-                <Table.Tr key={user.user_id}>
+                <Table.Tr
+                  key={user.user_id}
+                  onClick={() => router.push(`/users/${user.user_id}`)}
+                  style={{
+                    cursor: "pointer", // Make it clickable
+                    transition:
+                      "transform 0.3s ease, background-color 0.3s ease", // Smooth transition
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.01)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                  }}
+                >
                   <Table.Td p="md">
                     <Group gap="sm">
                       <Box pos="relative">
@@ -427,7 +442,7 @@ const UsersPage = () => {
                 {filteredUsers.length > 0
                   ? `${(activePage - 1) * Number(rowsPerPage) + 1}-${Math.min(
                       activePage * Number(rowsPerPage),
-                      filteredUsers.length,
+                      filteredUsers.length
                     )} of ${filteredUsers.length}`
                   : "0-0 of 0"}
               </Text>
