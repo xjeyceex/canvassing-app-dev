@@ -660,48 +660,70 @@ AS $$
       AND a.approval_reviewed_by = _user_id
     )
 $$;
--- Drop existing function if it exists
-DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, TEXT, UUID, INT, INT);
+
+DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, UUID, INT, INT, TEXT, TEXT);
 CREATE OR REPLACE FUNCTION get_all_my_tickets(
   user_id UUID, 
-  ticket_status TEXT DEFAULT NULL, 
   ticket_uuid UUID DEFAULT NULL,
   page INT DEFAULT 1,
-  page_size INT DEFAULT 10
+  page_size INT DEFAULT 10,
+  search_query TEXT DEFAULT NULL, -- Added search_query parameter
+  status_filter TEXT DEFAULT NULL -- Renamed ticket_status to status_filter
 )
 RETURNS TABLE (
-  ticket_id UUID,
-  ticket_name TEXT, 
-  ticket_item_name TEXT,
-  ticket_status TEXT,
-  ticket_revised_by UUID,
-  ticket_item_description TEXT,
-  ticket_specifications TEXT,
-  ticket_notes TEXT,
-  ticket_created_by UUID,
-  ticket_date_created TIMESTAMPTZ,
-  shared_users JSON,
-  reviewers JSON,
+  tickets JSON,
   total_count INT
 )
-LANGUAGE sql
-SET search_path TO public  
-AS $$  
-  WITH ticket_data AS (
+LANGUAGE plpgsql
+SET search_path TO public
+AS $$
+
+DECLARE
+  ticket_rows JSON;
+  total INT;
+BEGIN
+  -- Total count query with search and status_filter filtering
+  SELECT COUNT(*) INTO total
+  FROM public.ticket_table t
+  LEFT JOIN public.canvass_form_table c ON t.ticket_id = c.canvass_form_ticket_id
+  WHERE
+    -- Matching created tickets, shared tickets, or approved tickets
+    (t.ticket_created_by = user_id
+    OR EXISTS (
+      SELECT 1 FROM public.ticket_shared_with_table ts
+      WHERE ts.ticket_shared_ticket_id = t.ticket_id
+      AND ts.ticket_shared_user_id = user_id
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.approval_table a
+      WHERE a.approval_ticket_id = t.ticket_id
+      AND a.approval_reviewed_by = user_id
+    ))
+    -- Filter by ticket_uuid if provided
+    AND (ticket_uuid IS NULL OR t.ticket_id = ticket_uuid)
+    -- Add search filtering, searching by ticket name, description, or specifications
+    AND (search_query IS NULL OR 
+         t.ticket_name ILIKE '%' || search_query || '%' OR
+         t.ticket_item_description ILIKE '%' || search_query || '%' OR
+         t.ticket_specifications ILIKE '%' || search_query || '%')
+    -- Filter by status_filter if provided and it's not an empty string
+    AND (status_filter IS NULL OR status_filter = '' OR t.ticket_status = status_filter::ticket_status_enum);
+
+  -- Paginated ticket data query with search and status_filter filtering
+  SELECT JSON_AGG(t) INTO ticket_rows
+  FROM (
     SELECT
       t.ticket_id,
       t.ticket_name, 
       t.ticket_item_name,
-      t.ticket_status,
-      -- Get the canvass_form_revised_by from canvass_form_table
+      t.ticket_status,  -- Explicitly use ticket_status from ticket_table
       c.canvass_form_revised_by AS ticket_revised_by,
       t.ticket_item_description,
       t.ticket_specifications,
       t.ticket_notes,
       t.ticket_created_by,
-      t.ticket_date_created, 
+      t.ticket_date_created,
 
-      -- Aggregate shared users
       COALESCE(
         (SELECT JSON_AGG(
           JSON_BUILD_OBJECT(
@@ -715,7 +737,6 @@ AS $$
         WHERE ts.ticket_shared_ticket_id = t.ticket_id), '[]'::JSON
       ) AS shared_users,
 
-      -- Aggregate reviewers
       COALESCE(
         (SELECT JSON_AGG(
           JSON_BUILD_OBJECT(
@@ -728,47 +749,40 @@ AS $$
         WHERE a.approval_ticket_id = t.ticket_id), '[]'::JSON
       ) AS reviewers
 
-    FROM
-      public.ticket_table t  
-    -- Left join with canvass_form_table to get the canvass_form_revised_by
+    FROM public.ticket_table t
     LEFT JOIN public.canvass_form_table c ON t.ticket_id = c.canvass_form_ticket_id
 
     WHERE
-      user_id IN (t.ticket_created_by)
+      -- Matching created tickets, shared tickets, or approved tickets
+      (t.ticket_created_by = user_id
       OR EXISTS (
-        SELECT 1 FROM public.ticket_shared_with_table ts 
-        WHERE ts.ticket_shared_ticket_id = t.ticket_id 
+        SELECT 1 FROM public.ticket_shared_with_table ts
+        WHERE ts.ticket_shared_ticket_id = t.ticket_id
         AND ts.ticket_shared_user_id = user_id
       )
       OR EXISTS (
-        SELECT 1 FROM public.approval_table a 
-        WHERE a.approval_ticket_id = t.ticket_id 
+        SELECT 1 FROM public.approval_table a
+        WHERE a.approval_ticket_id = t.ticket_id
         AND a.approval_reviewed_by = user_id
-      )
-      AND (ticket_status IS NULL OR t.ticket_status = ticket_status)
+      ))
+      -- Filter by ticket_uuid if provided
       AND (ticket_uuid IS NULL OR t.ticket_id = ticket_uuid)
-  )
-  
-  SELECT
-    ticket_id,
-    ticket_name,
-    ticket_item_name,
-    ticket_status,
-    ticket_revised_by,
-    ticket_item_description,
-    ticket_specifications,
-    ticket_notes,
-    ticket_created_by,
-    ticket_date_created,
-    shared_users,
-    reviewers,
-    (SELECT COUNT(*) FROM ticket_data) AS total_count -- Counting total tickets available
-  
-  FROM ticket_data
-  ORDER BY
-    ticket_date_created DESC
-  LIMIT page_size
-  OFFSET (page - 1) * page_size
+      -- Add search filtering, searching by ticket name, description, or specifications
+      AND (search_query IS NULL OR 
+           t.ticket_name ILIKE '%' || search_query || '%' OR
+           t.ticket_item_description ILIKE '%' || search_query || '%' OR
+           t.ticket_specifications ILIKE '%' || search_query || '%')
+      -- Filter by status_filter if provided and it's not an empty string
+      AND (status_filter IS NULL OR status_filter = '' OR t.ticket_status = status_filter::ticket_status_enum)
+
+    ORDER BY t.ticket_date_created ASC
+    LIMIT page_size
+    OFFSET (page - 1) * page_size
+  ) t;
+
+  -- Return the result: paginated tickets and total count
+  RETURN QUERY SELECT COALESCE(ticket_rows, '[]'::JSON), total;
+END;
 $$;
 
 --view for realtime comment

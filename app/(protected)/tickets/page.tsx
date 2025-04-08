@@ -55,18 +55,17 @@ const TicketList = () => {
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"newest" | "oldest">("newest");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest">("oldest");
   const [tickets, setTickets] = useState<MyTicketType[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-
+  const [totalCount, setTotalCount] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
   const [expandedTickets, setExpandedTickets] = useState<
     Record<string, boolean>
   >({});
-
-  // Pagination states
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   // Breadcrumbs
   const breadcrumbs = [
@@ -78,35 +77,32 @@ const TicketList = () => {
   const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.xs})`);
   const isTablet = useMediaQuery(`(max-width: ${theme.breakpoints.md})`);
 
-  // Calculate content padding based on screen size
   const contentPadding = isMobile ? "xs" : isTablet ? "md" : "lg";
-
-  // Track manually expanded tickets to not auto-collapse them when search changes
   const manuallyExpandedTickets = useRef<Record<string, boolean>>({});
-
-  // Track previous search query to detect when it changes
   const prevSearchQuery = useRef("");
+
+  const startTicket = (page - 1) * pageSize + 1;
+  const endTicket = Math.min(page * pageSize, totalCount);
 
   const fetchTickets = async () => {
     if (!user?.user_id) return;
     setLoading(true);
     const fetchedTickets = await getAllMyTickets({
       user_id: user.user_id,
+      page_size: pageSize,
+      page: page,
+      search_query: searchQuery,
+      status_filter: activeTab,
     });
-    setTickets(fetchedTickets);
+    setTotalCount(fetchedTickets.total_count);
+    setTickets(fetchedTickets.tickets);
     setLoading(false);
   };
 
   useEffect(() => {
     fetchTickets();
-  }, [user?.user_id]);
+  }, [user?.user_id, pageSize, page, searchQuery, activeTab]);
 
-  // Reset to first page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab, searchQuery, sortBy]);
-
-  // Handle search query change and auto-expand matching tickets
   useEffect(() => {
     // Skip if search query hasn't changed
     if (prevSearchQuery.current === searchQuery) return;
@@ -168,6 +164,11 @@ const TicketList = () => {
     }
   };
 
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(parseInt(value, 10));
+    setPage(1); // Reset to page 1 when page size changes
+  };
+
   // Modified toggle function to track manually expanded tickets
   const toggleTicketExpand = (ticketId: string) => {
     setExpandedTickets((prev) => {
@@ -187,7 +188,7 @@ const TicketList = () => {
   const availableTickets = tickets.filter((ticket) => {
     const isPurchaser = user?.user_role === "PURCHASER";
     const isSharedWithUser = ticket.shared_users?.some(
-      (sharedUser) => sharedUser.user_id === user?.user_id,
+      (sharedUser) => sharedUser.user_id === user?.user_id
     );
     const isTicketOwner = ticket.ticket_created_by === user?.user_id;
 
@@ -203,7 +204,7 @@ const TicketList = () => {
 
   const getTicketCountByStatus = (status: ExtendedStatus) => {
     if (status === "all") {
-      return availableTickets.length;
+      return totalCount;
     }
 
     if (status === "REVISED") {
@@ -247,18 +248,10 @@ const TicketList = () => {
       return sortBy === "newest" ? dateB - dateA : dateA - dateB;
     });
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredTickets.length / rowsPerPage);
-  const startIndex = (currentPage - 1) * rowsPerPage;
-  const endIndex = Math.min(startIndex + rowsPerPage, filteredTickets.length);
-  const currentTickets = filteredTickets.slice(startIndex, endIndex);
   const showingInfoText =
     filteredTickets.length > 0
-      ? `${startIndex + 1}–${endIndex} of ${filteredTickets.length}`
+      ? `${startTicket}-${endTicket} of ${totalCount}`
       : "0 of 0";
-
-  // Options for rows per page
-  const rowsPerPageOptions = [5, 10, 25, 50];
 
   // Highlight search terms in text
   const highlightSearchTerm = (text: string) => {
@@ -267,7 +260,7 @@ const TicketList = () => {
     const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
     const html = text.replace(
       regex,
-      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
     );
 
     return DOMPurify.sanitize(html);
@@ -292,7 +285,7 @@ const TicketList = () => {
             const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
             const highlighted = node.textContent.replace(
               regex,
-              '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
+              '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
             );
 
             const wrapper = document.createElement("span");
@@ -315,13 +308,6 @@ const TicketList = () => {
     }
 
     return sanitized;
-  };
-
-  const handleRowsPerPageChange = (value: string) => {
-    const newRowsPerPage = parseInt(value, 10);
-    setRowsPerPage(newRowsPerPage);
-    // Reset to first page when changing rows per page
-    setCurrentPage(1);
   };
 
   if (!user || loading) {
@@ -478,7 +464,7 @@ const TicketList = () => {
         {filteredTickets.length > 0 ? (
           <>
             <Stack gap={5}>
-              {currentTickets.map((ticket) => (
+              {filteredTickets.map((ticket) => (
                 <Paper
                   p={isMobile ? "md" : "lg"}
                   key={ticket.ticket_id}
@@ -520,7 +506,7 @@ const TicketList = () => {
                           size="sm"
                           dangerouslySetInnerHTML={{
                             __html: `#${highlightSearchTerm(
-                              ticket.ticket_name,
+                              ticket.ticket_name
                             )}`,
                           }}
                         />
@@ -528,7 +514,7 @@ const TicketList = () => {
                           size="sm"
                           dangerouslySetInnerHTML={{
                             __html: highlightSearchTerm(
-                              ticket.ticket_item_name,
+                              ticket.ticket_item_name
                             ),
                           }}
                         />
@@ -607,7 +593,7 @@ const TicketList = () => {
                               size="sm"
                               dangerouslySetInnerHTML={{
                                 __html: highlightSearchTerm(
-                                  ticket.ticket_item_description,
+                                  ticket.ticket_item_description
                                 ),
                               }}
                             />
@@ -647,7 +633,7 @@ const TicketList = () => {
                               size="sm"
                               dangerouslySetInnerHTML={{
                                 __html: sanitizeAndHighlight(
-                                  ticket.ticket_notes,
+                                  ticket.ticket_notes
                                 ),
                               }}
                             />
@@ -687,7 +673,7 @@ const TicketList = () => {
                               className="rich-text-content"
                               dangerouslySetInnerHTML={{
                                 __html: sanitizeAndHighlight(
-                                  ticket.ticket_specifications,
+                                  ticket.ticket_specifications
                                 ),
                               }}
                             />
@@ -700,13 +686,13 @@ const TicketList = () => {
               ))}
             </Stack>
 
-            {/* Pagination Component */}
             <Box p={isMobile ? "xs" : "md"}>
               <Group
                 justify="apart"
                 align="center"
                 wrap={isMobile ? "wrap" : "nowrap"}
               >
+                {/* Left Section: Rows per page and info */}
                 <Group
                   align="center"
                   gap="sm"
@@ -720,23 +706,26 @@ const TicketList = () => {
                   <Text size="sm" c="dimmed">
                     Rows per page:
                   </Text>
+
                   <NativeSelect
-                    value={rowsPerPage.toString()}
+                    value={pageSize.toString()}
                     onChange={(event) =>
-                      handleRowsPerPageChange(event.currentTarget.value)
+                      handlePageSizeChange(event.currentTarget.value)
                     }
-                    data={rowsPerPageOptions.map((option) => option.toString())}
+                    data={["5", "10", "20", "50"]} // Available page sizes
                     style={{
-                      width: "70px",
-                      marginRight: theme.spacing.md,
+                      width: "65px",
+                      marginRight: theme.spacing.md, // Adjust margin as needed
                     }}
                     size="sm"
                   />
+
                   <Text size="sm" c="dimmed">
                     {showingInfoText}
                   </Text>
                 </Group>
 
+                {/* Right Section: Pagination */}
                 <Group
                   style={{
                     order: isMobile ? 1 : 2,
@@ -745,12 +734,12 @@ const TicketList = () => {
                   }}
                 >
                   <Pagination
-                    value={currentPage}
-                    onChange={setCurrentPage}
-                    total={totalPages}
-                    siblings={isMobile ? 0 : 1}
-                    boundaries={isMobile ? 1 : 1}
-                    size={isMobile ? "sm" : "md"}
+                    value={page}
+                    onChange={setPage}
+                    total={Math.ceil(totalCount / pageSize)} // Total number of pages
+                    color="blue" // Customize the color
+                    size="sm" // Adjust size for smaller screens
+                    withEdges // Display first/last page buttons
                   />
                 </Group>
               </Group>
