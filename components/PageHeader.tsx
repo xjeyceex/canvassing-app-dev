@@ -75,7 +75,7 @@ const PageHeader = ({ title, description, breadcrumbs }: PageHeaderProps) => {
                       href={item.href}
                       fz={15}
                       fw={500}
-                      c={isDark ? "gray.3" : "gray.7"}
+                      c={isDark ? "gray.2" : "black"}
                     >
                       {item.title}
                     </Anchor>

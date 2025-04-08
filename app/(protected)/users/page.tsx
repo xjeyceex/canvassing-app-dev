@@ -1,20 +1,28 @@
 "use client";
 
 import { getUsers } from "@/actions/get";
+import LoadingStateProtected from "@/components/LoadingStateProtected";
 import PageHeader from "@/components/PageHeader";
+import { getNameInitials, getRoleColor } from "@/utils/functions";
+import { UserRole } from "@/utils/types";
 import {
+  ActionIcon,
   Avatar,
   Badge,
   Box,
   Button,
-  Card,
+  Flex,
   Group,
-  Input,
-  Mark,
-  SimpleGrid,
-  Skeleton,
+  Pagination,
+  Paper,
+  Select,
+  Stack,
+  Table,
+  Tabs,
   Text,
-  Title,
+  TextInput,
+  Tooltip,
+  useMantineColorScheme,
   useMantineTheme,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
@@ -22,10 +30,12 @@ import { notifications } from "@mantine/notifications";
 import {
   IconAlertCircle,
   IconCheckbox,
+  IconEye,
+  IconPlus,
   IconSearch,
   IconTicket,
-  IconUser,
 } from "@tabler/icons-react";
+import DOMPurify from "dompurify";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -43,20 +53,16 @@ export type UserType = {
   tickets_reviewed_by_user_count: number;
 };
 
-const roleColors: Record<string, string> = {
-  admin: "red",
-  manager: "blue",
-  editor: "teal",
-  user: "gray",
-  reviewer: "orange",
-};
-
 const UsersPage = () => {
   const theme = useMantineTheme();
+  const { colorScheme } = useMantineColorScheme();
 
   const [users, setUsers] = useState<UserType[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<string>("all");
+  const [activePage, setActivePage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState("5");
 
   const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.xs})`);
 
@@ -102,222 +108,338 @@ const UsersPage = () => {
     };
   }, []);
 
-  const filteredUsers = users?.filter((user) => {
-    const query = searchQuery.toLowerCase();
-    return (
-      user.user_name.toLowerCase().includes(query) ||
-      user.user_email.toLowerCase().includes(query)
-    );
+  if (loading || !users) {
+    return <LoadingStateProtected />;
+  }
+
+  // Filter users based on active tab and search query
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.user_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.user_email.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (activeTab === "all") {
+      return matchesSearch;
+    } else {
+      return user.user_role === activeTab && matchesSearch;
+    }
   });
 
-  const highlightMatch = (text: string, query: string) => {
-    if (!query.trim() || !text) return text;
-
-    const regex = new RegExp(`(${query.trim()})`, "gi");
-    const parts = text.split(regex);
-
-    return parts.map((part, index) =>
-      part.toLowerCase() === query.trim().toLowerCase() ? (
-        <Mark
-          key={index}
-          style={{
-            backgroundColor: "#FFF3BF",
-            borderRadius: 2,
-            padding: "0 2px",
-          }}
-        >
-          {part}
-        </Mark>
-      ) : (
-        part
-      ),
+  // Get status badge
+  const getRoleBadge = (role: UserRole) => {
+    return (
+      <Badge color={role ? getRoleColor(role) : "gray"} variant="light">
+        {role}
+      </Badge>
     );
   };
 
-  if (loading || !users) {
-    return (
-      <Box p="md">
-        <Skeleton height={40} mb="xl" width="200px" />
-        <SimpleGrid cols={{ base: 1, sm: 2, md: 3 }} spacing="md">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} withBorder padding="lg" radius="md">
-              <Group mb="md">
-                <Skeleton circle height={50} />
-                <Skeleton height={20} width="100px" />
-              </Group>
-              <Skeleton height={16} width="80%" mb="xs" />
-              <Skeleton height={16} width="60%" mb="xs" />
-              <Skeleton height={16} width="40%" mb="md" />
-              <Skeleton height={36} radius="sm" />
-            </Card>
-          ))}
-        </SimpleGrid>
-      </Box>
-    );
-  }
-
-  if (!filteredUsers || filteredUsers.length === 0) {
-    return (
-      <Box p="md">
-        <Title order={2} mb="md">
-          Users
-        </Title>
-
-        <Input
-          placeholder="Search tickets..."
-          mb="md"
-          size={isMobile ? "sm" : "md"}
-          leftSection={<IconSearch size={isMobile ? 16 : 18} stroke={1.5} />}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.currentTarget.value)}
-        />
-
-        <Card withBorder>
-          <Text c="dimmed" ta="center" py="xl">
-            No users found for <strong>{searchQuery}</strong>
-          </Text>
-        </Card>
-      </Box>
-    );
-  }
+  // Pagination
+  const currentPageUsers = filteredUsers.slice(
+    (activePage - 1) * Number(rowsPerPage),
+    activePage * Number(rowsPerPage)
+  );
 
   const breadcrumbs = [
     { title: "Dashboard", href: "/dashboard" },
     { title: "Users", href: "/users" },
   ];
 
+  const tabItems: { value: UserRole; label: string }[] = [
+    { value: "all", label: "All" },
+    { value: "ADMIN", label: "Admin" },
+    { value: "MANAGER", label: "Manager" },
+    { value: "REVIEWER", label: "Reviewer" },
+    { value: "PURCHASER", label: "Purchaser" },
+  ];
+
+  const handleTabChange = (value: string | null) => {
+    if (value) {
+      setActiveTab(value as UserRole);
+    }
+  };
+
+  const getUserCountByRole = (role: UserRole) => {
+    if (role === "all") {
+      return users.length;
+    }
+
+    return users.filter((user) => user.user_role === role).length;
+  };
+
+  const highlightSearchTerm = (text: string) => {
+    if (!searchQuery.trim() || !text) return text;
+
+    const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
+    const html = text.replace(
+      regex,
+      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
+    );
+
+    return DOMPurify.sanitize(html);
+  };
+
   return (
     <Box p="md">
-      <PageHeader title="Users" breadcrumbs={breadcrumbs} />
+      <Box mb="lg">
+        <Flex
+          justify="space-between"
+          align={isMobile ? "flex-start" : "center"}
+          mb="lg"
+          wrap={isMobile ? "wrap" : "nowrap"}
+          direction={isMobile ? "column" : "row"}
+          gap="sm"
+        >
+          <PageHeader title="Users" breadcrumbs={breadcrumbs} />
 
-      <Input
-        placeholder="Search users..."
-        mb="md"
-        size={isMobile ? "sm" : "md"}
-        leftSection={<IconSearch size={isMobile ? 16 : 18} stroke={1.5} />}
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.currentTarget.value)}
-      />
+          <Button leftSection={<IconPlus size={16} />} size="sm">
+            New user
+          </Button>
+        </Flex>
+      </Box>
 
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
-        {users
-          .filter((user) =>
-            [user.user_name, user.user_email]
-              .join(" ")
-              .toLowerCase()
-              .includes(searchQuery.toLowerCase()),
-          )
-          .sort((b, a) => {
-            const roleOrder = ["admin", "manager", "reviewer", "purchaser"]; // Adjust roles as needed
-            return (
-              roleOrder.indexOf(a.user_role.toLowerCase()) -
-              roleOrder.indexOf(b.user_role.toLowerCase())
-            );
-          })
-          .map((user) => (
-            <Card
-              key={user.user_id}
-              withBorder
-              padding="lg"
-              radius="md"
+      <Paper
+        shadow="sm"
+        withBorder
+        style={{
+          border: `1px solid ${
+            colorScheme === "dark" ? theme.colors.dark[5] : theme.colors.gray[2]
+          }`,
+          borderRadius: "md",
+        }}
+        radius="md"
+      >
+        <Tabs defaultValue="all" value={activeTab} onChange={handleTabChange}>
+          <Tabs.List>
+            {tabItems.map((tab) => (
+              <Tabs.Tab
+                key={tab.value}
+                value={tab.value}
+                color={tab.value !== "all" ? getRoleColor(tab.value) : "dark"}
+                py="md"
+              >
+                <Group gap={8}>
+                  {tab.label}
+                  <Badge
+                    size="sm"
+                    radius="sm"
+                    variant="light"
+                    color={
+                      tab.value !== "all" ? getRoleColor(tab.value) : "dark"
+                    }
+                  >
+                    {getUserCountByRole(tab.value)}
+                  </Badge>
+                </Group>
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
+        </Tabs>
+
+        <Group
+          p="md"
+          align="flex-end"
+          style={{
+            borderBottom: `1px solid ${
+              colorScheme === "dark"
+                ? theme.colors.dark[5]
+                : theme.colors.gray[2]
+            }`,
+            borderRadius: "md",
+          }}
+        >
+          <TextInput
+            size="md"
+            placeholder="Search users..."
+            leftSection={<IconSearch size={16} />}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.currentTarget.value)}
+            flex={1}
+          />
+        </Group>
+
+        <Table>
+          <Table.Thead bg={colorScheme === "dark" ? "#2E2E2E" : "gray.0"}>
+            <Table.Tr style={{ border: "none" }}>
+              <Table.Th p="lg">Name</Table.Th>
+              <Table.Th py="lg">Role</Table.Th>
+              <Table.Th py="lg">Tickets</Table.Th>
+              <Table.Th py="lg">Date Created</Table.Th>
+              <Table.Th py="lg"></Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody
+            style={{
+              borderBlock: `1px solid ${
+                colorScheme === "dark"
+                  ? theme.colors.dark[5]
+                  : theme.colors.gray[2]
+              }`,
+              borderRadius: "md",
+            }}
+          >
+            {currentPageUsers.length === 0 ? (
+              <Table.Tr>
+                <Table.Td colSpan={6} align="center" py="xl">
+                  <Text c="dimmed">No users found</Text>
+                </Table.Td>
+              </Table.Tr>
+            ) : (
+              currentPageUsers.map((user) => (
+                <Table.Tr key={user.user_id}>
+                  <Table.Td p="md">
+                    <Group gap="sm">
+                      <Box pos="relative">
+                        <Avatar
+                          src={user.user_avatar || undefined}
+                          radius="50%"
+                          size="md"
+                          color={getRoleColor(user.user_role)}
+                          variant="filled"
+                        >
+                          {user.user_name
+                            ? getNameInitials(user.user_name || "")
+                            : "UN"}
+                        </Avatar>
+                      </Box>
+                      <Stack gap={0}>
+                        <Text
+                          size="sm"
+                          fw={500}
+                          dangerouslySetInnerHTML={{
+                            __html: highlightSearchTerm(user.user_name),
+                          }}
+                        />
+                        <Text
+                          size="xs"
+                          c="dimmed"
+                          dangerouslySetInnerHTML={{
+                            __html: highlightSearchTerm(user.user_email),
+                          }}
+                        />
+                      </Stack>
+                    </Group>
+                  </Table.Td>
+                  <Table.Td py="md">
+                    {getRoleBadge(user.user_role as UserRole)}
+                  </Table.Td>
+                  <Table.Td py="md">
+                    <Group gap="xs">
+                      {user.user_role === "PURCHASER" && (
+                        <>
+                          <Tooltip label={`${user.ticket_count} tickets`}>
+                            <Badge
+                              variant="light"
+                              color="blue"
+                              leftSection={<IconTicket size={12} />}
+                            >
+                              {user.ticket_count}
+                            </Badge>
+                          </Tooltip>
+                          <Tooltip
+                            label={`${user.revised_ticket_count} revised tickets`}
+                          >
+                            <Badge
+                              variant="light"
+                              color="red"
+                              leftSection={<IconCheckbox size={12} />}
+                            >
+                              {user.revised_ticket_count}
+                            </Badge>
+                          </Tooltip>
+                        </>
+                      )}
+                      {user.user_role === "REVIEWER" && (
+                        <>
+                          <Tooltip
+                            label={`${user.tickets_reviewed_by_user_count} tickets reviewed`}
+                          >
+                            <Badge
+                              variant="light"
+                              color="blue"
+                              leftSection={<IconTicket size={12} />}
+                            >
+                              {user.tickets_reviewed_by_user_count}
+                            </Badge>
+                          </Tooltip>
+                          <Tooltip
+                            label={`${user.tickets_revised_by_user_count} revised tickets`}
+                          >
+                            <Badge
+                              variant="light"
+                              color="green"
+                              leftSection={<IconCheckbox size={12} />}
+                            >
+                              {user.tickets_revised_by_user_count}
+                            </Badge>
+                          </Tooltip>
+                        </>
+                      )}
+                    </Group>
+                  </Table.Td>
+                  <Table.Td py="md">
+                    {new Date(user.user_created_at).toLocaleDateString()}
+                  </Table.Td>
+                  <Table.Td py="md">
+                    <Group gap="xs">
+                      <Tooltip label="View Profile">
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          component={Link}
+                          href={`/users/${user.user_id}`}
+                        >
+                          <IconEye size={16} />
+                        </ActionIcon>
+                      </Tooltip>
+                    </Group>
+                  </Table.Td>
+                </Table.Tr>
+              ))
+            )}
+          </Table.Tbody>
+        </Table>
+
+        <Box p={isMobile ? "xs" : "md"}>
+          <Group
+            justify="apart"
+            align="center"
+            wrap={isMobile ? "wrap" : "nowrap"}
+          >
+            <Group
+              align="center"
+              gap="sm"
               style={{
-                transition: "transform 0.2s, box-shadow 0.2s",
-                "&:hover": {
-                  transform: "translateY(-2px)",
-                  boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-                },
+                order: isMobile ? 2 : 1,
+                width: isMobile ? "100%" : "auto",
+                justifyContent: isMobile ? "center" : "flex-start",
+                marginTop: isMobile ? theme.spacing.xs : 0,
               }}
             >
-              <Group mb="md" wrap="nowrap">
-                <Avatar
-                  src={user.user_avatar}
-                  alt={user.user_name}
-                  size="lg"
-                  radius="xl"
-                />
-                <Box style={{ flex: 1, overflow: "hidden" }}>
-                  <Text size="lg" fw={600} truncate>
-                    {highlightMatch(user.user_name, searchQuery)}
-                  </Text>
-                  <Text size="sm" c="dimmed" truncate>
-                    {highlightMatch(user.user_email, searchQuery)}
-                  </Text>
-                </Box>
-              </Group>
-
-              <Group justify="space-between" mb="sm">
-                <Badge
-                  color={roleColors[user.user_role.toLowerCase()] || "gray"}
-                  variant="light"
-                  leftSection={
-                    <IconUser size={12} style={{ marginRight: 4 }} />
-                  }
-                >
-                  {user.user_role}
-                </Badge>
-
-                <Group gap="xs">
-                  {user.user_role.toLowerCase() === "purchaser" && (
-                    <>
-                      <Badge
-                        variant="light"
-                        color="blue"
-                        leftSection={
-                          <IconTicket size={12} style={{ marginRight: 4 }} />
-                        }
-                      >
-                        {user.ticket_count}
-                      </Badge>
-                      <Badge
-                        variant="light"
-                        color="red"
-                        leftSection={
-                          <IconCheckbox size={12} style={{ marginRight: 4 }} />
-                        }
-                      >
-                        {user.revised_ticket_count}
-                      </Badge>
-                    </>
-                  )}
-
-                  {user.user_role.toLowerCase() === "reviewer" && (
-                    <>
-                      <Badge
-                        variant="light"
-                        color="blue"
-                        leftSection={
-                          <IconTicket size={12} style={{ marginRight: 4 }} />
-                        }
-                      >
-                        {user.tickets_reviewed_by_user_count}
-                      </Badge>
-                      <Badge
-                        variant="light"
-                        color="green"
-                        leftSection={
-                          <IconCheckbox size={12} style={{ marginRight: 4 }} />
-                        }
-                      >
-                        {user.tickets_revised_by_user_count}
-                      </Badge>
-                    </>
-                  )}
-                </Group>
-              </Group>
-
-              <Button
-                component={Link}
-                href={`/users/${user.user_id}`}
-                fullWidth
-                variant="outline"
-                mt="sm"
-                scroll={false}
-              >
-                View Profile
-              </Button>
-            </Card>
-          ))}
-      </SimpleGrid>
+              <Text size="sm">Rows per page:</Text>
+              <Select
+                data={["5", "10", "20", "50"]}
+                value={rowsPerPage}
+                onChange={(value) => setRowsPerPage(value || "5")}
+                w={60}
+              />
+              <Text size="sm">
+                {filteredUsers.length > 0
+                  ? `${(activePage - 1) * Number(rowsPerPage) + 1}-${Math.min(
+                      activePage * Number(rowsPerPage),
+                      filteredUsers.length
+                    )} of ${filteredUsers.length}`
+                  : "0-0 of 0"}
+              </Text>
+              <Pagination
+                total={Math.ceil(filteredUsers.length / Number(rowsPerPage))}
+                value={activePage}
+                onChange={setActivePage}
+              />
+            </Group>
+          </Group>
+        </Box>
+      </Paper>
     </Box>
   );
 };

@@ -8,6 +8,8 @@ export type UserType = {
   user_created_at: string;
 };
 
+export type UserRole = "all" | "ADMIN" | "MANAGER" | "REVIEWER" | "PURCHASER";
+
 export type ReviewerType = {
   user_id: string;
   user_full_name: string;

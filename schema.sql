@@ -592,8 +592,8 @@ BEGIN
     user_full_name, 
     user_email,
     user_avatar,
-    created_at,
-    updated_at
+    user_created_at,
+    user_updated_at
   )
   VALUES (
     NEW.id, 

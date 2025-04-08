@@ -102,3 +102,18 @@ export const getStatusColor = (status: string) => {
       return "gray.6";
   }
 };
+
+export const getRoleColor = (role: string) => {
+  switch (role) {
+    case "ADMIN":
+      return "red";
+    case "MANAGER":
+      return "teal";
+    case "REVIEWER":
+      return "yellow";
+    case "PURCHASER":
+      return "blue";
+    default:
+      return "gray";
+  }
+};

@@ -333,7 +333,7 @@ const ProfilePage = () => {
                   <Text size="10px" c="dimmed" ta="center">
                     {ticketCount > 0
                       ? `${((revisedTicketCount / ticketCount) * 100).toFixed(
-                          2,
+                          2
                         )}%`
                       : "0%"}
                   </Text>
