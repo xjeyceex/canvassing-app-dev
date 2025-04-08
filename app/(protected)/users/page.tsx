@@ -137,7 +137,7 @@ const UsersPage = () => {
   // Pagination
   const currentPageUsers = filteredUsers.slice(
     (activePage - 1) * Number(rowsPerPage),
-    activePage * Number(rowsPerPage)
+    activePage * Number(rowsPerPage),
   );
 
   const breadcrumbs = [
@@ -173,7 +173,7 @@ const UsersPage = () => {
     const regex = new RegExp(`(${searchQuery.trim()})`, "gi");
     const html = text.replace(
       regex,
-      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>'
+      '<mark style="background-color: #FFF3BF; border-radius: 2px;">$1</mark>',
     );
 
     return DOMPurify.sanitize(html);
@@ -427,7 +427,7 @@ const UsersPage = () => {
                 {filteredUsers.length > 0
                   ? `${(activePage - 1) * Number(rowsPerPage) + 1}-${Math.min(
                       activePage * Number(rowsPerPage),
-                      filteredUsers.length
+                      filteredUsers.length,
                     )} of ${filteredUsers.length}`
                   : "0-0 of 0"}
               </Text>
