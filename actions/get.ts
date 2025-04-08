@@ -102,11 +102,14 @@ export const getAllMyTickets = async ({
   user_id,
   page = 1,
   page_size = 10,
+  search_query = "",
+  status_filter = "", // Added ticket_status parameter
 }: {
   user_id: string;
-  ticket_status?: string;
   page?: number;
   page_size?: number;
+  search_query?: string;
+  status_filter?: string; // Accept ticket status as a string
 }) => {
   const supabase = await createClient();
 
@@ -114,17 +117,21 @@ export const getAllMyTickets = async ({
     user_id,
     page,
     page_size,
+    search_query,
+    status_filter, // Pass ticket status to the RPC function
   });
 
+  // Error handling
   if (error) {
     console.error("Supabase Error:", error.message);
     return { tickets: [], total_count: 0 };
   }
 
-  return {
-    tickets: data?.[0]?.tickets || [],
-    total_count: data?.[0]?.total_count || 0,
-  };
+  // Safely returning the tickets and total_count, or default values if not present
+  const tickets = data?.[0]?.tickets || [];
+  const total_count = data?.[0]?.total_count || 0;
+
+  return { tickets, total_count };
 };
 
 type SharedUser = { ticket_shared_user_id: string };
