@@ -812,9 +812,7 @@ const TicketDetailsPage = () => {
           isDisabled={isDisabled}
           fetchTicketDetails={fetchTicketDetails}
           handleCanvassAction={handleCanvassAction}
-          updateCanvassDetails={fetchCanvassDetails}
           updateTicketDetails={fetchTicketDetails}
-          updateComments={fetchComments}
         />
       </Grid>
     </Box>

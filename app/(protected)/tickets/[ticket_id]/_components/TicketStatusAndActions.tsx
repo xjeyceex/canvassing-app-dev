@@ -1,7 +1,7 @@
 "use client";
 
 import { getAllUsers, getTicketDetails } from "@/actions/get";
-import { addComment, notifyUser, shareTicket } from "@/actions/post";
+import { notifyUser, shareTicket } from "@/actions/post";
 import { revertApprovalStatus, updateApprovalStatus } from "@/actions/update";
 import ConfirmationModal from "@/components/ConfirmationModal";
 import { useUserStore } from "@/stores/userStore";
@@ -45,9 +45,7 @@ type Props = {
   isDisabled: boolean;
   handleCanvassAction: (action: string) => void;
   fetchTicketDetails: () => Promise<void>;
-  updateCanvassDetails?: () => void;
   updateTicketDetails: () => void;
-  updateComments: () => void;
 };
 
 const TicketStatusAndActions = ({
@@ -56,14 +54,12 @@ const TicketStatusAndActions = ({
   fetchTicketDetails,
   handleCanvassAction,
   updateTicketDetails,
-  updateComments,
 }: Props) => {
   const { user } = useUserStore();
 
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [isSharing, setIsSharing] = useState(false);
   const [isSharingLoading, setIsSharingLoading] = useState(false);
-  const [newComment, setNewComment] = useState("");
   const [approvalStatus, setApprovalStatus] = useState<string | null>(null);
 
   // Confirmation Modal States
@@ -77,7 +73,7 @@ const TicketStatusAndActions = ({
 
   const [isStatusLoading, setIsStatusLoading] = useState(false);
   const [allUsers, setAllUsers] = useState<{ value: string; label: string }[]>(
-    [],
+    []
   );
 
   const { colorScheme } = useMantineColorScheme();
@@ -95,7 +91,7 @@ const TicketStatusAndActions = ({
 
   const isAdmin = user?.user_role === "ADMIN";
   const isReviewer = ticket.reviewers?.some(
-    (r) => r.reviewer_id === user?.user_id,
+    (r) => r.reviewer_id === user?.user_id
   );
   const isManager = user?.user_role === "MANAGER";
   const isCreator = ticket.ticket_created_by === user?.user_id;
@@ -107,14 +103,14 @@ const TicketStatusAndActions = ({
 
     try {
       await Promise.all(
-        selectedUsers.map((userId) => shareTicket(ticket.ticket_id, userId)),
+        selectedUsers.map((userId) => shareTicket(ticket.ticket_id, userId))
       );
 
       await fetchTicketDetails!();
 
       setSelectedUsers([]);
       setAllUsers((prev) =>
-        prev.filter((user) => !selectedUsers.includes(user.value)),
+        prev.filter((user) => !selectedUsers.includes(user.value))
       );
     } catch (error) {
       console.error("Error sharing ticket:", error);
@@ -132,12 +128,6 @@ const TicketStatusAndActions = ({
 
     setIsStatusLoading(true);
     try {
-      if (newComment.trim()) {
-        await addComment(ticket.ticket_id, newComment, user.user_id);
-        updateComments();
-        setNewComment("");
-      }
-
       handleCanvassAction("WORK IN PROGRESS");
       updateTicketDetails();
     } catch (error) {
@@ -192,13 +182,13 @@ const TicketStatusAndActions = ({
       (reviewer: TicketDetailsType["reviewers"][0]) =>
         reviewer.reviewer_id === user.user_id
           ? { ...reviewer, approval_status: newApprovalStatus }
-          : reviewer,
+          : reviewer
     );
 
     // Check if all non-managers have approved
     const nonManagerReviewers = updatedReviewers.filter(
       (reviewer: TicketDetailsType["reviewers"][0]) =>
-        reviewer.reviewer_role !== "MANAGER",
+        reviewer.reviewer_role !== "MANAGER"
     );
 
     const isSingleReviewer = nonManagerReviewers.length === 1;
@@ -206,21 +196,16 @@ const TicketStatusAndActions = ({
       nonManagerReviewers.length > 0 &&
       nonManagerReviewers.every(
         (reviewer: TicketDetailsType["reviewers"][0]) =>
-          reviewer.approval_status === "APPROVED",
+          reviewer.approval_status === "APPROVED"
       );
 
     const newTicketStatus = allApproved
       ? "FOR APPROVAL"
       : isSingleReviewer && newApprovalStatus === "REJECTED"
-        ? "REJECTED"
-        : currentTicket.ticket_status;
+      ? "REJECTED"
+      : currentTicket.ticket_status;
 
     try {
-      if (newComment.trim()) {
-        await addComment(currentTicket.ticket_id, newComment, user.user_id);
-        updateComments();
-      }
-
       await updateApprovalStatus({
         approval_ticket_id: currentTicket.ticket_id,
         approval_review_status: newApprovalStatus,
@@ -230,7 +215,7 @@ const TicketStatusAndActions = ({
       if (allApproved) {
         for (const manager of currentTicket.reviewers.filter(
           (reviewer: TicketDetailsType["reviewers"][0]) =>
-            reviewer.reviewer_role === "MANAGER",
+            reviewer.reviewer_role === "MANAGER"
         )) {
           await updateApprovalStatus({
             approval_ticket_id: currentTicket.ticket_id,
@@ -242,7 +227,7 @@ const TicketStatusAndActions = ({
           await notifyUser(
             manager.reviewer_id,
             message,
-            currentTicket.ticket_id,
+            currentTicket.ticket_id
           );
         }
       }
@@ -302,13 +287,13 @@ const TicketStatusAndActions = ({
         reviewer.reviewer_role === "MANAGER" &&
         reviewer.reviewer_id === user.user_id
           ? { ...reviewer, approval_status: newApprovalStatus }
-          : reviewer,
+          : reviewer
     );
 
     // Filter only managers
     const managerReviewers = updatedReviewers.filter(
       (reviewer: TicketDetailsType["reviewers"][0]) =>
-        reviewer.reviewer_role === "MANAGER",
+        reviewer.reviewer_role === "MANAGER"
     );
 
     const isSingleManager = managerReviewers.length === 1;
@@ -316,22 +301,17 @@ const TicketStatusAndActions = ({
       managerReviewers.length > 0 &&
       managerReviewers.every(
         (reviewer: TicketDetailsType["reviewers"][0]) =>
-          reviewer.approval_status === "APPROVED",
+          reviewer.approval_status === "APPROVED"
       );
 
     // Handle single or multiple manager approvals
     const newTicketStatus = allManagersApproved
       ? "DONE"
       : isSingleManager && newApprovalStatus === "REJECTED"
-        ? "REJECTED"
-        : currentTicket.ticket_status;
+      ? "REJECTED"
+      : currentTicket.ticket_status;
 
     try {
-      if (newComment.trim()) {
-        await addComment(currentTicket.ticket_id, newComment, user.user_id);
-        updateComments();
-      }
-
       await updateApprovalStatus({
         approval_ticket_id: currentTicket.ticket_id,
         approval_review_status: newApprovalStatus,
@@ -356,11 +336,6 @@ const TicketStatusAndActions = ({
     setIsStatusLoading(true);
 
     try {
-      if (newComment.trim()) {
-        await addComment(ticket.ticket_id, newComment, user.user_id);
-        updateComments();
-      }
-
       // Revert approval status
       await revertApprovalStatus(ticket.ticket_id);
       handleCanvassAction("FOR REVISION");
@@ -381,13 +356,6 @@ const TicketStatusAndActions = ({
     setIsStatusLoading(true);
 
     try {
-      if (newComment.trim()) {
-        // Add comment before reverting approval status
-        await addComment(ticket.ticket_id, newComment, user.user_id);
-
-        updateComments();
-      }
-
       // Revert approval status
       await revertApprovalStatus(ticket.ticket_id);
 
@@ -609,7 +577,7 @@ const TicketStatusAndActions = ({
                     .filter(
                       (manager) =>
                         manager.reviewer_role === "MANAGER" &&
-                        manager.approval_status !== "PENDING",
+                        manager.approval_status !== "PENDING"
                     )
                     .map((manager) => (
                       <Group
@@ -668,8 +636,8 @@ const TicketStatusAndActions = ({
                             manager.approval_status === "APPROVED"
                               ? "green"
                               : manager.approval_status === "REJECTED"
-                                ? "red"
-                                : "gray"
+                              ? "red"
+                              : "gray"
                           }
                         >
                           {manager.approval_status}
@@ -737,8 +705,8 @@ const TicketStatusAndActions = ({
                             reviewer.approval_status === "APPROVED"
                               ? "green"
                               : reviewer.approval_status === "REJECTED"
-                                ? "red"
-                                : "gray"
+                              ? "red"
+                              : "gray"
                           }
                         >
                           {reviewer.approval_status}
