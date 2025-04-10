@@ -125,13 +125,14 @@ export const getAllMyTickets = async ({
   // Error handling
   if (error) {
     console.error("Supabase Error:", error.message);
-    return { tickets: [] };
+    return { tickets: [], total_count: 0 };
   }
 
-  // Safely returning the tickets, or default value if not present
+  // Safely returning the tickets and total_count, or default values if not present
   const tickets = data?.[0]?.tickets || [];
+  const total_count = data?.[0]?.total_count || 0;
 
-  return { tickets };
+  return { tickets, total_count };
 };
 
 export const getTicketStatusCounts = async (

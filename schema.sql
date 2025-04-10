@@ -660,8 +660,8 @@ AS $$
       AND a.approval_reviewed_by = _user_id
     )
 $$;
-DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, UUID, INT, INT, TEXT, TEXT, BOOLEAN);
 
+DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, UUID, INT, INT, TEXT, TEXT, BOOLEAN);
 CREATE OR REPLACE FUNCTION get_all_my_tickets(
   user_id UUID, 
   ticket_uuid UUID DEFAULT NULL,
@@ -672,7 +672,8 @@ CREATE OR REPLACE FUNCTION get_all_my_tickets(
   revised_only BOOLEAN DEFAULT FALSE -- New parameter to filter revised tickets
 )
 RETURNS TABLE (
-  tickets JSON
+  tickets JSON,
+  total_count INT
 )
 LANGUAGE plpgsql
 SET search_path TO public
@@ -680,7 +681,39 @@ AS $$
 
 DECLARE
   ticket_rows JSON;
+  total INT;
 BEGIN
+  -- Total count query
+  SELECT COUNT(*) INTO total
+  FROM public.ticket_table t
+  LEFT JOIN public.canvass_form_table c ON t.ticket_id = c.canvass_form_ticket_id
+  WHERE
+    (t.ticket_created_by = user_id
+    OR EXISTS (
+      SELECT 1 FROM public.ticket_shared_with_table ts
+      WHERE ts.ticket_shared_ticket_id = t.ticket_id
+      AND ts.ticket_shared_user_id = user_id
+    )
+    OR EXISTS (
+      SELECT 1 FROM public.approval_table a
+      WHERE a.approval_ticket_id = t.ticket_id
+      AND a.approval_reviewed_by = user_id
+    ))
+    AND (ticket_uuid IS NULL OR t.ticket_id = ticket_uuid)
+    AND (search_query IS NULL OR 
+         t.ticket_name ILIKE '%' || search_query || '%' OR
+         t.ticket_item_description ILIKE '%' || search_query || '%' OR
+         t.ticket_specifications ILIKE '%' || search_query || '%')
+    AND (
+      status_filter IS NULL
+      OR status_filter = 'all'
+      -- For REVISED, check if the ticket has been revised but ignore the ticket status
+      OR status_filter = 'REVISED' AND c.canvass_form_revised_by IS NOT NULL
+      -- For other status filters, use the actual ticket status
+      OR status_filter != 'REVISED' AND t.ticket_status = status_filter::ticket_status_enum
+    )
+    AND (revised_only IS FALSE OR c.canvass_form_revised_by IS NOT NULL); -- Filter for revised-only tickets
+
   -- Paginated ticket data
   SELECT JSON_AGG(t) INTO ticket_rows
   FROM (
@@ -754,8 +787,8 @@ BEGIN
     OFFSET (page - 1) * page_size
   ) t;
 
-  -- Return only the result with tickets
-  RETURN QUERY SELECT COALESCE(ticket_rows, '[]'::JSON);
+  -- Return the result: paginated tickets and total count
+  RETURN QUERY SELECT COALESCE(ticket_rows, '[]'::JSON), total;
 END;
 $$;
 

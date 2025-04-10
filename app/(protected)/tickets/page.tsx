@@ -59,6 +59,7 @@ const TicketList = () => {
   const [sortBy, setSortBy] = useState<"newest" | "oldest">("oldest");
   const [tickets, setTickets] = useState<MyTicketType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
+  const [currentTotalCount, setCurrentTotalCount] = useState<number>(0);
   const [totalCounts, setTotalCounts] = useState<{
     status_counts: TicketStatusCount[];
     total_count: number;
@@ -99,35 +100,36 @@ const TicketList = () => {
       search_query: searchQuery,
       status_filter: activeTab,
     });
+    setCurrentTotalCount(fetchedTickets.total_count);
     setTickets(fetchedTickets.tickets);
     setLoadingTab(false);
     setLoading(false);
   };
 
-  const fetchTicketStatusCounts = async () => {
-    if (!user?.user_id) return;
-
-    setLoading(true);
-    const { status_counts, total_count } = await getTicketStatusCounts(
-      user.user_id
-    ); // Pass user_id to the function
-
-    // Update the state with the fetched data
-    setTotalCounts({
-      status_counts, // The grouped ticket status counts
-      total_count, // The total ticket count
-    });
-
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchTicketStatusCounts();
-  }, []);
-
   useEffect(() => {
     fetchTickets();
   }, [user?.user_id, pageSize, page, searchQuery, activeTab]);
+
+  useEffect(() => {
+    const fetchTicketStatusCounts = async () => {
+      if (!user?.user_id) return;
+
+      setLoading(true);
+      const { status_counts, total_count } = await getTicketStatusCounts(
+        user.user_id
+      ); // Pass user_id to the function
+
+      // Update the state with the fetched data
+      setTotalCounts({
+        status_counts, // The grouped ticket status counts
+        total_count, // The total ticket count
+      });
+
+      setLoading(false);
+    };
+
+    fetchTicketStatusCounts();
+  }, [user?.user_id]);
 
   useEffect(() => {
     // Skip if search query hasn't changed
@@ -288,20 +290,12 @@ const TicketList = () => {
   const startTicket = (page - 1) * pageSize + 1;
   const endTicket = Math.min(page * pageSize, totalCounts.total_count);
 
-  // Calculate the actual total count based on active tab
-  const actualTotalCount =
-    activeTab === "all"
-      ? totalCounts.total_count
-      : totalCounts.status_counts.find(
-          (count) => count.ticket_status === activeTab
-        )?.ticket_count || 0;
-
-  // Make sure endTicket doesn't exceed actualTotalCount
-  const correctedEndTicket = Math.min(endTicket, actualTotalCount);
+  // Make sure endTicket doesn't exceed currentTotalCount
+  const correctedEndTicket = Math.min(endTicket, currentTotalCount);
 
   const showingInfoText =
     filteredTickets.length > 0
-      ? `${startTicket}-${correctedEndTicket} of ${actualTotalCount}`
+      ? `${startTicket}-${correctedEndTicket} of ${currentTotalCount}`
       : "0 of 0";
 
   // Highlight search terms in text
@@ -793,13 +787,7 @@ const TicketList = () => {
                   <Pagination
                     value={page}
                     onChange={setPage}
-                    total={Math.ceil(
-                      (activeTab === "all"
-                        ? totalCounts.total_count // Use total count if active tab is 'all'
-                        : totalCounts.status_counts.find(
-                            (count) => count.ticket_status === activeTab
-                          )?.ticket_count || 0) / pageSize
-                    )} // Total number of pages based on active tab's ticket count or total count if 'all'
+                    total={Math.ceil(currentTotalCount / pageSize)} // Total number of pages based on filtered tickets count
                     color="blue"
                     size="sm"
                     withEdges
