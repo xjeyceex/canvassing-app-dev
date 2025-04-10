@@ -436,7 +436,7 @@ const UsersPage = () => {
                 data={["5", "10", "20", "50"]}
                 value={rowsPerPage}
                 onChange={(value) => setRowsPerPage(value || "5")}
-                w={60}
+                w={65}
               />
               <Text size="sm">
                 {filteredUsers.length > 0
