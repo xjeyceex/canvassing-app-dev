@@ -43,11 +43,11 @@ import { useEffect, useRef, useState } from "react";
 
 import LoadingStateProtected from "@/components/LoadingStateProtected";
 
-import { getAllMyTickets } from "@/actions/get";
+import { getAllMyTickets, getTicketStatusCounts } from "@/actions/get";
 import PageHeader from "@/components/PageHeader";
 import { useUserStore } from "@/stores/userStore";
 import { formatDate, getStatusColor } from "@/utils/functions";
-import { MyTicketType, TicketStatus } from "@/utils/types";
+import { MyTicketType, TicketStatus, TicketStatusCount } from "@/utils/types";
 
 const TicketList = () => {
   const { colorScheme } = useMantineColorScheme();
@@ -59,11 +59,17 @@ const TicketList = () => {
   const [sortBy, setSortBy] = useState<"newest" | "oldest">("oldest");
   const [tickets, setTickets] = useState<MyTicketType[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [totalCount, setTotalCount] = useState<number>(0);
+  const [totalCounts, setTotalCounts] = useState<{
+    status_counts: TicketStatusCount[];
+    total_count: number;
+  }>({
+    status_counts: [],
+    total_count: 0,
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
-  const [loadingTab, setLoadingTab] = useState<string | null>(null);
+  const [loadingTab, setLoadingTab] = useState(false);
 
   const [expandedTickets, setExpandedTickets] = useState<
     Record<string, boolean>
@@ -83,9 +89,6 @@ const TicketList = () => {
   const manuallyExpandedTickets = useRef<Record<string, boolean>>({});
   const prevSearchQuery = useRef("");
 
-  const startTicket = (page - 1) * pageSize + 1;
-  const endTicket = Math.min(page * pageSize, totalCount);
-
   const fetchTickets = async () => {
     if (!user?.user_id) return;
     setLoading(true);
@@ -96,11 +99,31 @@ const TicketList = () => {
       search_query: searchQuery,
       status_filter: activeTab,
     });
-    setTotalCount(fetchedTickets.total_count);
     setTickets(fetchedTickets.tickets);
-    setLoadingTab(null);
+    setLoadingTab(false);
     setLoading(false);
   };
+
+  const fetchTicketStatusCounts = async () => {
+    if (!user?.user_id) return;
+
+    setLoading(true);
+    const { status_counts, total_count } = await getTicketStatusCounts(
+      user.user_id
+    ); // Pass user_id to the function
+
+    // Update the state with the fetched data
+    setTotalCounts({
+      status_counts, // The grouped ticket status counts
+      total_count, // The total ticket count
+    });
+
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    fetchTicketStatusCounts();
+  }, []);
 
   useEffect(() => {
     fetchTickets();
@@ -163,10 +186,7 @@ const TicketList = () => {
   ];
 
   const handleTabChange = (value: string | null) => {
-    if (value === activeTab) return;
-
     if (value) {
-      setLoadingTab(value);
       setActiveTab(value as TicketStatus);
       setPage(1);
     }
@@ -211,17 +231,26 @@ const TicketList = () => {
   type ExtendedStatus = TicketStatus | "all" | "revised";
 
   const getTicketCountByStatus = (status: ExtendedStatus) => {
+    // If the status is "all", return the total ticket count
     if (status === "all") {
-      return totalCount;
+      return totalCounts.total_count;
     }
 
+    // If the status is "REVISED", filter tickets based on whether they have been revised
     if (status === "REVISED") {
-      return availableTickets.filter((ticket) => !!ticket.ticket_revised_by)
-        .length;
+      // Check if there is a "REVISED" status in the status counts
+      const revisedStatus = totalCounts.status_counts.find(
+        (count) => count.ticket_status === "REVISED"
+      );
+      return revisedStatus ? revisedStatus.ticket_count : 0;
     }
+    // Otherwise, find the ticket count for the given status in the `status_counts`
+    const statusCount = totalCounts.status_counts.find(
+      (count) => count.ticket_status === status
+    );
 
-    return availableTickets.filter((ticket) => ticket.ticket_status === status)
-      .length;
+    // If the status is found, return its count; otherwise, return 0
+    return statusCount ? statusCount.ticket_count : 0;
   };
 
   // Filter and sort tickets based on active tab, sort preference, and search query
@@ -256,9 +285,23 @@ const TicketList = () => {
       return sortBy === "newest" ? dateB - dateA : dateA - dateB;
     });
 
+  const startTicket = (page - 1) * pageSize + 1;
+  const endTicket = Math.min(page * pageSize, totalCounts.total_count);
+
+  // Calculate the actual total count based on active tab
+  const actualTotalCount =
+    activeTab === "all"
+      ? totalCounts.total_count
+      : totalCounts.status_counts.find(
+          (count) => count.ticket_status === activeTab
+        )?.ticket_count || 0;
+
+  // Make sure endTicket doesn't exceed actualTotalCount
+  const correctedEndTicket = Math.min(endTicket, actualTotalCount);
+
   const showingInfoText =
     filteredTickets.length > 0
-      ? `${startTicket}-${endTicket} of ${totalCount}`
+      ? `${startTicket}-${correctedEndTicket} of ${actualTotalCount}`
       : "0 of 0";
 
   // Highlight search terms in text
@@ -374,7 +417,7 @@ const TicketList = () => {
                 >
                   <Group gap={8}>
                     {tab.label}
-                    {activeTab === tab.value && (
+                    {
                       <Badge
                         size="sm"
                         radius="sm"
@@ -385,13 +428,13 @@ const TicketList = () => {
                             : undefined
                         }
                       >
-                        {loadingTab === tab.value ? (
+                        {loadingTab ? (
                           <Skeleton width={16} height={12} />
                         ) : (
                           getTicketCountByStatus(tab.value)
                         )}
                       </Badge>
-                    )}
+                    }
                   </Group>
                 </Tabs.Tab>
               ))}
@@ -750,10 +793,16 @@ const TicketList = () => {
                   <Pagination
                     value={page}
                     onChange={setPage}
-                    total={Math.ceil(totalCount / pageSize)} // Total number of pages
-                    color="blue" // Customize the color
-                    size="sm" // Adjust size for smaller screens
-                    withEdges // Display first/last page buttons
+                    total={Math.ceil(
+                      (activeTab === "all"
+                        ? totalCounts.total_count // Use total count if active tab is 'all'
+                        : totalCounts.status_counts.find(
+                            (count) => count.ticket_status === activeTab
+                          )?.ticket_count || 0) / pageSize
+                    )} // Total number of pages based on active tab's ticket count or total count if 'all'
+                    color="blue"
+                    size="sm"
+                    withEdges
                   />
                 </Group>
               </Group>

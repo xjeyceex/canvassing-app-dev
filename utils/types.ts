@@ -167,3 +167,8 @@ export type TicketStatus =
   | "DECLINED"
   | "REVISED"
   | "all";
+
+export type TicketStatusCount = {
+  ticket_status: string;
+  ticket_count: number;
+};

@@ -8,6 +8,7 @@ import {
   DropdownType,
   NotificationType,
   ReviewerType,
+  TicketStatusCount,
   UserType,
 } from "@/utils/types";
 
@@ -79,7 +80,7 @@ export const getTicketDetails = async (ticket_id: string) => {
 
 export const checkReviewerResponse = async (
   ticket_id: string,
-  user_id: string,
+  user_id: string
 ) => {
   const supabase = await createClient();
 
@@ -124,14 +125,86 @@ export const getAllMyTickets = async ({
   // Error handling
   if (error) {
     console.error("Supabase Error:", error.message);
-    return { tickets: [], total_count: 0 };
+    return { tickets: [] };
   }
 
-  // Safely returning the tickets and total_count, or default values if not present
+  // Safely returning the tickets, or default value if not present
   const tickets = data?.[0]?.tickets || [];
-  const total_count = data?.[0]?.total_count || 0;
 
-  return { tickets, total_count };
+  return { tickets };
+};
+
+export const getTicketStatusCounts = async (
+  user_id: string
+): Promise<{ status_counts: TicketStatusCount[]; total_count: number }> => {
+  const supabase = await createClient();
+
+  // Fetch ticket statuses from the ticket_table
+  const { data: ticketData, error: ticketError } = await supabase
+    .from("ticket_table")
+    .select("ticket_status, ticket_id")
+    .eq("ticket_created_by", user_id);
+
+  // Error handling for ticket table
+  if (ticketError) {
+    console.error("Error fetching ticket statuses:", ticketError.message);
+    return { status_counts: [], total_count: 0 };
+  }
+
+  // Fetch revised status from canvass_form_table using canvass_form_ticket_id
+  const { data: canvassData, error: canvassError } = await supabase
+    .from("canvass_form_table")
+    .select("canvass_form_ticket_id, canvass_form_revised_by")
+    .in(
+      "canvass_form_ticket_id",
+      ticketData?.map((ticket) => ticket.ticket_id) || []
+    );
+
+  // Error handling for canvass form table
+  if (canvassError) {
+    console.error("Error fetching canvass form data:", canvassError.message);
+    return { status_counts: [], total_count: 0 };
+  }
+
+  // Group the tickets by status and count them, while checking if the ticket is revised
+  const ticketCounts = ticketData?.reduce(
+    (
+      acc: { [key: string]: number },
+      ticket: { ticket_status: string; ticket_id: string }
+    ) => {
+      // Check if the ticket has been revised by checking canvass_form_table data
+      const canvassForm = canvassData?.find(
+        (form) => form.canvass_form_ticket_id === ticket.ticket_id
+      );
+      const status = ticket.ticket_status;
+
+      // If canvass_form_revised_by is occupied (not null), count it as "REVISED"
+      if (canvassForm?.canvass_form_revised_by) {
+        acc["REVISED"] = (acc["REVISED"] || 0) + 1;
+      } else {
+        acc[status] = (acc[status] || 0) + 1;
+      }
+
+      return acc;
+    },
+    {}
+  );
+
+  // Convert the grouped counts into an array of TicketStatusCount objects
+  const statusCounts = Object.entries(ticketCounts || {}).map(
+    ([ticket_status, ticket_count]) => ({
+      ticket_status,
+      ticket_count: ticket_count as number,
+    })
+  );
+
+  // Calculate total count
+  const totalCount = statusCounts.reduce(
+    (total, count) => total + count.ticket_count,
+    0
+  );
+
+  return { status_counts: statusCounts, total_count: totalCount };
 };
 
 type SharedUser = { ticket_shared_user_id: string };
@@ -174,17 +247,17 @@ export const getAllUsers = async (ticket_id: string) => {
     console.error(
       "Error fetching related users:",
       sharedUsersResponse.error?.message,
-      reviewersResponse.error?.message,
+      reviewersResponse.error?.message
     );
     return { error: true, message: "Failed to fetch related users." };
   }
 
   const ticketCreatorId = ticketResponse.data.ticket_created_by;
   const sharedUserIds = sharedUsersResponse.data.map(
-    (u: SharedUser) => u.ticket_shared_user_id,
+    (u: SharedUser) => u.ticket_shared_user_id
   );
   const reviewerIds = reviewersResponse.data.map(
-    (r: Reviewer) => r.approval_reviewed_by,
+    (r: Reviewer) => r.approval_reviewed_by
   );
 
   // Collect all users to exclude
@@ -250,7 +323,7 @@ export const getCanvassDetails = async ({
 
   const { data: canvassDetails, error } = await supabase.rpc(
     "get_canvass_details",
-    { ticket_uuid: ticketId },
+    { ticket_uuid: ticketId }
   );
 
   if (error) {
@@ -298,13 +371,13 @@ export const getCurrentUserNotification = async () => {
 };
 
 export const getComments = async (
-  ticket_id: string,
+  ticket_id: string
 ): Promise<CommentType[]> => {
   const supabase = await createClient();
 
   const { data: comments, error: commentsError } = await supabase.rpc(
     "get_comments_with_avatars",
-    { ticket_id },
+    { ticket_id }
   );
 
   if (commentsError) {
@@ -375,7 +448,7 @@ export const getDraftCanvass = async (ticketId: string, userId: string) => {
 
     if (attachmentsError) {
       throw new Error(
-        `Failed to fetch draft attachments: ${attachmentsError.message}`,
+        `Failed to fetch draft attachments: ${attachmentsError.message}`
       );
     }
 
