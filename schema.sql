@@ -661,14 +661,15 @@ AS $$
     )
 $$;
 
-DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, UUID, INT, INT, TEXT, TEXT);
+DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, UUID, INT, INT, TEXT, TEXT, BOOLEAN);
 CREATE OR REPLACE FUNCTION get_all_my_tickets(
   user_id UUID, 
   ticket_uuid UUID DEFAULT NULL,
   page INT DEFAULT 1,
   page_size INT DEFAULT 10,
-  search_query TEXT DEFAULT NULL, -- Added search_query parameter
-  status_filter TEXT DEFAULT NULL -- Renamed ticket_status to status_filter
+  search_query TEXT DEFAULT NULL,
+  status_filter TEXT DEFAULT NULL,
+  revised_only BOOLEAN DEFAULT FALSE -- New parameter to filter revised tickets
 )
 RETURNS TABLE (
   tickets JSON,
@@ -682,12 +683,11 @@ DECLARE
   ticket_rows JSON;
   total INT;
 BEGIN
-  -- Total count query with search and status_filter filtering
+  -- Total count query
   SELECT COUNT(*) INTO total
   FROM public.ticket_table t
   LEFT JOIN public.canvass_form_table c ON t.ticket_id = c.canvass_form_ticket_id
   WHERE
-    -- Matching created tickets, shared tickets, or approved tickets
     (t.ticket_created_by = user_id
     OR EXISTS (
       SELECT 1 FROM public.ticket_shared_with_table ts
@@ -699,24 +699,29 @@ BEGIN
       WHERE a.approval_ticket_id = t.ticket_id
       AND a.approval_reviewed_by = user_id
     ))
-    -- Filter by ticket_uuid if provided
     AND (ticket_uuid IS NULL OR t.ticket_id = ticket_uuid)
-    -- Add search filtering, searching by ticket name, description, or specifications
     AND (search_query IS NULL OR 
          t.ticket_name ILIKE '%' || search_query || '%' OR
          t.ticket_item_description ILIKE '%' || search_query || '%' OR
          t.ticket_specifications ILIKE '%' || search_query || '%')
-    -- Filter by status_filter if provided and it's not "all"
-    AND (status_filter IS NULL OR status_filter = 'all' OR t.ticket_status = status_filter::ticket_status_enum);
+    AND (
+      status_filter IS NULL
+      OR status_filter = 'all'
+      -- For REVISED, check if the ticket has been revised but ignore the ticket status
+      OR status_filter = 'REVISED' AND c.canvass_form_revised_by IS NOT NULL
+      -- For other status filters, use the actual ticket status
+      OR status_filter != 'REVISED' AND t.ticket_status = status_filter::ticket_status_enum
+    )
+    AND (revised_only IS FALSE OR c.canvass_form_revised_by IS NOT NULL); -- Filter for revised-only tickets
 
-  -- Paginated ticket data query with search and status_filter filtering
+  -- Paginated ticket data
   SELECT JSON_AGG(t) INTO ticket_rows
   FROM (
     SELECT
       t.ticket_id,
       t.ticket_name, 
       t.ticket_item_name,
-      t.ticket_status,  -- Explicitly use ticket_status from ticket_table
+      t.ticket_status,
       c.canvass_form_revised_by AS ticket_revised_by,
       t.ticket_item_description,
       t.ticket_specifications,
@@ -751,9 +756,7 @@ BEGIN
 
     FROM public.ticket_table t
     LEFT JOIN public.canvass_form_table c ON t.ticket_id = c.canvass_form_ticket_id
-
     WHERE
-      -- Matching created tickets, shared tickets, or approved tickets
       (t.ticket_created_by = user_id
       OR EXISTS (
         SELECT 1 FROM public.ticket_shared_with_table ts
@@ -765,16 +768,20 @@ BEGIN
         WHERE a.approval_ticket_id = t.ticket_id
         AND a.approval_reviewed_by = user_id
       ))
-      -- Filter by ticket_uuid if provided
       AND (ticket_uuid IS NULL OR t.ticket_id = ticket_uuid)
-      -- Add search filtering, searching by ticket name, description, or specifications
       AND (search_query IS NULL OR 
            t.ticket_name ILIKE '%' || search_query || '%' OR
            t.ticket_item_description ILIKE '%' || search_query || '%' OR
            t.ticket_specifications ILIKE '%' || search_query || '%')
-      -- Filter by status_filter if provided and it's not "all"
-      AND (status_filter IS NULL OR status_filter = 'all' OR t.ticket_status = status_filter::ticket_status_enum)
-
+      AND (
+        status_filter IS NULL
+        OR status_filter = 'all'
+        -- For REVISED, check if the ticket has been revised but ignore the ticket status
+        OR status_filter = 'REVISED' AND c.canvass_form_revised_by IS NOT NULL
+        -- For other status filters, use the actual ticket status
+        OR status_filter != 'REVISED' AND t.ticket_status = status_filter::ticket_status_enum
+      )
+      AND (revised_only IS FALSE OR c.canvass_form_revised_by IS NOT NULL)
     ORDER BY t.ticket_date_created ASC
     LIMIT page_size
     OFFSET (page - 1) * page_size

@@ -159,6 +159,7 @@ const TicketList = () => {
     { value: "CANCELED", label: "Canceled" },
     { value: "DONE", label: "Done" },
     { value: "DECLINED", label: "Declined" },
+    { value: "REVISED", label: "Revised" },
   ];
 
   const handleTabChange = (value: string | null) => {
