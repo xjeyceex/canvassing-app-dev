@@ -134,56 +134,83 @@ export const getAllMyTickets = async ({
 
   return { tickets, total_count };
 };
-
 export const getTicketStatusCounts = async (
   user_id: string
 ): Promise<{ status_counts: TicketStatusCount[]; total_count: number }> => {
   const supabase = await createClient();
 
-  // Fetch ticket statuses from the ticket_table
-  const { data: ticketData, error: ticketError } = await supabase
+  // 1. Fetch tickets created by user
+  const { data: createdTickets, error: createdError } = await supabase
     .from("ticket_table")
-    .select("ticket_status, ticket_id")
+    .select("ticket_id, ticket_status")
     .eq("ticket_created_by", user_id);
 
-  // Error handling for ticket table
-  if (ticketError) {
-    console.error("Error fetching ticket statuses:", ticketError.message);
+  if (createdError) {
+    console.error("Error fetching created tickets:", createdError.message);
     return { status_counts: [], total_count: 0 };
   }
 
-  // Fetch revised status from canvass_form_table using canvass_form_ticket_id
+  // 2. Fetch tickets where user is a reviewer
+  const { data: reviewedApprovals, error: approvalError } = await supabase
+    .from("approval_table")
+    .select("approval_ticket_id")
+    .eq("approval_reviewed_by", user_id);
+
+  if (approvalError) {
+    console.error("Error fetching reviewed approvals:", approvalError.message);
+    return { status_counts: [], total_count: 0 };
+  }
+
+  // 3. Combine created + reviewed ticket IDs
+  const reviewedIds = reviewedApprovals?.map((a) => a.approval_ticket_id) || [];
+  const createdMap = new Map(
+    createdTickets?.map((t) => [t.ticket_id, t.ticket_status])
+  );
+  const reviewedOnlyIds = reviewedIds.filter((id) => !createdMap.has(id));
+
+  // 4. Fetch statuses of reviewed tickets (not created by user)
+  const { data: reviewedTickets, error: reviewedTicketsError } = await supabase
+    .from("ticket_table")
+    .select("ticket_id, ticket_status")
+    .in("ticket_id", reviewedOnlyIds);
+
+  if (reviewedTicketsError) {
+    console.error(
+      "Error fetching reviewed ticket statuses:",
+      reviewedTicketsError.message
+    );
+    return { status_counts: [], total_count: 0 };
+  }
+
+  const allTickets = [...(createdTickets || []), ...(reviewedTickets || [])];
+  const allTicketIds = allTickets.map((t) => t.ticket_id);
+
+  // 5. Fetch canvass info
   const { data: canvassData, error: canvassError } = await supabase
     .from("canvass_form_table")
     .select("canvass_form_ticket_id, canvass_form_revised_by")
-    .in(
-      "canvass_form_ticket_id",
-      ticketData?.map((ticket) => ticket.ticket_id) || []
-    );
+    .in("canvass_form_ticket_id", allTicketIds);
 
-  // Error handling for canvass form table
   if (canvassError) {
-    console.error("Error fetching canvass form data:", canvassError.message);
+    console.error("Error fetching canvass data:", canvassError.message);
     return { status_counts: [], total_count: 0 };
   }
 
-  // Group the tickets by status and count them, while checking if the ticket is revised
-  const ticketCounts = ticketData?.reduce(
-    (
-      acc: { [key: string]: number },
-      ticket: { ticket_status: string; ticket_id: string }
-    ) => {
-      // Check if the ticket has been revised by checking canvass_form_table data
-      const canvassForm = canvassData?.find(
-        (form) => form.canvass_form_ticket_id === ticket.ticket_id
-      );
-      const status = ticket.ticket_status;
+  // 6. Count ticket statuses with revised double-counted
+  const ticketCounts = allTickets.reduce(
+    (acc: { [key: string]: number }, ticket) => {
+      const { ticket_id, ticket_status } = ticket;
 
-      // If canvass_form_revised_by is occupied (not null), count it as "REVISED"
-      if (canvassForm?.canvass_form_revised_by) {
+      // Always count by ticket_status
+      acc[ticket_status] = (acc[ticket_status] || 0) + 1;
+
+      // Also count as REVISED if it's revised
+      const revised = canvassData?.find(
+        (form) => form.canvass_form_ticket_id === ticket_id
+      )?.canvass_form_revised_by;
+
+      if (revised) {
         acc["REVISED"] = (acc["REVISED"] || 0) + 1;
-      } else {
-        acc[status] = (acc[status] || 0) + 1;
       }
 
       return acc;
@@ -191,19 +218,18 @@ export const getTicketStatusCounts = async (
     {}
   );
 
-  // Convert the grouped counts into an array of TicketStatusCount objects
-  const statusCounts = Object.entries(ticketCounts || {}).map(
+  // 7. Convert to array format
+  const statusCounts = Object.entries(ticketCounts).map(
     ([ticket_status, ticket_count]) => ({
       ticket_status,
-      ticket_count: ticket_count as number,
+      ticket_count,
     })
   );
 
-  // Calculate total count
-  const totalCount = statusCounts.reduce(
-    (total, count) => total + count.ticket_count,
-    0
-  );
+  // 8. Sum all counts
+  // 8. Unique total count (no duplicates)
+  const uniqueTicketIds = new Set(allTickets.map((t) => t.ticket_id));
+  const totalCount = uniqueTicketIds.size;
 
   return { status_counts: statusCounts, total_count: totalCount };
 };
