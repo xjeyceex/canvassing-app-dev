@@ -13,6 +13,7 @@ import {
   NativeSelect,
   Pagination,
   Paper,
+  Skeleton,
   Stack,
   Tabs,
   Text,
@@ -57,11 +58,12 @@ const TicketList = () => {
   const [activeTab, setActiveTab] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest">("oldest");
   const [tickets, setTickets] = useState<MyTicketType[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [totalCount, setTotalCount] = useState<number>(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+  const [loadingTab, setLoadingTab] = useState<string | null>(null);
 
   const [expandedTickets, setExpandedTickets] = useState<
     Record<string, boolean>
@@ -96,6 +98,7 @@ const TicketList = () => {
     });
     setTotalCount(fetchedTickets.total_count);
     setTickets(fetchedTickets.tickets);
+    setLoadingTab(null);
     setLoading(false);
   };
 
@@ -159,7 +162,10 @@ const TicketList = () => {
   ];
 
   const handleTabChange = (value: string | null) => {
+    if (value === activeTab) return;
+
     if (value) {
+      setLoadingTab(value);
       setActiveTab(value as TicketStatus);
       setPage(1);
     }
@@ -311,7 +317,7 @@ const TicketList = () => {
     return sanitized;
   };
 
-  if (!user || loading) {
+  if (!user) {
     return <LoadingStateProtected />;
   }
 
@@ -367,18 +373,24 @@ const TicketList = () => {
                 >
                   <Group gap={8}>
                     {tab.label}
-                    <Badge
-                      size="sm"
-                      radius="sm"
-                      variant="light"
-                      color={
-                        tab.value !== "all"
-                          ? getStatusColor(tab.value)
-                          : undefined
-                      }
-                    >
-                      {getTicketCountByStatus(tab.value)}
-                    </Badge>
+                    {activeTab === tab.value && (
+                      <Badge
+                        size="sm"
+                        radius="sm"
+                        variant="light"
+                        color={
+                          tab.value !== "all"
+                            ? getStatusColor(tab.value)
+                            : undefined
+                        }
+                      >
+                        {loadingTab === tab.value ? (
+                          <Skeleton width={16} height={12} />
+                        ) : (
+                          getTicketCountByStatus(tab.value)
+                        )}
+                      </Badge>
+                    )}
                   </Group>
                 </Tabs.Tab>
               ))}
@@ -462,7 +474,7 @@ const TicketList = () => {
           </Group>
         </Stack>
 
-        {filteredTickets.length > 0 ? (
+        {filteredTickets.length > 0 && !loading ? (
           <>
             <Stack gap={5}>
               {filteredTickets.map((ticket) => (
@@ -745,6 +757,72 @@ const TicketList = () => {
                 </Group>
               </Group>
             </Box>
+          </>
+        ) : loading ? (
+          <>
+            <Paper
+              p={isMobile ? "md" : "lg"}
+              radius="none"
+              shadow="none"
+              style={{
+                borderBottom: `1px solid ${
+                  colorScheme === "dark"
+                    ? theme.colors.dark[5]
+                    : theme.colors.gray[2]
+                }`,
+              }}
+            >
+              {/* Details Section Skeleton */}
+              <Collapse in>
+                <Stack gap="lg">
+                  {[...Array(5)].map((_, index) => (
+                    <Box key={index}>
+                      <Paper
+                        pb="lg"
+                        radius="none"
+                        shadow="none"
+                        bg={colorScheme === "dark" ? "dark.7" : "gray.0"}
+                        style={{
+                          borderBottom: `1px solid ${
+                            colorScheme === "dark"
+                              ? theme.colors.dark[5]
+                              : theme.colors.gray[2]
+                          }`,
+                        }}
+                      >
+                        <Group justify="space-between" align="center">
+                          <Stack gap={6}>
+                            <Group>
+                              <Skeleton height={18} width={120} />
+                              <Skeleton height={20} width={200} />
+                            </Group>
+                            <Group>
+                              <Skeleton height={25} width={180} />
+                              <Skeleton height={25} width={100} />
+                            </Group>
+                          </Stack>
+                          <Stack pr="xl">
+                            <Skeleton height={30} width={120} />
+                          </Stack>
+                        </Group>
+                      </Paper>
+                    </Box>
+                  ))}
+                  <Group gap="xl">
+                    <Group>
+                      <Skeleton height={25} width={120} />
+                      <Skeleton height={30} width={60} />
+                    </Group>
+                    <Group pl="md">
+                      <Skeleton height={22} width={22} radius="sm" />
+                      <Skeleton height={22} width={22} radius="sm" />
+                      <Skeleton height={22} width={22} radius="sm" />
+                      <Skeleton height={22} width={22} radius="sm" />
+                    </Group>
+                  </Group>
+                </Stack>
+              </Collapse>
+            </Paper>
           </>
         ) : (
           <Flex
