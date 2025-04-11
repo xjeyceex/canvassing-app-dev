@@ -864,16 +864,62 @@ const TicketList = () => {
                       </Paper>
                     </Box>
                   ))}
-                  <Group gap="xl">
-                    <Group>
+                  <Group
+                    justify="space-between"
+                    align="center"
+                    wrap="wrap"
+                    gap="md"
+                  >
+                    {/* Left Section: Rows per page */}
+                    <Group
+                      gap="xs"
+                      style={{
+                        flex: 1,
+                        justifyContent: isMobile ? "center" : "flex-start",
+                        order: 1,
+                        width: "100%",
+                      }}
+                    >
                       <Skeleton height={25} width={120} />
-                      <Skeleton height={30} width={60} />
+                      <Skeleton height={35} width={70} />
+                      <Skeleton height={25} width={60} />
                     </Group>
-                    <Group pl="md">
-                      <Skeleton height={22} width={22} radius="sm" />
-                      <Skeleton height={22} width={22} radius="sm" />
-                      <Skeleton height={22} width={22} radius="sm" />
-                      <Skeleton height={22} width={22} radius="sm" />
+
+                    {/* Middle Section: Pagination */}
+                    <Group
+                      gap="xs"
+                      style={{
+                        flex: 1,
+                        justifyContent: "center",
+                        order: 2,
+                        width: "100%",
+                        marginTop: isMobile ? theme.spacing.xs : 0,
+                      }}
+                    >
+                      <Skeleton height={25} width={25} radius="sm" />
+                      <Skeleton height={25} width={25} radius="sm" />
+                      <Skeleton height={25} width={25} radius="sm" />
+                      <Skeleton height={25} width={25} radius="sm" />
+                      <Skeleton height={25} width={25} radius="sm" />
+                      <Skeleton height={25} width={25} radius="sm" />
+                      <Skeleton height={25} width={25} radius="sm" />
+                      <Skeleton height={25} width={25} radius="sm" />
+                      <Skeleton height={25} width={25} radius="sm" />
+                    </Group>
+
+                    {/* Right Section: Go to page */}
+                    <Group
+                      gap="xs"
+                      style={{
+                        flex: 1,
+                        justifyContent: isMobile ? "center" : "flex-end",
+                        order: 3,
+                        width: "100%",
+                        marginTop: isMobile ? theme.spacing.xs : 0,
+                      }}
+                    >
+                      <Skeleton height={25} width={100} />
+                      <Skeleton height={30} width={80} />
                     </Group>
                   </Group>
                 </Stack>
