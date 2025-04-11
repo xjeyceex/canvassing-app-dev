@@ -902,9 +902,6 @@ const TicketList = () => {
                       <Skeleton height={25} width={25} radius="md" />
                       <Skeleton height={25} width={25} radius="md" />
                       <Skeleton height={25} width={25} radius="md" />
-                      <Skeleton height={25} width={25} radius="md" />
-                      <Skeleton height={25} width={25} radius="md" />
-                      <Skeleton height={25} width={25} radius="md" />
                     </Group>
 
                     {/* Right Section: Go to page */}
