@@ -68,8 +68,8 @@ const ProfilePage = () => {
     { title: "Dashboard", href: "/dashboard" },
     { title: "Users", href: "/users" },
     {
-      title: `${user?.user_full_name}`,
-      href: `/tickets/${user?.user_full_name}`,
+      title: `${profileUser?.user_full_name}`,
+      href: `/tickets/${profileUser?.user_full_name}`,
     },
   ];
 
