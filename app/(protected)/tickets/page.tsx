@@ -102,19 +102,14 @@ const TicketList = () => {
     });
     setCurrentTotalCount(fetchedTickets.total_count);
     setTickets(fetchedTickets.tickets);
-    setLoadingTab(false);
     setLoading(false);
   };
-
-  useEffect(() => {
-    fetchTickets();
-  }, [user?.user_id, pageSize, page, searchQuery, activeTab]);
 
   useEffect(() => {
     const fetchTicketStatusCounts = async () => {
       if (!user?.user_id) return;
 
-      setLoading(true);
+      setLoadingTab(true);
       const { status_counts, total_count } = await getTicketStatusCounts(
         user.user_id
       ); // Pass user_id to the function
@@ -125,11 +120,15 @@ const TicketList = () => {
         total_count, // The total ticket count
       });
 
-      setLoading(false);
+      setLoadingTab(false);
     };
 
     fetchTicketStatusCounts();
   }, [user?.user_id]);
+
+  useEffect(() => {
+    fetchTickets();
+  }, [user?.user_id, pageSize, page, searchQuery, activeTab]);
 
   useEffect(() => {
     // Skip if search query hasn't changed

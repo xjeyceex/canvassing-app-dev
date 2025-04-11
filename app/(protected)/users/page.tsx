@@ -11,7 +11,6 @@ import {
   Avatar,
   Badge,
   Box,
-  Button,
   Flex,
   Group,
   Pagination,
@@ -32,7 +31,6 @@ import {
   IconAlertCircle,
   IconCheckbox,
   IconEye,
-  IconPlus,
   IconSearch,
   IconTicket,
 } from "@tabler/icons-react";
@@ -197,9 +195,9 @@ const UsersPage = () => {
         >
           <PageHeader title="Users" breadcrumbs={breadcrumbs} />
 
-          <Button leftSection={<IconPlus size={16} />} size="sm">
+          {/* <Button leftSection={<IconPlus size={16} />} size="sm">
             New user
-          </Button>
+          </Button> */}
         </Flex>
       </Box>
 
