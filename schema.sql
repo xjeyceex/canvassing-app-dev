@@ -657,8 +657,8 @@ AS $$
       AND a.approval_reviewed_by = _user_id
     )
 $$;
-
 DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, UUID, INT, INT, TEXT, TEXT, BOOLEAN);
+
 CREATE OR REPLACE FUNCTION get_all_my_tickets(
   user_id UUID, 
   ticket_uuid UUID DEFAULT NULL,
@@ -666,7 +666,7 @@ CREATE OR REPLACE FUNCTION get_all_my_tickets(
   page_size INT DEFAULT 10,
   search_query TEXT DEFAULT NULL,
   status_filter TEXT DEFAULT NULL,
-  revised_only BOOLEAN DEFAULT FALSE -- New parameter to filter revised tickets
+  revised_only BOOLEAN DEFAULT FALSE
 )
 RETURNS TABLE (
   tickets JSON,
@@ -681,76 +681,9 @@ DECLARE
   total INT;
 BEGIN
   -- Total count query
-  SELECT COUNT(*) INTO total
-  FROM public.ticket_table t
-  LEFT JOIN public.canvass_form_table c ON t.ticket_id = c.canvass_form_ticket_id
-  WHERE
-    (t.ticket_created_by = user_id
-    OR EXISTS (
-      SELECT 1 FROM public.ticket_shared_with_table ts
-      WHERE ts.ticket_shared_ticket_id = t.ticket_id
-      AND ts.ticket_shared_user_id = user_id
-    )
-    OR EXISTS (
-      SELECT 1 FROM public.approval_table a
-      WHERE a.approval_ticket_id = t.ticket_id
-      AND a.approval_reviewed_by = user_id
-    ))
-    AND (ticket_uuid IS NULL OR t.ticket_id = ticket_uuid)
-    AND (search_query IS NULL OR 
-         t.ticket_name ILIKE '%' || search_query || '%' OR
-         t.ticket_item_description ILIKE '%' || search_query || '%' OR
-         t.ticket_specifications ILIKE '%' || search_query || '%')
-    AND (
-      status_filter IS NULL
-      OR status_filter = 'all'
-      -- For REVISED, check if the ticket has been revised but ignore the ticket status
-      OR status_filter = 'REVISED' AND c.canvass_form_revised_by IS NOT NULL
-      -- For other status filters, use the actual ticket status
-      OR status_filter != 'REVISED' AND t.ticket_status = status_filter::ticket_status_enum
-    )
-    AND (revised_only IS FALSE OR c.canvass_form_revised_by IS NOT NULL); -- Filter for revised-only tickets
-
-  -- Paginated ticket data
-  SELECT JSON_AGG(t) INTO ticket_rows
-  FROM (
-    SELECT
-      t.ticket_id,
-      t.ticket_name, 
-      t.ticket_item_name,
-      t.ticket_status,
-      c.canvass_form_revised_by AS ticket_revised_by,
-      t.ticket_item_description,
-      t.ticket_specifications,
-      t.ticket_notes,
-      t.ticket_created_by,
-      t.ticket_date_created,
-
-      COALESCE(
-        (SELECT JSON_AGG(
-          JSON_BUILD_OBJECT(
-            'user_id', u2.user_id,
-            'user_full_name', u2.user_full_name,
-            'user_email', u2.user_email,
-            'user_avatar', u2.user_avatar
-          )
-        ) FROM public.ticket_shared_with_table ts
-        LEFT JOIN public.user_table u2 ON ts.ticket_shared_user_id = u2.user_id
-        WHERE ts.ticket_shared_ticket_id = t.ticket_id), '[]'::JSON
-      ) AS shared_users,
-
-      COALESCE(
-        (SELECT JSON_AGG(
-          JSON_BUILD_OBJECT(
-            'reviewer_id', a.approval_reviewed_by,
-            'reviewer_name', u3.user_full_name,
-            'approval_status', a.approval_review_status
-          )
-        ) FROM public.approval_table a
-        LEFT JOIN public.user_table u3 ON u3.user_id = a.approval_reviewed_by
-        WHERE a.approval_ticket_id = t.ticket_id), '[]'::JSON
-      ) AS reviewers
-
+  WITH filtered_tickets AS (
+    SELECT 
+      t.ticket_id
     FROM public.ticket_table t
     LEFT JOIN public.canvass_form_table c ON t.ticket_id = c.canvass_form_ticket_id
     WHERE
@@ -773,18 +706,107 @@ BEGIN
       AND (
         status_filter IS NULL
         OR status_filter = 'all'
-        -- For REVISED, check if the ticket has been revised but ignore the ticket status
         OR status_filter = 'REVISED' AND c.canvass_form_revised_by IS NOT NULL
-        -- For other status filters, use the actual ticket status
         OR status_filter != 'REVISED' AND t.ticket_status = status_filter::ticket_status_enum
       )
       AND (revised_only IS FALSE OR c.canvass_form_revised_by IS NOT NULL)
+  )
+  SELECT COUNT(*) INTO total
+  FROM filtered_tickets;
+
+  -- Paginated ticket data
+  WITH filtered_tickets AS (
+    SELECT 
+      t.ticket_id,
+      t.ticket_name, 
+      t.ticket_item_name,
+      t.ticket_status,
+      c.canvass_form_revised_by AS ticket_revised_by,
+      t.ticket_item_description,
+      t.ticket_specifications,
+      t.ticket_notes,
+      t.ticket_created_by,
+      t.ticket_date_created
+    FROM public.ticket_table t
+    LEFT JOIN public.canvass_form_table c ON t.ticket_id = c.canvass_form_ticket_id
+    WHERE
+      (t.ticket_created_by = user_id
+      OR EXISTS (
+        SELECT 1 FROM public.ticket_shared_with_table ts
+        WHERE ts.ticket_shared_ticket_id = t.ticket_id
+        AND ts.ticket_shared_user_id = user_id
+      )
+      OR EXISTS (
+        SELECT 1 FROM public.approval_table a
+        WHERE a.approval_ticket_id = t.ticket_id
+        AND a.approval_reviewed_by = user_id
+      ))
+      AND (ticket_uuid IS NULL OR t.ticket_id = ticket_uuid)
+      AND (search_query IS NULL OR 
+           t.ticket_name ILIKE '%' || search_query || '%' OR
+           t.ticket_item_description ILIKE '%' || search_query || '%' OR
+           t.ticket_specifications ILIKE '%' || search_query || '%')
+      AND (
+        status_filter IS NULL
+        OR status_filter = 'all'
+        OR status_filter = 'REVISED' AND c.canvass_form_revised_by IS NOT NULL
+        OR status_filter != 'REVISED' AND t.ticket_status = status_filter::ticket_status_enum
+      )
+      AND (revised_only IS FALSE OR c.canvass_form_revised_by IS NOT NULL)
+  ),
+  ticket_shares AS (
+    SELECT 
+      ts.ticket_shared_ticket_id,
+      JSON_AGG(
+        JSON_BUILD_OBJECT(
+          'user_id', u2.user_id,
+          'user_full_name', u2.user_full_name,
+          'user_email', u2.user_email,
+          'user_avatar', u2.user_avatar
+        )
+      ) AS shared_users
+    FROM public.ticket_shared_with_table ts
+    LEFT JOIN public.user_table u2 ON ts.ticket_shared_user_id = u2.user_id
+    GROUP BY ts.ticket_shared_ticket_id
+  ),
+  ticket_reviews AS (
+    SELECT 
+      a.approval_ticket_id,
+      JSON_AGG(
+        JSON_BUILD_OBJECT(
+          'reviewer_id', a.approval_reviewed_by,
+          'reviewer_name', u3.user_full_name,
+          'approval_status', a.approval_review_status
+        )
+      ) AS reviewers
+    FROM public.approval_table a
+    LEFT JOIN public.user_table u3 ON u3.user_id = a.approval_reviewed_by
+    GROUP BY a.approval_ticket_id
+  )
+  SELECT JSON_AGG(t) INTO ticket_rows
+  FROM (
+    SELECT 
+      t.ticket_id,
+      t.ticket_name, 
+      t.ticket_item_name,
+      t.ticket_status,
+      t.ticket_revised_by,
+      t.ticket_item_description,
+      t.ticket_specifications,
+      t.ticket_notes,
+      t.ticket_created_by,
+      t.ticket_date_created,
+      COALESCE(ts.shared_users, '[]'::JSON) AS shared_users,
+      COALESCE(tr.reviewers, '[]'::JSON) AS reviewers
+    FROM filtered_tickets t
+    LEFT JOIN ticket_shares ts ON t.ticket_id = ts.ticket_shared_ticket_id
+    LEFT JOIN ticket_reviews tr ON t.ticket_id = tr.approval_ticket_id
     ORDER BY t.ticket_date_created ASC
     LIMIT page_size
     OFFSET (page - 1) * page_size
   ) t;
 
-  -- Return the result: paginated tickets and total count
+  -- Return result: paginated tickets and total count
   RETURN QUERY SELECT COALESCE(ticket_rows, '[]'::JSON), total;
 END;
 $$;
