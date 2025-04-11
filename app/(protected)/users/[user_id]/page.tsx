@@ -69,7 +69,7 @@ const ProfilePage = () => {
     { title: "Users", href: "/users" },
     {
       title: `${profileUser?.user_full_name}`,
-      href: `/tickets/${profileUser?.user_full_name}`,
+      href: `/tickets/${profileUser?.user_id}`,
     },
   ];
 
