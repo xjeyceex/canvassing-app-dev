@@ -896,15 +896,15 @@ const TicketList = () => {
                         marginTop: isMobile ? theme.spacing.xs : 0,
                       }}
                     >
-                      <Skeleton height={25} width={25} radius="sm" />
-                      <Skeleton height={25} width={25} radius="sm" />
-                      <Skeleton height={25} width={25} radius="sm" />
-                      <Skeleton height={25} width={25} radius="sm" />
-                      <Skeleton height={25} width={25} radius="sm" />
-                      <Skeleton height={25} width={25} radius="sm" />
-                      <Skeleton height={25} width={25} radius="sm" />
-                      <Skeleton height={25} width={25} radius="sm" />
-                      <Skeleton height={25} width={25} radius="sm" />
+                      <Skeleton height={25} width={25} radius="md" />
+                      <Skeleton height={25} width={25} radius="md" />
+                      <Skeleton height={25} width={25} radius="md" />
+                      <Skeleton height={25} width={25} radius="md" />
+                      <Skeleton height={25} width={25} radius="md" />
+                      <Skeleton height={25} width={25} radius="md" />
+                      <Skeleton height={25} width={25} radius="md" />
+                      <Skeleton height={25} width={25} radius="md" />
+                      <Skeleton height={25} width={25} radius="md" />
                     </Group>
 
                     {/* Right Section: Go to page */}
