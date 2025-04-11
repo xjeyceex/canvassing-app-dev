@@ -117,9 +117,6 @@ CREATE SEQUENCE IF NOT EXISTS public.ticket_name_seq
     START WITH 1
     CACHE 1;
 
--- Index for ticket name for faster lookup
-CREATE INDEX idx_ticket_name ON public.ticket_table(ticket_name);
-
 -- Enable RLS
 ALTER TABLE public.ticket_table ENABLE ROW LEVEL SECURITY;
 
@@ -1387,7 +1384,14 @@ LEFT JOIN (
 ) ap ON ap.approval_reviewed_by = u.user_id;
 $$;
 
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+--indexes
 CREATE INDEX IF NOT EXISTS idx_ticket_created_by ON ticket_table (ticket_created_by);
 CREATE INDEX IF NOT EXISTS idx_canvass_form_submitted_by ON canvass_form_table (canvass_form_submitted_by);
 CREATE INDEX IF NOT EXISTS idx_canvass_form_revised_by ON canvass_form_table (canvass_form_revised_by);
 CREATE INDEX IF NOT EXISTS idx_approval_reviewed_by ON approval_table (approval_reviewed_by);
+CREATE INDEX IF NOT EXISTS idx_ticket_name ON public.ticket_table(ticket_name);
+CREATE INDEX IF NOT EXISTS idx_ticket_name_trgm ON ticket_table USING GIN (ticket_name gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_ticket_item_description_trgm ON ticket_table USING GIN (ticket_item_description gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_ticket_specifications_trgm ON ticket_table USING GIN (ticket_specifications gin_trgm_ops);

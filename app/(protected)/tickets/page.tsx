@@ -30,7 +30,6 @@ import {
   IconFileDescription,
   IconFileText,
   IconFilter,
-  IconNotes,
   IconPlus,
   IconRefresh,
   IconSearch,
@@ -658,46 +657,6 @@ const TicketList = () => {
                               dangerouslySetInnerHTML={{
                                 __html: highlightSearchTerm(
                                   ticket.ticket_item_description
-                                ),
-                              }}
-                            />
-                          </Paper>
-                        </Box>
-                      )}
-
-                      {ticket.ticket_notes && (
-                        <Box>
-                          <Group mb={4} gap={10}>
-                            <ThemeIcon
-                              size="sm"
-                              color="teal"
-                              variant="light"
-                              radius="xl"
-                            >
-                              <IconNotes size={14} />
-                            </ThemeIcon>
-                            <Text fw={500} size="sm">
-                              Notes
-                            </Text>
-                          </Group>
-                          <Paper
-                            p="sm"
-                            radius="md"
-                            shadow="none"
-                            withBorder
-                            bg={colorScheme === "dark" ? "dark.7" : "gray.0"}
-                            style={{
-                              borderColor:
-                                colorScheme === "dark"
-                                  ? theme.colors.dark[5]
-                                  : theme.colors.gray[1],
-                            }}
-                          >
-                            <Text
-                              size="sm"
-                              dangerouslySetInnerHTML={{
-                                __html: sanitizeAndHighlight(
-                                  ticket.ticket_notes
                                 ),
                               }}
                             />
