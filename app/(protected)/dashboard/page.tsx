@@ -64,7 +64,7 @@ const DashboardPage = () => {
 
   function countUserTicketsByStatus(
     tickets: DashboardTicketType[],
-    statusType: "OPEN" | "COMPLETED",
+    statusType: "OPEN" | "COMPLETED"
   ) {
     if (statusType === "OPEN") {
       return tickets.filter(
@@ -73,7 +73,7 @@ const DashboardPage = () => {
           ticket.ticket_status === "FOR APPROVAL" ||
           ticket.ticket_status === "FOR REVIEW OF SUBMISSIONS" ||
           ticket.ticket_status === "WORK IN PROGRESS" ||
-          ticket.ticket_status === "FOR REVISION",
+          ticket.ticket_status === "FOR REVISION"
       ).length;
     }
 
@@ -88,7 +88,7 @@ const DashboardPage = () => {
     try {
       setLoading(true);
       const data = await getDashboardTickets(
-        isAdmin ? undefined : user?.user_id,
+        isAdmin ? undefined : user?.user_id
       );
       setTickets(data ?? []);
     } catch (error) {
@@ -347,11 +347,28 @@ const DashboardPage = () => {
                 </Text>
               </Group>
               <Text fz={isMobile ? 24 : 32} fw={600}>
-                {ticketStats.revised} / {ticketStats.total}
+                {ticketStats.revised}
               </Text>
               <Text c="dimmed" size={isMobile ? "xs" : "sm"} mt={4}>
-                {isNaN(revisedPercentage) ? "0" : revisedPercentage.toFixed(2)}%
-                of Tickets Revised
+                {`${ticketStats.revised} of ${ticketStats.total} tickets have been revised`}{" "}
+                —{" "}
+                <Text
+                  span
+                  c={
+                    isNaN(revisedPercentage)
+                      ? "dimmed"
+                      : revisedPercentage < 50
+                      ? "green"
+                      : revisedPercentage < 80
+                      ? "yellow"
+                      : "red"
+                  }
+                >
+                  {isNaN(revisedPercentage)
+                    ? "0.00"
+                    : revisedPercentage.toFixed(2)}
+                  %
+                </Text>
               </Text>
             </Paper>
           </Grid.Col>
@@ -409,7 +426,7 @@ const DashboardPage = () => {
                 .sort(
                   (a, b) =>
                     new Date(b.ticket_date_created).getTime() -
-                    new Date(a.ticket_date_created).getTime(),
+                    new Date(a.ticket_date_created).getTime()
                 )
                 .slice(0, 5)
                 .map((ticket, index, arr) => (

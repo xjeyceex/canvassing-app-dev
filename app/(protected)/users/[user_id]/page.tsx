@@ -3,6 +3,7 @@
 import { getUserDataById } from "@/actions/get";
 import { updateUserRole } from "@/actions/post";
 import LoadingStateProtected from "@/components/LoadingStateProtected";
+import PageHeader from "@/components/PageHeader";
 import { useUserStore } from "@/stores/userStore";
 import { getNameInitials } from "@/utils/functions";
 import { UserType } from "@/utils/types";
@@ -62,6 +63,15 @@ const ProfilePage = () => {
   const isAdmin = user?.user_role === "ADMIN";
   const isManager = user?.user_role === "MANAGER";
   const isUser = user?.user_id === profileUser?.user_id;
+
+  const breadcrumbs = [
+    { title: "Dashboard", href: "/dashboard" },
+    { title: "Users", href: "/users" },
+    {
+      title: `${user?.user_full_name}`,
+      href: `/tickets/${user?.user_full_name}`,
+    },
+  ];
 
   const getRelativeTime = (timestamp: string) => {
     const zonedDate = toZonedTime(new Date(timestamp), "Asia/Manila");
@@ -167,6 +177,8 @@ const ProfilePage = () => {
 
   return (
     <Box p={{ base: "md", sm: "xl" }} mx="auto" maw={500}>
+      <PageHeader title="Users" breadcrumbs={breadcrumbs} />
+
       <Stack gap="lg">
         <Paper
           shadow="md"
@@ -307,108 +319,144 @@ const ProfilePage = () => {
             )}
           </Stack>
         </Paper>
+        {(user?.user_role === "MANAGER" || user?.user_role === "ADMIN") && (
+          <Paper p="md" radius="lg" withBorder shadow="sm">
+            <Group justify="space-around" align="stretch">
+              {profileUser?.user_role === "PURCHASER" && (
+                <>
+                  <Stack align="center" gap={0} style={{ height: "100%" }}>
+                    <Text size="sm" c="dimmed" ta="center">
+                      Tickets
+                    </Text>
+                    <Text
+                      size="xl"
+                      fw={700}
+                      ta="center"
+                      style={{ flexGrow: 1 }}
+                    >
+                      {ticketCount}
+                    </Text>
+                  </Stack>
 
-        <Paper p="md" radius="lg" withBorder shadow="sm">
-          <Group justify="space-around" align="stretch">
-            {profileUser?.user_role === "PURCHASER" && (
-              <>
-                <Stack align="center" gap={0} style={{ height: "100%" }}>
-                  <Text size="sm" c="dimmed" ta="center">
-                    Tickets
-                  </Text>
-                  <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
-                    {ticketCount}
-                  </Text>
-                </Stack>
+                  <Divider orientation="vertical" />
 
-                <Divider orientation="vertical" />
+                  <Stack align="center" gap={0} style={{ height: "100%" }}>
+                    <Text size="sm" c="dimmed" ta="center">
+                      Revised Ticket Ratio
+                    </Text>
+                    <Text
+                      size="xl"
+                      fw={700}
+                      ta="center"
+                      style={{ flexGrow: 1 }}
+                    >
+                      {revisedTicketCount || 0}
+                    </Text>
+                    <Text size="10px" c="dimmed" ta="center">
+                      {ticketCount > 0
+                        ? `${((revisedTicketCount / ticketCount) * 100).toFixed(
+                            2
+                          )}%`
+                        : "0%"}
+                    </Text>
+                  </Stack>
 
-                <Stack align="center" gap={0} style={{ height: "100%" }}>
-                  <Text size="sm" c="dimmed" ta="center">
-                    Revised Ticket Ratio
-                  </Text>
-                  <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
-                    {revisedTicketCount || 0}
-                  </Text>
-                  <Text size="10px" c="dimmed" ta="center">
-                    {ticketCount > 0
-                      ? `${((revisedTicketCount / ticketCount) * 100).toFixed(
-                          2,
-                        )}%`
-                      : "0%"}
-                  </Text>
-                </Stack>
+                  <Divider orientation="vertical" />
 
-                <Divider orientation="vertical" />
-
-                <Stack align="center" gap={0} style={{ height: "100%" }}>
-                  <Text size="sm" c="dimmed" ta="center">
-                    Joined
-                  </Text>
-                  <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
-                    {getRelativeTime(profileUser?.user_created_at)}
-                  </Text>
-                  <Text size="10px" c="dimmed" ta="center">
-                    {getExactTime(profileUser?.user_created_at)}
-                  </Text>
-                </Stack>
-              </>
-            )}
-
-            {profileUser?.user_role === "REVIEWER" && (
-              <>
-                <Stack align="center" gap={0} style={{ height: "100%" }}>
-                  <Text size="sm" c="dimmed" ta="center">
-                    Tickets
-                  </Text>
-                  <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
-                    {ticketsReviewedByUserCount || 0}
-                  </Text>
-                </Stack>
-
-                <Divider orientation="vertical" />
-
-                <Stack align="center" gap={0} style={{ height: "100%" }}>
-                  <Text size="sm" c="dimmed" ta="center">
-                    Tickets Revised
-                  </Text>
-                  <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
-                    {ticketsRevisedByUserCount || 0}
-                  </Text>
-                </Stack>
-
-                <Divider orientation="vertical" />
-
-                <Stack align="center" gap={0} style={{ height: "100%" }}>
-                  <Text size="sm" c="dimmed" ta="center">
-                    Joined
-                  </Text>
-                  <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
-                    {getRelativeTime(profileUser?.user_created_at)}
-                  </Text>
-                  <Text size="10px" c="dimmed" ta="center">
-                    {getExactTime(profileUser?.user_created_at)}
-                  </Text>
-                </Stack>
-              </>
-            )}
-
-            {profileUser?.user_role !== "PURCHASER" &&
-              profileUser?.user_role !== "REVIEWER" && (
-                <Stack align="center" gap={0} style={{ height: "100%" }}>
-                  <Text size="sm" c="dimmed" ta="center">
-                    Joined
-                  </Text>
-                  <Text size="xl" fw={700} ta="center" style={{ flexGrow: 1 }}>
-                    {getRelativeTime(profileUser?.user_created_at)}
-                  </Text>
-                  <Text size="10px" c="dimmed" ta="center">
-                    {getExactTime(profileUser?.user_created_at)}
-                  </Text>
-                </Stack>
+                  <Stack align="center" gap={0} style={{ height: "100%" }}>
+                    <Text size="sm" c="dimmed" ta="center">
+                      Joined
+                    </Text>
+                    <Text
+                      size="xl"
+                      fw={700}
+                      ta="center"
+                      style={{ flexGrow: 1 }}
+                    >
+                      {getRelativeTime(profileUser?.user_created_at)}
+                    </Text>
+                    <Text size="10px" c="dimmed" ta="center">
+                      {getExactTime(profileUser?.user_created_at)}
+                    </Text>
+                  </Stack>
+                </>
               )}
-          </Group>
-        </Paper>
+
+              {profileUser?.user_role === "REVIEWER" && (
+                <>
+                  <Stack align="center" gap={0} style={{ height: "100%" }}>
+                    <Text size="sm" c="dimmed" ta="center">
+                      Tickets
+                    </Text>
+                    <Text
+                      size="xl"
+                      fw={700}
+                      ta="center"
+                      style={{ flexGrow: 1 }}
+                    >
+                      {ticketsReviewedByUserCount || 0}
+                    </Text>
+                  </Stack>
+
+                  <Divider orientation="vertical" />
+
+                  <Stack align="center" gap={0} style={{ height: "100%" }}>
+                    <Text size="sm" c="dimmed" ta="center">
+                      Tickets Revised
+                    </Text>
+                    <Text
+                      size="xl"
+                      fw={700}
+                      ta="center"
+                      style={{ flexGrow: 1 }}
+                    >
+                      {ticketsRevisedByUserCount || 0}
+                    </Text>
+                  </Stack>
+
+                  <Divider orientation="vertical" />
+
+                  <Stack align="center" gap={0} style={{ height: "100%" }}>
+                    <Text size="sm" c="dimmed" ta="center">
+                      Joined
+                    </Text>
+                    <Text
+                      size="xl"
+                      fw={700}
+                      ta="center"
+                      style={{ flexGrow: 1 }}
+                    >
+                      {getRelativeTime(profileUser?.user_created_at)}
+                    </Text>
+                    <Text size="10px" c="dimmed" ta="center">
+                      {getExactTime(profileUser?.user_created_at)}
+                    </Text>
+                  </Stack>
+                </>
+              )}
+
+              {profileUser?.user_role !== "PURCHASER" &&
+                profileUser?.user_role !== "REVIEWER" && (
+                  <Stack align="center" gap={0} style={{ height: "100%" }}>
+                    <Text size="sm" c="dimmed" ta="center">
+                      Joined
+                    </Text>
+                    <Text
+                      size="xl"
+                      fw={700}
+                      ta="center"
+                      style={{ flexGrow: 1 }}
+                    >
+                      {getRelativeTime(profileUser?.user_created_at)}
+                    </Text>
+                    <Text size="10px" c="dimmed" ta="center">
+                      {getExactTime(profileUser?.user_created_at)}
+                    </Text>
+                  </Stack>
+                )}
+            </Group>
+          </Paper>
+        )}
       </Stack>
       <Modal
         opened={opened}

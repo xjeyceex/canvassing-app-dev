@@ -3,6 +3,7 @@
 import { getUsers } from "@/actions/get";
 import LoadingStateProtected from "@/components/LoadingStateProtected";
 import PageHeader from "@/components/PageHeader";
+import { useUserStore } from "@/stores/userStore";
 import { getNameInitials, getRoleColor } from "@/utils/functions";
 import { UserRole } from "@/utils/types";
 import {
@@ -58,6 +59,9 @@ const UsersPage = () => {
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
   const router = useRouter();
+  const { user } = useUserStore();
+  const currentUser = user;
+
   const [users, setUsers] = useState<UserType[] | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -264,7 +268,10 @@ const UsersPage = () => {
             <Table.Tr style={{ border: "none" }}>
               <Table.Th p="lg">Name</Table.Th>
               <Table.Th py="lg">Role</Table.Th>
-              <Table.Th py="lg">Tickets</Table.Th>
+              {(currentUser?.user_role === "MANAGER" ||
+                currentUser?.user_role === "ADMIN") && (
+                <Table.Th py="lg">Ticket Status</Table.Th>
+              )}
               <Table.Th py="lg">Date Created</Table.Th>
               <Table.Th py="lg"></Table.Th>
             </Table.Tr>
@@ -338,60 +345,95 @@ const UsersPage = () => {
                   <Table.Td py="md">
                     {getRoleBadge(user.user_role as UserRole)}
                   </Table.Td>
-                  <Table.Td py="md">
-                    <Group gap="xs">
-                      {user.user_role === "PURCHASER" && (
-                        <>
-                          <Tooltip label={`${user.ticket_count} tickets`}>
-                            <Badge
-                              variant="light"
-                              color="blue"
-                              leftSection={<IconTicket size={12} />}
+
+                  {(currentUser?.user_role === "MANAGER" ||
+                    currentUser?.user_role === "ADMIN") && (
+                    <Table.Td py="md">
+                      <Group gap="xs">
+                        {user.user_role === "PURCHASER" && (
+                          <>
+                            <Tooltip label={`${user.ticket_count} tickets`}>
+                              <Badge
+                                variant="light"
+                                color="blue"
+                                leftSection={<IconTicket size={12} />}
+                              >
+                                {user.ticket_count}
+                              </Badge>
+                            </Tooltip>
+                            <Tooltip
+                              label={`${user.revised_ticket_count} revised tickets`}
                             >
-                              {user.ticket_count}
-                            </Badge>
-                          </Tooltip>
-                          <Tooltip
-                            label={`${user.revised_ticket_count} revised tickets`}
-                          >
-                            <Badge
-                              variant="light"
-                              color="red"
-                              leftSection={<IconCheckbox size={12} />}
+                              <Badge
+                                variant="light"
+                                color="red"
+                                leftSection={<IconCheckbox size={12} />}
+                              >
+                                {user.revised_ticket_count}
+                              </Badge>
+                            </Tooltip>
+                            <Tooltip label={`Revised tickets percentage`}>
+                              <Badge
+                                variant="light"
+                                color={
+                                  user.ticket_count === 0
+                                    ? "dimmed"
+                                    : (user.revised_ticket_count /
+                                        user.ticket_count) *
+                                        100 <
+                                      50
+                                    ? "green"
+                                    : (user.revised_ticket_count /
+                                        user.ticket_count) *
+                                        100 <
+                                      80
+                                    ? "yellow"
+                                    : "red"
+                                }
+                              >
+                                {user.ticket_count === 0
+                                  ? "0.00"
+                                  : (
+                                      (user.revised_ticket_count /
+                                        user.ticket_count) *
+                                      100
+                                    ).toFixed(2)}
+                                %
+                              </Badge>
+                            </Tooltip>
+                          </>
+                        )}
+
+                        {user.user_role === "REVIEWER" && (
+                          <>
+                            <Tooltip
+                              label={`${user.tickets_reviewed_by_user_count} tickets reviewed`}
                             >
-                              {user.revised_ticket_count}
-                            </Badge>
-                          </Tooltip>
-                        </>
-                      )}
-                      {user.user_role === "REVIEWER" && (
-                        <>
-                          <Tooltip
-                            label={`${user.tickets_reviewed_by_user_count} tickets reviewed`}
-                          >
-                            <Badge
-                              variant="light"
-                              color="blue"
-                              leftSection={<IconTicket size={12} />}
+                              <Badge
+                                variant="light"
+                                color="blue"
+                                leftSection={<IconTicket size={12} />}
+                              >
+                                {user.tickets_reviewed_by_user_count}
+                              </Badge>
+                            </Tooltip>
+                            <Tooltip
+                              label={`${user.tickets_revised_by_user_count} revised tickets`}
                             >
-                              {user.tickets_reviewed_by_user_count}
-                            </Badge>
-                          </Tooltip>
-                          <Tooltip
-                            label={`${user.tickets_revised_by_user_count} revised tickets`}
-                          >
-                            <Badge
-                              variant="light"
-                              color="green"
-                              leftSection={<IconCheckbox size={12} />}
-                            >
-                              {user.tickets_revised_by_user_count}
-                            </Badge>
-                          </Tooltip>
-                        </>
-                      )}
-                    </Group>
-                  </Table.Td>
+                              <Badge
+                                variant="light"
+                                color="green"
+                                leftSection={<IconCheckbox size={12} />}
+                              >
+                                {user.tickets_revised_by_user_count}
+                              </Badge>
+                            </Tooltip>
+                          </>
+                        )}
+                      </Group>
+                    </Table.Td>
+                  )}
+
                   <Table.Td py="md">
                     {new Date(user.user_created_at).toLocaleDateString()}
                   </Table.Td>
