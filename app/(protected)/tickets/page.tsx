@@ -90,20 +90,31 @@ const TicketList = () => {
   const manuallyExpandedTickets = useRef<Record<string, boolean>>({});
   const prevSearchQuery = useRef("");
 
-  const fetchTickets = async () => {
-    if (!user?.user_id) return;
-    setLoading(true);
-    const fetchedTickets = await getAllMyTickets({
-      user_id: user.user_id,
-      page_size: pageSize,
-      page: page,
-      search_query: searchQuery,
-      status_filter: activeTab,
-    });
-    setCurrentTotalCount(fetchedTickets.total_count);
-    setTickets(fetchedTickets.tickets);
-    setLoading(false);
-  };
+  const fetchTickets = (() => {
+    let currentRequestId = 0;
+
+    return async () => {
+      if (!user?.user_id) return;
+
+      const requestId = ++currentRequestId;
+      setLoading(true);
+
+      const fetchedTickets = await getAllMyTickets({
+        user_id: user.user_id,
+        page_size: pageSize,
+        page,
+        search_query: searchQuery,
+        status_filter: activeTab,
+      });
+
+      // Only set data if this is the latest request
+      if (requestId === currentRequestId) {
+        setCurrentTotalCount(fetchedTickets.total_count);
+        setTickets(fetchedTickets.tickets);
+        setLoading(false);
+      }
+    };
+  })();
 
   useEffect(() => {
     const fetchTicketStatusCounts = async () => {

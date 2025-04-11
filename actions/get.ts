@@ -134,6 +134,7 @@ export const getAllMyTickets = async ({
 
   return { tickets, total_count };
 };
+
 export const getTicketStatusCounts = async (
   user_id: string
 ): Promise<{ status_counts: TicketStatusCount[]; total_count: number }> => {
