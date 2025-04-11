@@ -13,6 +13,7 @@ import {
   NativeSelect,
   Pagination,
   Paper,
+  Select,
   Skeleton,
   Stack,
   Tabs,
@@ -199,6 +200,8 @@ const TicketList = () => {
   const handleTabChange = (value: string | null) => {
     if (value) {
       setActiveTab(value as TicketStatus);
+      setSearchQuery("");
+      setExpandedTickets({});
       setPage(1);
     }
   };
@@ -711,19 +714,23 @@ const TicketList = () => {
 
             <Box p={isMobile ? "xs" : "md"}>
               <Group
-                justify="apart"
-                align="center"
-                wrap={isMobile ? "wrap" : "nowrap"}
+                wrap="wrap"
+                gap="md"
+                style={{
+                  flexDirection: isMobile ? "column" : "row",
+                  alignItems: isMobile ? "stretch" : "center",
+                }}
               >
-                {/* Left Section: Rows per page and info */}
+                {/* Left Section */}
                 <Group
                   align="center"
-                  gap="sm"
+                  gap="xs"
                   style={{
+                    flex: 1,
+                    justifyContent: isMobile ? "center" : "flex-start",
                     order: isMobile ? 2 : 1,
                     width: isMobile ? "100%" : "auto",
-                    justifyContent: isMobile ? "center" : "flex-start",
-                    marginTop: isMobile ? theme.spacing.xs : 0,
+                    textAlign: isMobile ? "center" : "left",
                   }}
                 >
                   <Text size="sm" c="dimmed">
@@ -735,12 +742,9 @@ const TicketList = () => {
                     onChange={(event) =>
                       handlePageSizeChange(event.currentTarget.value)
                     }
-                    data={["5", "10", "20", "50"]} // Available page sizes
-                    style={{
-                      width: "65px",
-                      marginRight: theme.spacing.md, // Adjust margin as needed
-                    }}
+                    data={["5", "10", "20", "50"]}
                     size="sm"
+                    style={{ width: 75 }}
                   />
 
                   <Text size="sm" c="dimmed">
@@ -748,22 +752,64 @@ const TicketList = () => {
                   </Text>
                 </Group>
 
-                {/* Right Section: Pagination */}
-                <Group
+                {/* Middle Section: Pagination */}
+                <Box
                   style={{
+                    flex: 1,
+                    display: "flex",
+                    justifyContent: "center",
                     order: isMobile ? 1 : 2,
                     width: isMobile ? "100%" : "auto",
-                    justifyContent: isMobile ? "center" : "flex-end",
+                    marginTop: isMobile ? theme.spacing.xs : 0,
                   }}
                 >
                   <Pagination
                     value={page}
                     onChange={setPage}
-                    total={Math.ceil(currentTotalCount / pageSize)} // Total number of pages based on filtered tickets count
+                    total={Math.max(1, Math.ceil(currentTotalCount / pageSize))}
                     color="blue"
                     size="sm"
                     withEdges
                   />
+                </Box>
+
+                {/* Right Section: Page Select */}
+                <Group
+                  align="center"
+                  gap={4}
+                  style={{
+                    flex: 1,
+                    justifyContent: isMobile ? "center" : "flex-end",
+                    order: 3,
+                    width: isMobile ? "100%" : "auto",
+                    marginTop: isMobile ? theme.spacing.xs : 0,
+                    textAlign: isMobile ? "center" : "right",
+                  }}
+                >
+                  <Text size="sm" c="dimmed">
+                    Go to page:
+                  </Text>
+
+                  <Select
+                    value={page.toString()}
+                    onChange={(value) => value && setPage(Number(value))}
+                    data={Array.from(
+                      {
+                        length: Math.max(
+                          1,
+                          Math.ceil(currentTotalCount / pageSize)
+                        ),
+                      },
+                      (_, i) => (i + 1).toString()
+                    )}
+                    size="sm"
+                    style={{ width: 80 }}
+                    allowDeselect={false}
+                  />
+
+                  <Text size="sm" c="dimmed">
+                    / {Math.max(1, Math.ceil(currentTotalCount / pageSize))}
+                  </Text>
                 </Group>
               </Group>
             </Box>
