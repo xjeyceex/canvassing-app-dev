@@ -466,7 +466,10 @@ const TicketList = () => {
                 <IconSearch size={isMobile ? 16 : 18} stroke={1.5} />
               }
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.currentTarget.value)}
+              onChange={(e) => {
+                setSearchQuery(e.currentTarget.value);
+                setActiveTab("all");
+              }}
             />
             <Group align="center" justify="center" wrap="nowrap">
               <Menu shadow="md" width="fit-content" position="bottom-start">
