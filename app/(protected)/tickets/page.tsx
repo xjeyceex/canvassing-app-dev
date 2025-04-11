@@ -422,7 +422,7 @@ const TicketList = () => {
                         }
                       >
                         {loadingTab ? (
-                          <Skeleton width={16} height={12} />
+                          <Skeleton width={8} height={8} />
                         ) : (
                           getTicketCountByStatus(tab.value)
                         )}
