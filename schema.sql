@@ -657,8 +657,8 @@ AS $$
       AND a.approval_reviewed_by = _user_id
     )
 $$;
-DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, UUID, INT, INT, TEXT, TEXT, BOOLEAN);
 
+DROP FUNCTION IF EXISTS get_all_my_tickets(UUID, UUID, INT, INT, TEXT, TEXT, BOOLEAN);
 CREATE OR REPLACE FUNCTION get_all_my_tickets(
   user_id UUID, 
   ticket_uuid UUID DEFAULT NULL,
@@ -702,6 +702,7 @@ BEGIN
       AND (search_query IS NULL OR 
            t.ticket_name ILIKE '%' || search_query || '%' OR
            t.ticket_item_description ILIKE '%' || search_query || '%' OR
+           t.ticket_item_name ILIKE '%' || search_query || '%' OR
            t.ticket_specifications ILIKE '%' || search_query || '%')
       AND (
         status_filter IS NULL
@@ -745,6 +746,7 @@ BEGIN
       AND (search_query IS NULL OR 
            t.ticket_name ILIKE '%' || search_query || '%' OR
            t.ticket_item_description ILIKE '%' || search_query || '%' OR
+           t.ticket_item_name ILIKE '%' || search_query || '%' OR
            t.ticket_specifications ILIKE '%' || search_query || '%')
       AND (
         status_filter IS NULL
@@ -1417,3 +1419,4 @@ CREATE INDEX IF NOT EXISTS idx_ticket_name ON public.ticket_table(ticket_name);
 CREATE INDEX IF NOT EXISTS idx_ticket_name_trgm ON ticket_table USING GIN (ticket_name gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_ticket_item_description_trgm ON ticket_table USING GIN (ticket_item_description gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_ticket_specifications_trgm ON ticket_table USING GIN (ticket_specifications gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_ticket_item_name_trgm ON ticket_table USING GIN (ticket_item_name gin_trgm_ops);
