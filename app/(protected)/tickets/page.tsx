@@ -816,112 +816,97 @@ const TicketList = () => {
           </>
         ) : loading ? (
           <>
-            <Paper
-              p={isMobile ? "md" : "lg"}
-              radius="none"
-              shadow="none"
-              style={{
-                borderBottom: `1px solid ${
-                  colorScheme === "dark"
-                    ? theme.colors.dark[5]
-                    : theme.colors.gray[2]
-                }`,
-              }}
-            >
-              {/* Details Section Skeleton */}
-              <Collapse in>
-                <Stack gap="lg">
-                  {[...Array(5)].map((_, index) => (
-                    <Box key={index}>
-                      <Paper
-                        pb="lg"
-                        radius="none"
-                        shadow="none"
-                        bg={colorScheme === "dark" ? "dark.7" : "gray.0"}
-                        style={{
-                          borderBottom: `1px solid ${
-                            colorScheme === "dark"
-                              ? theme.colors.dark[5]
-                              : theme.colors.gray[2]
-                          }`,
-                        }}
-                      >
-                        <Group justify="space-between" align="center">
-                          <Stack gap={6}>
-                            <Group>
-                              <Skeleton height={18} width={120} />
-                              <Skeleton height={20} width={200} />
-                            </Group>
-                            <Group>
-                              <Skeleton height={25} width={180} />
-                              <Skeleton height={25} width={100} />
-                            </Group>
-                          </Stack>
-                          <Stack pr="xl">
-                            <Skeleton height={30} width={120} />
-                          </Stack>
-                        </Group>
-                      </Paper>
-                    </Box>
-                  ))}
-                  <Group
-                    justify="space-between"
-                    align="center"
-                    wrap="wrap"
-                    gap="md"
-                  >
-                    {/* Left Section: Rows per page */}
-                    <Group
-                      gap="xs"
-                      style={{
-                        flex: 1,
-                        justifyContent: isMobile ? "center" : "flex-start",
-                        order: 1,
-                        width: "100%",
-                      }}
-                    >
-                      <Skeleton height={25} width={120} />
-                      <Skeleton height={35} width={70} />
-                      <Skeleton height={25} width={60} />
-                    </Group>
-
-                    {/* Middle Section: Pagination */}
-                    <Group
-                      gap="xs"
-                      style={{
-                        flex: 1,
-                        justifyContent: "center",
-                        order: 2,
-                        width: "100%",
-                        marginTop: isMobile ? theme.spacing.xs : 0,
-                      }}
-                    >
-                      <Skeleton height={25} width={25} radius="md" />
-                      <Skeleton height={25} width={25} radius="md" />
-                      <Skeleton height={25} width={25} radius="md" />
-                      <Skeleton height={25} width={25} radius="md" />
-                      <Skeleton height={25} width={25} radius="md" />
-                      <Skeleton height={25} width={25} radius="md" />
-                    </Group>
-
-                    {/* Right Section: Go to page */}
-                    <Group
-                      gap="xs"
-                      style={{
-                        flex: 1,
-                        justifyContent: isMobile ? "center" : "flex-end",
-                        order: 3,
-                        width: "100%",
-                        marginTop: isMobile ? theme.spacing.xs : 0,
-                      }}
-                    >
-                      <Skeleton height={25} width={100} />
-                      <Skeleton height={30} width={80} />
+            {[...Array(5)].map((_, index) => (
+              <Box key={index}>
+                <Paper
+                  p={isMobile ? "md" : "lg"}
+                  radius="none"
+                  shadow="none"
+                  bg={colorScheme === "dark" ? "dark.7" : "gray.0"}
+                  style={{
+                    borderBottom: `1px solid ${
+                      colorScheme === "dark"
+                        ? theme.colors.dark[5]
+                        : theme.colors.gray[2]
+                    }`,
+                  }}
+                >
+                  <Group justify="space-between" align="center">
+                    <Stack gap={6}>
+                      <Group>
+                        <Skeleton height={18} width={120} />
+                        <Skeleton height={20} width={200} />
+                      </Group>
+                      <Group>
+                        <Skeleton height={25} width={180} />
+                        <Skeleton height={25} width={100} />
+                      </Group>
+                    </Stack>
+                    <Group>
+                      <Skeleton height={30} width={120} />
+                      <Skeleton height={28} width={28} />
                     </Group>
                   </Group>
-                </Stack>
-              </Collapse>
-            </Paper>
+                </Paper>
+              </Box>
+            ))}
+
+            <Group
+              p={isMobile ? "md" : "lg"}
+              justify="space-between"
+              align="center"
+              wrap="wrap"
+              gap="md"
+            >
+              {/* Left Section: Rows per page */}
+              <Group
+                gap="xs"
+                style={{
+                  flex: 1,
+                  justifyContent: isMobile ? "center" : "flex-start",
+                  order: 1,
+                  width: "100%",
+                }}
+              >
+                <Skeleton height={25} width={120} />
+                <Skeleton height={35} width={70} />
+                <Skeleton height={25} width={60} />
+              </Group>
+
+              {/* Middle Section: Pagination */}
+              <Group
+                gap="xs"
+                style={{
+                  flex: 1,
+                  justifyContent: "center",
+                  order: 2,
+                  width: "100%",
+                  marginTop: isMobile ? theme.spacing.xs : 0,
+                }}
+              >
+                <Skeleton height={25} width={25} radius="md" />
+                <Skeleton height={25} width={25} radius="md" />
+                <Skeleton height={25} width={25} radius="md" />
+                <Skeleton height={25} width={25} radius="md" />
+                <Skeleton height={25} width={25} radius="md" />
+                <Skeleton height={25} width={25} radius="md" />
+              </Group>
+
+              {/* Right Section: Go to page */}
+              <Group
+                gap="xs"
+                style={{
+                  flex: 1,
+                  justifyContent: isMobile ? "center" : "flex-end",
+                  order: 3,
+                  width: "100%",
+                  marginTop: isMobile ? theme.spacing.xs : 0,
+                }}
+              >
+                <Skeleton height={25} width={100} />
+                <Skeleton height={30} width={80} />
+              </Group>
+            </Group>
           </>
         ) : (
           <Flex

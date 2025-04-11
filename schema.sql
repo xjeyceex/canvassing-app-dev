@@ -1338,7 +1338,13 @@ begin
 end;
 $$;
 
-CREATE OR REPLACE FUNCTION get_all_users_with_stats()
+DROP FUNCTION IF EXISTS get_all_users_with_stats(integer,integer,text,text);
+CREATE OR REPLACE FUNCTION get_all_users_with_stats(
+  page INT,          
+  page_size INT,     
+  search_query TEXT,
+  active_tab TEXT DEFAULT NULL  -- Renamed from user_role
+)
 RETURNS TABLE (
   user_id UUID,
   user_name TEXT,
@@ -1350,7 +1356,8 @@ RETURNS TABLE (
   ticket_count BIGINT,
   revised_ticket_count BIGINT,
   tickets_revised_by_user_count BIGINT,
-  tickets_reviewed_by_user_count BIGINT
+  tickets_reviewed_by_user_count BIGINT,
+  total_count BIGINT
 )
 LANGUAGE SQL
 AS $$
@@ -1365,7 +1372,8 @@ SELECT
   COALESCE(t.ticket_count, 0) AS ticket_count,
   COALESCE(rt.revised_ticket_count, 0) AS revised_ticket_count,
   COALESCE(rv.tickets_revised_by_user_count, 0) AS tickets_revised_by_user_count,
-  COALESCE(ap.tickets_reviewed_by_user_count, 0) AS tickets_reviewed_by_user_count
+  COALESCE(ap.tickets_reviewed_by_user_count, 0) AS tickets_reviewed_by_user_count,
+  COUNT(*) OVER() AS total_count
 FROM 
   user_table u
 LEFT JOIN (
@@ -1405,7 +1413,14 @@ LEFT JOIN (
     approval_table
   GROUP BY 
     approval_reviewed_by
-) ap ON ap.approval_reviewed_by = u.user_id;
+) ap ON ap.approval_reviewed_by = u.user_id
+WHERE 
+  (u.user_full_name ILIKE '%' || COALESCE(search_query, '') || '%'
+  OR u.user_email ILIKE '%' || COALESCE(search_query, '') || '%')
+  AND (active_tab IS NULL OR u.user_role = active_tab::user_role_enum)
+
+LIMIT page_size
+OFFSET (page - 1) * page_size;
 $$;
 
 CREATE EXTENSION IF NOT EXISTS pg_trgm;

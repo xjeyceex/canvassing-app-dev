@@ -235,6 +235,37 @@ export const getTicketStatusCounts = async (
   return { status_counts: statusCounts, total_count: totalCount };
 };
 
+export const getUserRoleCounts = async (): Promise<{
+  role_counts: { user_role: string; user_count: number }[];
+  total_count: number;
+}> => {
+  const supabase = await createClient();
+
+  const { data: users, error } = await supabase
+    .from("user_table")
+    .select("user_role");
+
+  if (error) {
+    console.error("Error fetching users:", error.message);
+    return { role_counts: [], total_count: 0 };
+  }
+
+  const roleCounts = users.reduce((acc: { [role: string]: number }, user) => {
+    const role = user.user_role;
+    acc[role] = (acc[role] || 0) + 1;
+    return acc;
+  }, {});
+
+  const role_counts = Object.entries(roleCounts).map(
+    ([user_role, user_count]) => ({
+      user_role,
+      user_count,
+    })
+  );
+
+  return { role_counts, total_count: users.length };
+};
+
 type SharedUser = { ticket_shared_user_id: string };
 type Reviewer = { approval_reviewed_by: string };
 
@@ -517,20 +548,39 @@ export const getUserDataById = async (user_id: string) => {
   }
 };
 
-export const getUsers = async () => {
+export const getUsers = async ({
+  page,
+  pageSize,
+  searchQuery,
+  activeTab,
+}: {
+  page: number;
+  pageSize: number;
+  searchQuery: string;
+  activeTab: string;
+}) => {
   const supabase = await createClient();
 
   try {
-    const { data, error } = await supabase.rpc("get_all_users_with_stats");
+    const { data, error } = await supabase.rpc("get_all_users_with_stats", {
+      page,
+      page_size: pageSize,
+      search_query: searchQuery,
+      active_tab: activeTab === "all" ? null : activeTab, // Ensure null for "all" role
+    });
 
     if (error) {
       throw new Error(error.message || "Error fetching users with stats");
     }
 
+    const users = data || [];
+    const totalCount = users.length > 0 ? users[0].total_count : 0;
+
     return {
       error: false,
       success: true,
-      users: data,
+      users: users,
+      totalCount, // Returning the total count here
     };
   } catch (err) {
     return {

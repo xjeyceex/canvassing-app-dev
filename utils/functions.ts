@@ -113,6 +113,8 @@ export const getRoleColor = (role: string) => {
       return "yellow";
     case "PURCHASER":
       return "blue";
+    case "all":
+      return "gray";
     default:
       return "gray";
   }

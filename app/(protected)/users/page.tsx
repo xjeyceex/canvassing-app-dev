@@ -1,6 +1,6 @@
 "use client";
 
-import { getUsers } from "@/actions/get";
+import { getUserRoleCounts, getUsers } from "@/actions/get";
 import LoadingStateProtected from "@/components/LoadingStateProtected";
 import PageHeader from "@/components/PageHeader";
 import { useUserStore } from "@/stores/userStore";
@@ -13,9 +13,11 @@ import {
   Box,
   Flex,
   Group,
+  NativeSelect,
   Pagination,
   Paper,
   Select,
+  Skeleton,
   Stack,
   Table,
   Tabs,
@@ -53,6 +55,11 @@ export type UserType = {
   tickets_reviewed_by_user_count: number;
 };
 
+export type RoleCount = {
+  user_role: string;
+  user_count: number;
+};
+
 const UsersPage = () => {
   const theme = useMantineTheme();
   const { colorScheme } = useMantineColorScheme();
@@ -61,20 +68,40 @@ const UsersPage = () => {
   const currentUser = user;
 
   const [users, setUsers] = useState<UserType[] | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<string>("all");
-  const [activePage, setActivePage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState("5");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loadingTab, setLoadingTab] = useState(false);
 
+  const [totalCounts, setTotalCounts] = useState<{
+    role_count: RoleCount[];
+    total_count: number;
+  }>({
+    role_count: [],
+    total_count: 0,
+  });
   const isMobile = useMediaQuery(`(max-width: ${theme.breakpoints.xs})`);
 
-  useEffect(() => {
-    let isMounted = true;
+  const fetchData = (() => {
+    let currentRequestId = 0;
 
-    const fetchData = async () => {
+    return async () => {
+      const requestId = ++currentRequestId;
+      setLoading(true);
+
       try {
-        const result = await getUsers();
+        const result = await getUsers({
+          page,
+          pageSize,
+          searchQuery,
+          activeTab,
+        });
+
+        // Abort if this is not the latest request
+        if (requestId !== currentRequestId) return;
 
         if (result.error) {
           notifications.show({
@@ -86,32 +113,53 @@ const UsersPage = () => {
           return;
         }
 
-        if (isMounted) {
-          setUsers(result?.users || []);
-        }
+        setUsers(result?.users || []);
+        setTotalCount(result?.totalCount);
       } catch (error) {
-        console.error("Error fetching data:", error);
-        notifications.show({
-          title: "Error",
-          message: "Failed to fetch users",
-          color: "red",
-          icon: <IconAlertCircle size={16} />,
-        });
+        // Only show error if this is the latest request
+        if (requestId === currentRequestId) {
+          console.error("Error fetching data:", error);
+          notifications.show({
+            title: "Error",
+            message: "Failed to fetch users",
+            color: "red",
+            icon: <IconAlertCircle size={16} />,
+          });
+        }
       } finally {
-        if (isMounted) {
+        // Only turn off loading if this is the latest request
+        if (requestId === currentRequestId) {
           setLoading(false);
         }
       }
     };
+  })();
 
+  useEffect(() => {
+    console.log("Tab changed:", activeTab); // Debugging tab change
     fetchData();
+  }, [page, pageSize, searchQuery, activeTab]);
 
-    return () => {
-      isMounted = false;
+  useEffect(() => {
+    const fetchRoleCounts = async () => {
+      if (!user?.user_id) return;
+
+      setLoadingTab(true);
+      const { role_counts, total_count } = await getUserRoleCounts(); // Pass user_id to the function
+
+      // Update the state with the fetched data
+      setTotalCounts({
+        role_count: role_counts, // ✅ this matches your state type
+        total_count,
+      });
+
+      setLoadingTab(false);
     };
-  }, []);
 
-  if (loading || !users) {
+    fetchRoleCounts();
+  }, [user?.user_id]);
+
+  if (!users) {
     return <LoadingStateProtected />;
   }
 
@@ -128,6 +176,22 @@ const UsersPage = () => {
     }
   });
 
+  const startTicket = (page - 1) * pageSize + 1;
+  const endTicket = Math.min(page * pageSize, totalCount);
+
+  // Make sure endTicket doesn't exceed currentTotalCount
+  const correctedEndTicket = Math.min(endTicket, totalCount);
+
+  const showingInfoText =
+    filteredUsers.length > 0
+      ? `${startTicket}-${correctedEndTicket} of ${totalCount}`
+      : "0 of 0";
+
+  const handlePageSizeChange = (value: string) => {
+    setPageSize(parseInt(value, 10));
+    setPage(1); // Reset to page 1 when page size changes
+  };
+
   // Get status badge
   const getRoleBadge = (role: UserRole) => {
     return (
@@ -136,12 +200,6 @@ const UsersPage = () => {
       </Badge>
     );
   };
-
-  // Pagination
-  const currentPageUsers = filteredUsers.slice(
-    (activePage - 1) * Number(rowsPerPage),
-    activePage * Number(rowsPerPage)
-  );
 
   const breadcrumbs = [
     { title: "Dashboard", href: "/dashboard" },
@@ -158,16 +216,19 @@ const UsersPage = () => {
 
   const handleTabChange = (value: string | null) => {
     if (value) {
-      setActiveTab(value as UserRole);
+      setActiveTab(value);
+      setSearchQuery("");
+      setPage(1);
     }
   };
 
   const getUserCountByRole = (role: UserRole) => {
     if (role === "all") {
-      return users.length;
+      return totalCounts.total_count;
     }
 
-    return users.filter((user) => user.user_role === role).length;
+    const roleData = totalCounts.role_count.find((r) => r.user_role === role);
+    return roleData ? roleData.user_count : 0;
   };
 
   const highlightSearchTerm = (text: string) => {
@@ -218,7 +279,7 @@ const UsersPage = () => {
               <Tabs.Tab
                 key={tab.value}
                 value={tab.value}
-                color={tab.value !== "all" ? getRoleColor(tab.value) : "dark"}
+                color={getRoleColor(tab.value)}
                 py="md"
               >
                 <Group gap={8}>
@@ -227,11 +288,13 @@ const UsersPage = () => {
                     size="sm"
                     radius="sm"
                     variant="light"
-                    color={
-                      tab.value !== "all" ? getRoleColor(tab.value) : "dark"
-                    }
+                    color={getRoleColor(tab.value)}
                   >
-                    {getUserCountByRole(tab.value)}
+                    {loadingTab ? (
+                      <Skeleton width={8} height={8} />
+                    ) : (
+                      getUserCountByRole(tab.value)
+                    )}{" "}
                   </Badge>
                 </Group>
               </Tabs.Tab>
@@ -284,14 +347,49 @@ const UsersPage = () => {
               borderRadius: "md",
             }}
           >
-            {currentPageUsers.length === 0 ? (
+            {loading ? (
+              <>
+                {[...Array(5)].map((_, index) => (
+                  <Table.Tr key={`skeleton-${index}`}>
+                    <Table.Td p="md">
+                      <Group gap="sm">
+                        <Skeleton height={40} width={40} circle />
+                        <Stack gap={4}>
+                          <Skeleton height={16} width={100} radius="sm" />
+                          <Skeleton height={12} width={140} radius="sm" />
+                        </Stack>
+                      </Group>
+                    </Table.Td>
+                    <Table.Td py="md">
+                      <Skeleton height={24} width={80} radius="xl" />
+                    </Table.Td>
+                    {(currentUser?.user_role === "MANAGER" ||
+                      currentUser?.user_role === "ADMIN") && (
+                      <Table.Td py="md">
+                        <Group gap={4}>
+                          <Skeleton height={24} width={40} radius="xl" />
+                          <Skeleton height={24} width={40} radius="xl" />
+                          <Skeleton height={24} width={50} radius="xl" />
+                        </Group>
+                      </Table.Td>
+                    )}
+                    <Table.Td py="md">
+                      <Skeleton height={16} width={90} radius="sm" />
+                    </Table.Td>
+                    <Table.Td py="md">
+                      <Skeleton height={24} width={24} circle />
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </>
+            ) : filteredUsers.length === 0 ? (
               <Table.Tr>
                 <Table.Td colSpan={6} align="center" py="xl">
                   <Text c="dimmed">No users found</Text>
                 </Table.Td>
               </Table.Tr>
             ) : (
-              currentPageUsers.map((user) => (
+              filteredUsers.map((user) => (
                 <Table.Tr
                   key={user.user_id}
                   onClick={() => router.push(`/users/${user.user_id}`)}
@@ -456,43 +554,139 @@ const UsersPage = () => {
         </Table>
 
         <Box p={isMobile ? "xs" : "md"}>
-          <Group
-            justify="apart"
-            align="center"
-            wrap={isMobile ? "wrap" : "nowrap"}
-          >
+          {loading ? (
             <Group
+              justify="space-between"
               align="center"
-              gap="sm"
-              style={{
-                order: isMobile ? 2 : 1,
-                width: isMobile ? "100%" : "auto",
-                justifyContent: isMobile ? "center" : "flex-start",
-                marginTop: isMobile ? theme.spacing.xs : 0,
-              }}
+              wrap={isMobile ? "wrap" : "nowrap"}
             >
-              <Text size="sm">Rows per page:</Text>
-              <Select
-                data={["5", "10", "20", "50"]}
-                value={rowsPerPage}
-                onChange={(value) => setRowsPerPage(value || "5")}
-                w={65}
-              />
-              <Text size="sm">
-                {filteredUsers.length > 0
-                  ? `${(activePage - 1) * Number(rowsPerPage) + 1}-${Math.min(
-                      activePage * Number(rowsPerPage),
-                      filteredUsers.length
-                    )} of ${filteredUsers.length}`
-                  : "0-0 of 0"}
-              </Text>
-              <Pagination
-                total={Math.ceil(filteredUsers.length / Number(rowsPerPage))}
-                value={activePage}
-                onChange={setActivePage}
-              />
+              {/* Left section - Rows per page */}
+              <Group
+                align="center"
+                gap="sm"
+                style={{
+                  order: isMobile ? 2 : 1,
+                  width: isMobile ? "100%" : "auto",
+                  justifyContent: isMobile ? "center" : "flex-start",
+                  marginTop: isMobile ? theme.spacing.xs : 0,
+                }}
+              >
+                <Skeleton height={20} width={90} radius="sm" />
+                <Skeleton height={32} width={75} radius="sm" />
+                <Skeleton height={20} width={60} radius="sm" />
+              </Group>
+
+              {/* Middle section - Pagination */}
+              <Group
+                gap={4}
+                style={{
+                  order: isMobile ? 1 : 2,
+                  justifyContent: "center",
+                  width: isMobile ? "100%" : "auto",
+                }}
+              >
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton
+                    key={`pagination-skeleton-${i}`}
+                    height={25}
+                    width={25}
+                    radius="md"
+                  />
+                ))}
+              </Group>
+
+              {/* Right section - Go to page */}
+              <Group
+                align="center"
+                gap={4}
+                style={{
+                  order: 3,
+                  justifyContent: isMobile ? "center" : "flex-end",
+                  width: isMobile ? "100%" : "auto",
+                  marginTop: isMobile ? theme.spacing.xs : 0,
+                }}
+              >
+                <Skeleton height={20} width={70} radius="sm" />
+                <Skeleton height={32} width={80} radius="sm" />
+                <Skeleton height={20} width={30} radius="sm" />
+              </Group>
             </Group>
-          </Group>
+          ) : (
+            <Group
+              justify="space-between"
+              align="center"
+              wrap={isMobile ? "wrap" : "nowrap"}
+            >
+              {/* Left section - Rows per page */}
+              <Group
+                align="center"
+                gap="sm"
+                style={{
+                  order: isMobile ? 2 : 1,
+                  width: isMobile ? "100%" : "auto",
+                  justifyContent: isMobile ? "center" : "flex-start",
+                  marginTop: isMobile ? theme.spacing.xs : 0,
+                }}
+              >
+                <Text size="sm">Rows per page:</Text>
+                <NativeSelect
+                  value={pageSize.toString()}
+                  onChange={(event) =>
+                    handlePageSizeChange(event.currentTarget.value)
+                  }
+                  data={["5", "10", "20", "50"]}
+                  size="sm"
+                  style={{ width: 75 }}
+                />
+                <Text size="sm">{showingInfoText}</Text>
+              </Group>
+
+              {/* Middle section - Pagination */}
+              <Pagination
+                value={page}
+                onChange={setPage}
+                total={Math.max(1, Math.ceil(totalCount / pageSize))}
+                color="blue"
+                size="sm"
+                withEdges
+                style={{
+                  order: isMobile ? 1 : 2,
+                  justifyContent: "center",
+                  width: isMobile ? "100%" : "auto",
+                }}
+              />
+
+              {/* Right section - Go to page */}
+              <Group
+                align="center"
+                gap={4}
+                style={{
+                  order: 3,
+                  justifyContent: isMobile ? "center" : "flex-end",
+                  width: isMobile ? "100%" : "auto",
+                  marginTop: isMobile ? theme.spacing.xs : 0,
+                }}
+              >
+                <Text size="sm" c="dimmed">
+                  Go to page:
+                </Text>
+                <Select
+                  value={page.toString()}
+                  onChange={(value) => value && setPage(Number(value))}
+                  data={Array.from(
+                    { length: Math.max(1, Math.ceil(totalCount / pageSize)) },
+                    (_, i) => (i + 1).toString()
+                  )}
+                  size="sm"
+                  style={{ width: 80 }}
+                  allowDeselect={false}
+                />
+                <Text size="sm" c="dimmed">
+                  / {Math.max(1, Math.ceil(totalCount / pageSize))}
+                </Text>
+              </Group>
+            </Group>
+          )}
         </Box>
       </Paper>
     </Box>
