@@ -136,7 +136,6 @@ const UsersPage = () => {
   })();
 
   useEffect(() => {
-    console.log("Tab changed:", activeTab); // Debugging tab change
     fetchData();
   }, [page, pageSize, searchQuery, activeTab]);
 
